@@ -47,13 +47,16 @@ const Navbar = () => {
 <ul className="hidden md:flex items-center gap-14 text-lg text-[#2D2926] font-medium mx-auto">
 
           <li><Link to="/" className="hover:text-[#8B5C42]">Home</Link></li>
+           <li><a href="/home2" className="hover:text-[#8B5C42]">Home 2</a></li>
           <li><Link to="/about" className="hover:text-[#8B5C42]">About Us</Link></li>
           <li><Link to="/faqs" className="hover:text-[#8B5C42]">FAQs</Link></li>
           <li><Link to="/contact" className="hover:text-[#8B5C42]">Contact Us</Link></li>
-          <li><Link to="/reservation" className="hover:text-[#8B5C42]">Make a Reservation</Link></li>
-          <li>
-  <a href="/home2" className="hover:text-[#8B5C42]">Home 2</a>
-</li>
+          <li><a href="/Product/1" className="hover:text-[#8B5C42]">Products</a></li>
+          
+ 
+  
+
+
         </ul>
         
         <div className="hidden md:block">
