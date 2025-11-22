@@ -18,8 +18,9 @@ const Home = () => {
       {/* PARTNERS SECTION */}
       
       <Partners />
-       <VideoSlider />
       <FeaturedProducts />
+      <VideoSlider />
+      
 
     </div>
   );

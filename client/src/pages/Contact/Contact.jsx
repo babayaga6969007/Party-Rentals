@@ -47,7 +47,7 @@ const Contact = () => {
             <FiPhone size={26} className="text-[#8B5C42]" />
             <div>
               <p className="text-[#2D2926] font-medium text-lg">Phone</p>
-              <p className="text-[#2D2926]/70">+61 XXX XXX XXX</p>
+              <p className="text-[#2D2926]/70">+1 XXX XXX XXX</p>
             </div>
           </div>
 
@@ -56,7 +56,7 @@ const Contact = () => {
             <FiMail size={26} className="text-[#8B5C42]" />
             <div>
               <p className="text-[#2D2926] font-medium text-lg">Email</p>
-              <p className="text-[#2D2926]/70">contact@partyrentals.au</p>
+              <p className="text-[#2D2926]/70">hello@newprojectdesigns.com</p>
             </div>
           </div>
 
@@ -66,8 +66,8 @@ const Contact = () => {
             <div>
               <p className="text-[#2D2926] font-medium text-lg">Location</p>
               <p className="text-[#2D2926]/70">
-                Melbourne, Australia  
-                <br />
+2031 Via Burton Street
+Suite A                <br />
                 (Delivery available nationwide)
               </p>
             </div>
@@ -118,6 +118,15 @@ const Contact = () => {
                 placeholder="Enter your email"
               />
             </div>
+            {/* Title */}
+<div>
+  <label className="block mb-2 text-[#2D2926]">Title</label>
+  <input
+    type="text"
+    className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
+    placeholder="Enter message title"
+  />
+</div>
 
             {/* Message */}
             <div>
@@ -148,7 +157,7 @@ const Contact = () => {
         <div className="w-full h-[350px] rounded-xl overflow-hidden shadow-md border border-[#D9C7BE]">
           <iframe
             title="Google Map"
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d31502.138774308723!2d144.9464574!3d-37.8409356!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6ad65d4f0e0b89c1%3A0x5045675218ce6e0!2sMelbourne%20VIC%2C%20Australia!5e0!3m2!1sen!2sau!4v1707733344444"
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3302.104085378176!2d-118.322553!3d34.1341157!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x80c2bf0caa18b9d9%3A0xe85dfb0c1dbd2f8b!2sHollywood%20Sign!5e0!3m2!1sen!2sus!4v1707733344444"
             width="100%"
             height="100%"
             style={{ border: 0 }}

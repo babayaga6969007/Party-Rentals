@@ -10,6 +10,15 @@ import v5 from "../../assets/reels/5.mp4";
 import v6 from "../../assets/reels/6.mp4";
 
 const videosOriginal = [v1, v2, v3, v4, v5, v6];
+const instaLinks = [
+  "https://www.instagram.com/p/DRDNVjFEhgR/",
+  "https://www.instagram.com/p/DQ0tqBADhDa/",
+  "https://www.instagram.com/p/DN7eZpwDrZe/",
+  "https://www.instagram.com/p/DG7HAWSRizA/",
+  "https://www.instagram.com/p/DDl164Ox-0n/",
+  "https://www.instagram.com/p/C16jS0UrRZ2/",
+];
+
 
 // Create duplicates for infinite effect
 const videos = [...videosOriginal, ...videosOriginal, ...videosOriginal];
@@ -65,14 +74,14 @@ const cardWidth = window.innerWidth < 768 ? 300 : 284;
       {/* Arrows */}
       <button
         onClick={prev}
-        className="absolute left-20 top-1/2 -translate-y-1/2 z-20 bg-[#8B5C42] p-4 rounded-full text-white shadow-lg hover:bg-[#704A36]"
+      className="hidden md:flex absolute left-20 top-1/2 -translate-y-1/2 z-20 bg-[#8B5C42] p-4 rounded-full text-white shadow-lg hover:bg-[#704A36]"
       >
         <FiChevronLeft size={24} />
       </button>
 
       <button
         onClick={next}
-        className="absolute right-20 top-1/2 -translate-y-1/2 z-20 bg-[#8B5C42] p-4 rounded-full text-white shadow-lg hover:bg-[#704A36]"
+  className="hidden md:flex absolute right-20 top-1/2 -translate-y-1/2 z-20 bg-[#8B5C42] p-4 rounded-full text-white shadow-lg hover:bg-[#704A36]"
       >
         <FiChevronRight size={24} />
       </button>
@@ -93,14 +102,21 @@ const cardWidth = window.innerWidth < 768 ? 300 : 284;
               key={i}
                 className="w-[260px] h-[400px] mx-3 flex-shrink-0 rounded-xl overflow-hidden shadow-lg"
             >
+              <a
+              href={instaLinks[i % instaLinks.length]}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <video
                 src={video}
                 autoPlay
                 muted
                 loop
                 playsInline
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover cursor-pointer"
               />
+            </a>
+
             </div>
           ))}
         </div>

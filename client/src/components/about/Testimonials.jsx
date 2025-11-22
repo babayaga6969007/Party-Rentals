@@ -1,5 +1,5 @@
-import { useRef } from "react";
-import { FiChevronLeft, FiChevronRight, FiStar } from "react-icons/fi";
+import { useState } from "react";
+import { FiStar, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
 const testimonials = [
   {
@@ -33,18 +33,14 @@ const testimonials = [
 ];
 
 const Testimonials = () => {
-  const sliderRef = useRef(null);
+  const [active, setActive] = useState(0);
 
-  const scrollLeft = () => {
-    sliderRef.current.scrollBy({ left: -350, behavior: "smooth" });
-  };
-
-  const scrollRight = () => {
-    sliderRef.current.scrollBy({ left: 350, behavior: "smooth" });
-  };
+  const next = () => setActive((prev) => (prev + 1) % testimonials.length);
+  const prev = () => setActive((prev) => (prev - 1 + testimonials.length) % testimonials.length);
 
   return (
     <section className="py-20 bg-[#FFF7F0]">
+      
       {/* Heading */}
       <div className="text-center mb-12 px-4">
         <p className="text-sm tracking-widest text-[#8B5C42] font-semibold">
@@ -62,62 +58,71 @@ const Testimonials = () => {
         </p>
       </div>
 
-      {/* Slider wrapper */}
-      <div className="relative max-w-6xl mx-auto px-8">
-        
-        {/* Left Arrow */}
+      {/* Circular Avatar Selector */}
+      <div className="flex justify-center gap-6 mb-10 flex-wrap">
+        {testimonials.map((t, i) => (
+          <img
+            key={i}
+            src={t.img}
+            alt={t.name}
+            onClick={() => setActive(i)}
+            className={`w-16 h-16 rounded-full object-cover cursor-pointer
+              transition-all duration-300 border-2
+              ${active === i ? "border-[#8B5C42] scale-110" : "border-transparent opacity-60 hover:opacity-100"}`}
+          />
+        ))}
+      </div>
+
+      {/* Testimonial Card */}
+      <div className="relative max-w-3xl mx-auto px-6">
+
+        {/* Arrows */}
         <button
-          onClick={scrollLeft}
-          className="absolute -left-4 top-1/2 -translate-y-1/2 bg-white shadow-lg p-3 rounded-full text-[#8B5C42] hover:bg-[#f7ebe3] hidden md:flex"
+          onClick={prev}
+          className="absolute -left-20 ml-4 top-1/2 -translate-y-1/2 bg-white shadow-md p-3 rounded-full text-[#8B5C42] hidden md:flex hover:bg-[#f5e9df]"
         >
           <FiChevronLeft size={22} />
         </button>
 
-        {/* Cards */}
-        <div
-          ref={sliderRef}
-          className="flex gap-6 overflow-x-scroll scroll-smooth no-scrollbar"
-        >
-          {testimonials.map((t, i) => (
-            <div
-              key={i}
-              className="min-w-[320px] md:min-w-[360px] bg-white shadow-md rounded-xl p-6 border border-[#EAD9C7]"
-            >
-              {/* Person row */}
-              <div className="flex items-center gap-4">
-                <img
-                  src={t.img}
-                  alt={t.name}
-                  className="w-14 h-14 rounded-full object-cover"
-                />
-                <div>
-                  <h4 className="text-lg font-semibold text-[#2D2926]">{t.name}</h4>
-                  <p className="text-sm text-gray-500">{t.role}</p>
-                </div>
-              </div>
-
-              {/* Rating */}
-              <div className="flex items-center mt-3 text-[#FFB400]">
-                {Array.from({ length: t.rating }).map((_, idx) => (
-                  <FiStar key={idx} />
-                ))}
-              </div>
-
-              {/* Testimonial text */}
-              <p className="text-gray-600 mt-4 leading-relaxed">
-                "{t.text}"
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Right Arrow */}
         <button
-          onClick={scrollRight}
-          className="absolute -right-4 top-1/2 -translate-y-1/2 bg-white shadow-lg p-3 rounded-full text-[#8B5C42] hover:bg-[#f7ebe3] hidden md:flex"
+          onClick={next}
+        className="absolute -right-20 mr-4 top-1/2 -translate-y-1/2 bg-white shadow-md p-3 rounded-full text-[#8B5C42] hidden md:flex hover:bg-[#f5e9df]"
         >
           <FiChevronRight size={22} />
         </button>
+
+        <div
+          key={active}
+          className="bg-white rounded-2xl p-8 shadow-lg border border-[#EAD9C7] transition-all duration-500 animate-fadeIn"
+        >
+          <div className="flex items-center gap-4 mb-4">
+            <img
+              src={testimonials[active].img}
+              alt={testimonials[active].name}
+              className="w-16 h-16 rounded-full object-cover"
+            />
+            <div>
+              <h4 className="text-xl font-semibold text-[#2D2926]">
+                {testimonials[active].name}
+              </h4>
+              <p className="text-sm text-gray-500">
+                {testimonials[active].role}
+              </p>
+            </div>
+          </div>
+
+          {/* Stars */}
+          <div className="flex text-[#FFB400] mb-3">
+            {Array.from({ length: testimonials[active].rating }).map((_, idx) => (
+              <FiStar key={idx} />
+            ))}
+          </div>
+
+          {/* Review */}
+          <p className="text-gray-600 leading-relaxed">
+            "{testimonials[active].text}"
+          </p>
+        </div>
       </div>
     </section>
   );

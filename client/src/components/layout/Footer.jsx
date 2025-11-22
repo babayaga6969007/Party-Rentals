@@ -22,7 +22,8 @@ const Footer = () => {
           </p>
 
           <p className="mt-5 text-[#8B5C42] font-medium">
-            contact@partyrentals.au
+          hello@newprojectdesigns.com
+
           </p>
 
           {/* Social Icons */}
@@ -86,7 +87,7 @@ const Footer = () => {
 
           <div className="flex items-center gap-3 text-[#2D2926] font-medium">
             <FiPhone size={20} />
-            <span>+61 XXX XXX XXX</span>
+            <span>+1 XXX XXX XXX</span>
           </div>
         </div>
       </div>

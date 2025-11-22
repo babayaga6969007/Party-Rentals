@@ -77,12 +77,13 @@ const Home2 = () => {
       <div className="mt-15">
   <Partners />
 </div>
+{/* FEATURED PRODUCTS */}
+      <FeaturedProducts />
 
       {/* VIDEO SLIDER */}
       <VideoSlider />
 
-      {/* FEATURED PRODUCTS */}
-      <FeaturedProducts />
+      
     </div>
     </section>
     
