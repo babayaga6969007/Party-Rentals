@@ -94,7 +94,7 @@ const Footer = () => {
 
       {/* Bottom text */}
       <div className="text-center mt-12 text-sm text-[#2D2926]/70">
-        © {new Date().getFullYear()} Party Rentals Australia. All Rights Reserved.
+        © {new Date().getFullYear()} Party Rentals America. All Rights Reserved.
       </div>
     </footer>
   );
