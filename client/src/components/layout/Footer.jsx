@@ -80,7 +80,7 @@ const Footer = () => {
           </h3>
 
           <p className="text-[#2D2926]/80 leading-relaxed mb-4">
-            Australia-wide service  
+            America-wide service  
             Reliable delivery & pickup  
             Friendly customer support
           </p>

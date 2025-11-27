@@ -15,10 +15,10 @@ const Navbar = () => {
         {/* Left: Contact details */}
         <div className="flex items-center gap-6">
           <span className="flex items-center gap-2">
-            <FiPhone size={14} /> +61 XXX XXX XXX
+            <FiPhone size={14} /> +1 XXX XXX XXX
           </span>
           <span className="flex items-center gap-2">
-            <FiMail size={14} /> contact@partyrentals.au
+            <FiMail size={14} /> hello@newprojectdesigns.com
           </span>
         </div>
 
@@ -51,11 +51,8 @@ const Navbar = () => {
           <li><Link to="/about" className="hover:text-[#8B5C42]">About Us</Link></li>
           <li><Link to="/faqs" className="hover:text-[#8B5C42]">FAQs</Link></li>
           <li><Link to="/contact" className="hover:text-[#8B5C42]">Contact Us</Link></li>
+          <li><a href="category" className="hover:text-[#8B5C42]">Category</a></li>
           <li><a href="/Product/1" className="hover:text-[#8B5C42]">Products</a></li>
-          
- 
-  
-
 
         </ul>
         

@@ -44,31 +44,39 @@ const FeaturedProducts = () => {
       <div className="mt-14 max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 px-6">
         {products.map((item) => (
           <div
-            key={item.id}
-            className="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition"
+        key={item.id}
+        className="group bg-white border border-black/10 rounded-xl overflow-hidden 
+                  transition-transform duration-300 hover:scale-[1.03] hover:shadow-xl"
+      >
+        {/* Image */}
+        <div className="h-60 overflow-hidden">
+          <img
+            src={item.img}
+            alt={item.title}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+          />
+        </div>
+
+        {/* Details */}
+        <div className="p-4 relative">
+          <span className="inline-block bg-green-600 text-white text-[12px] px-3 py-1 rounded-full mb-3">
+            {item.availability} available
+          </span>
+
+          <h3 className="font-semibold text-[#2D2926]">{item.title}</h3>
+          <p className="text-sm text-[#2D2926]/70 mt-1">{item.price}</p>
+
+          {/* Add To Cart Button - Appears on Hover */}
+          <button
+            className="mt-4 w-full py-2 rounded-full bg-[#8B5C42] text-white text-sm font-medium
+                      opacity-0 group-hover:opacity-100 transition-opacity duration-300 
+                      hover:bg-[#704A36]"
           >
-            {/* Image */}
-            <img
-              src={item.img}
-              alt={item.title}
-              className="w-full h-60 object-cover"
-            />
+            Add to Cart
+          </button>
+        </div>
+      </div>
 
-            {/* Details */}
-            <div className="p-4">
-              <span className="inline-block bg-green-600 text-white text-[12px] px-3 py-1 rounded-full mb-3">
-                {item.availability} available
-              </span>
-
-              <h3 className="font-semibold text-[#2D2926]">{item.title}</h3>
-              <p className="text-sm text-[#2D2926]/70 mt-1">{item.price}</p>
-
-              {/* Cart Button */}
-              <button className="mt-4 w-10 h-10 flex items-center justify-center bg-[#8B5C42] text-white rounded-lg hover:bg-[#704A36]">
-                <FiShoppingCart size={18} />
-              </button>
-            </div>
-          </div>
         ))}
       </div>
     </section>
