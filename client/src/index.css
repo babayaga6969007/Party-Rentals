@@ -32,4 +32,24 @@
 .animate-fadeIn {
   animation: fadeIn 0.4s ease;
 }
+/* Fix internal container layout */
+.custom-date-container {
+  width: 100% !important;
+}
 
+/* Fix the actual text input */
+.custom-date-input {
+  width: 100% !important;
+  text-align: left !important;
+  padding-left: 10px  !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+}
+
+/* Force placeholder + text to stay left */
+.custom-date-container .rmdp-input {
+  width: 100% !important;
+  text-align: left !important;
+  padding-left: 4px !important;   /* adjust freely */
+  padding-right: 4px !important;
+}
