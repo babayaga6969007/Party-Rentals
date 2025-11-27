@@ -1,7 +1,8 @@
+import NavbarTransparent from "../../components/layout/NavbarTransparent";
+
 import Hero from "../../components/home/Hero";
 import Partners from "../../components/home/Partners";
 import VideoSlider from "../../components/home/VideoSlider";
-
 import FeaturedProducts from "../../components/home/FeaturedProducts";
 
 
@@ -10,6 +11,7 @@ import FeaturedProducts from "../../components/home/FeaturedProducts";
 const Home = () => {
   return (
     <div className="w-full">
+      <NavbarTransparent />
        {/* HERO SECTION */}
       <Hero />
 
