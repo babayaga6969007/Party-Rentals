@@ -9,6 +9,9 @@ import About from "../pages/About/About";
 import Home2 from "../pages/Home2/Home2";
 import ProductPage from "../pages/Product/ProductPage";
 import CategoryPage from "../pages/Category/CategoryPage";
+import AdminLogin from "./admin/Login";
+import Products from "./admin/Products";
+import AddProduct from "./admin/AddProduct";
 
 
 
@@ -25,6 +28,9 @@ const AppRoutes = () => {
           <Route path="/home2" element={<Home2 />} />
           <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/category" element={<CategoryPage />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/products" element={<Products />} />
+          <Route path="/admin/products/new" element={<AddProduct />} />
 
 
 
