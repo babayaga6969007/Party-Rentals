@@ -3,9 +3,13 @@ import AdminSidebar from "./AdminSidebar";
 const AdminLayout = ({ children }) => {
   return (
     <div className="flex">
-      <AdminSidebar />
+      {/* Sidebar */}
+      <div className="w-64">
+        <AdminSidebar />
+      </div>
 
-      <main className="ml-64 w-full min-h-screen bg-[#FFF7F0] p-10">
+      {/* Main Content */}
+      <main className="flex-1 bg-[#FFF7F0] p-8">
         {children}
       </main>
     </div>

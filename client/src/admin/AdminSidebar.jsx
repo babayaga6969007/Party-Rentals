@@ -7,7 +7,7 @@ const AdminSidebar = () => {
   };
 
   return (
-    <div className="w-64 bg-white shadow-lg h-screen p-6 fixed">
+    <div className="bg-white shadow-lg min-h-screen p-6">
       <h2 className="text-2xl font-bold text-[#8B5C42] mb-10">Admin Panel</h2>
 
       <nav className="space-y-4">

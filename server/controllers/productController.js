@@ -22,6 +22,7 @@ exports.addProduct = async (req, res) => {
   }
 };
 
+
 // ----------------------------------------------
 // Edit Product
 // ----------------------------------------------
@@ -29,19 +30,22 @@ exports.editProduct = async (req, res) => {
   try {
     let updates = { ...req.body };
 
-    if (req.files?.length > 0) {
-      const uploadedImages = await uploadImagesToCloudinary(req.files);
-      updates.images = uploadedImages;
+    // Parse existing images array (from frontend)
+    if (req.body.existingImages) {
+      updates.images = JSON.parse(req.body.existingImages);
     }
 
-    const product = await Product.findByIdAndUpdate(req.params.id, updates, {
+    // If new images uploaded, add them
+    if (req.files?.length > 0) {
+      const newUploaded = await uploadImagesToCloudinary(req.files);
+      updates.images = [...updates.images, ...newUploaded];
+    }
+
+    const updated = await Product.findByIdAndUpdate(req.params.id, updates, {
       new: true,
     });
 
-    res.json({
-      message: "Product updated",
-      product,
-    });
+    res.json({ message: "Product updated", product: updated });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -50,15 +54,33 @@ exports.editProduct = async (req, res) => {
 // ----------------------------------------------
 // Delete Product
 // ----------------------------------------------
+const cloudinary = require("../config/cloudinary");
+
+
 exports.deleteProduct = async (req, res) => {
   try {
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // Delete Cloudinary images
+    for (const img of product.images) {
+      if (img.public_id) {
+        await cloudinary.uploader.destroy(img.public_id);
+      }
+    }
+
+    // Delete product from DB
     await Product.findByIdAndDelete(req.params.id);
 
-    res.json({ message: "Product deleted" });
+    res.json({ message: "Product deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // ----------------------------------------------
 // GET Single Product

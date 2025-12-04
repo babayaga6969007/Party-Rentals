@@ -2,9 +2,10 @@ const mongoose = require("mongoose");
 
 const productSchema = new mongoose.Schema(
   {
-    name: {
+    // Use title instead of name (matches your frontend)
+    title: {
       type: String,
-      required: [true, "Product name is required"],
+      required: [true, "Product title is required"],
     },
 
     category: {
@@ -28,19 +29,18 @@ const productSchema = new mongoose.Schema(
 
     availabilityCount: {
       type: Number,
-      required: true,
       default: 1,
     },
 
     description: {
       type: String,
-      required: true,
+      required: false,
       maxlength: 2000,
     },
 
     images: [
       {
-        public_id: { type: String, required: true },
+        public_id: { type: String, required: false }, // make optional
         url: { type: String, required: true },
       },
     ],
@@ -64,7 +64,7 @@ const productSchema = new mongoose.Schema(
     },
 
     blockedDates: {
-      type: [String], // store yyyy-mm-dd as string
+      type: [String], // yyyy-mm-dd
       default: [],
     },
   },

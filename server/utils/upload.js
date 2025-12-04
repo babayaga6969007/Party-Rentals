@@ -1,11 +1,12 @@
 const cloudinary = require("../config/cloudinary");
 
 exports.uploadImagesToCloudinary = async (files) => {
-  let uploadedImages = [];
+  const uploadedImages = [];
 
-  for (let file of files) {
+  for (const file of files) {
     const result = await cloudinary.uploader.upload(file.path, {
       folder: "party-rentals/products",
+      resource_type: "image",
     });
 
     uploadedImages.push({
