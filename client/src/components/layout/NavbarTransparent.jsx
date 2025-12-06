@@ -75,6 +75,7 @@ useEffect(() => {
             { to: "/contact", label: "Contact" },
             
             { to: "/faqs", label: "FAQs" },
+            { to: "/shop", label: "Shop" },
           ].map((item) => (
             <NavLink
               key={item.to}

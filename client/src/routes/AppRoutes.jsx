@@ -11,6 +11,8 @@ import About from "../pages/About/About";
 import Home2 from "../pages/Home2/Home2";
 import ProductPage from "../pages/Product/ProductPage";
 import CategoryPage from "../pages/Category/CategoryPage";
+import Shop from "../pages/Shop/shop";
+import SecondHProducts from "../pages/SecondHProducts/buyproducts";
 
 // Admin Pages
 import AdminLogin from "../admin/Login";
@@ -34,7 +36,9 @@ const AppRoutes = () => {
           <Route path="/home2" element={<Home2 />} />
           <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/category" element={<CategoryPage />} />
-          
+          <Route path="/shop" element={<Shop />} />
+          <Route path="/buyproducts" element={<SecondHProducts />} />
+
           {/* Admin Login - Unprotected */}
           <Route path="/admin/login" element={<AdminLogin />} />
 
