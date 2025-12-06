@@ -1,265 +1,250 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import hero1 from "../../assets/home2/hero1.png";
+import hero2 from "../../assets/home2/hero2.png";
+import hero3 from "../../assets/home2/hero3.png";
+import hero4 from "../../assets/home2/hero4.png";
 
-// Re-use existing images from your assets
-import img6 from "../../assets/featured/6.png";
-import img7 from "../../assets/featured/7.png";
-import img8 from "../../assets/featured/8.png";
-import img9 from "../../assets/featured/9.png";
-import img10 from "../../assets/featured/10.png";
-import img11 from "../../assets/featured/11.png";
-import img12 from "../../assets/featured/12.png";
-import img13 from "../../assets/featured/13.png";
-
+// ====================
+//  CATEGORY DATA
+// ====================
 const ALL_CATEGORIES = [
-  "Backdrops",
-  "Tables",
-  "Balloon Stands",
-  "Photo Props",
+  "Backdrop",
   "Furniture",
   "Lights",
+  "Props",
+  "Florals",
+  "Tables",
+];
+const COLORS = [
+  { name: "White", value: "#ffffff", border: "#ccc" },
+  { name: "Black", value: "#000000", border: "#000" },
+  { name: "Gold", value: "#d4af37", border: "#b8972b" },
+  { name: "Silver", value: "#c0c0c0", border: "#999" },
+  { name: "Pink", value: "#f4a7c4", border: "#c2889e" },
+  { name: "Red", value: "#e63946", border: "#a62834" },
+  { name: "Blue", value: "#4a90e2", border: "#326fb8" },
+  { name: "Green", value: "#6ab547", border: "#4c8a32" },
+  { name: "Purple", value: "#9b59b6", border: "#7d3c98" },
+  { name: "Yellow", value: "#f1c40f", border: "#d4a307" },
 ];
 
-const TAGS = ["Indoor", "Outdoor", "Pastel", "Bold", "Large", "Compact"];
 
+// ====================
+//  MOCK PRODUCT DATA (Your existing dummy data)
+// ====================
 const PRODUCTS = [
   {
+    id: 1,
+    name: "White Wedding Arch",
+    category: "Backdrop",
+    pricePerDay: 120,
+    tags: ["Outdoor", "Large"],
+    image: hero1,
+    color: "White",
+  },
+  {
+    id: 2,
+    name: "Vintage Sofa Set",
+    category: "Furniture",
+    pricePerDay: 200,
+    tags: ["Indoor", "Compact"],
+    image: hero2,
+    color: "Gold",
+  },
+  {
+    id: 3,
+    name: "Fairy Light Curtain",
+    category: "Lights",
+    pricePerDay: 40,
+    tags: ["Outdoor", "Pastel"],
+    image: hero3,
+    color: "Yellow",
+  },
+  {
+    id: 4,
+    name: "Neon Name Sign",
+    category: "Lights",
+    pricePerDay: 60,
+    tags: ["Bold"],
+    image: hero4,
+    color: "Red",
+  },
+  {
+    id: 5,
+    name: "Flower Garland Set",
+    category: "Florals",
+    pricePerDay: 75,
+    tags: ["Pastel", "Large"],
+    image: hero1,
+    color: "Pink",
+  },
+
+  // ⭐ NEW DEMO PRODUCT ADDED:
+  {
     id: 6,
-    title: "Golden Arch Backdrop",
-    category: "Backdrops",
-    pricePerDay: 220,
-    img: img6,
-    tags: ["Indoor", "Pastel", "Large"],
-    unavailableRanges: [
-      { start: "2025-12-10", end: "2025-12-12" },
-      { start: "2025-12-24", end: "2025-12-25" },
-    ],
-  },
-  {
-    id: 7,
-    title: "Rustic Wooden Table Set",
+    name: "Rustic Wooden Table",
     category: "Tables",
-    pricePerDay: 150,
-    img: img7,
-    tags: ["Indoor", "Outdoor", "Large"],
-    unavailableRanges: [{ start: "2025-12-05", end: "2025-12-06" }],
-  },
-  {
-    id: 8,
-    title: "Pastel Balloon Stand",
-    category: "Balloon Stands",
-    pricePerDay: 110,
-    img: img8,
-    tags: ["Indoor", "Pastel", "Compact"],
-    unavailableRanges: [],
-  },
-  {
-    id: 9,
-    title: "Photo Booth Frame",
-    category: "Photo Props",
     pricePerDay: 95,
-    img: img9,
-    tags: ["Indoor", "Bold", "Compact"],
-    unavailableRanges: [{ start: "2025-12-18", end: "2025-12-19" }],
-  },
-  {
-    id: 10,
-    title: "Velvet Sofa Seating",
-    category: "Furniture",
-    pricePerDay: 260,
-    img: img10,
     tags: ["Indoor", "Large"],
-    unavailableRanges: [],
-  },
-  {
-    id: 11,
-    title: "Boho Rattan Chairs",
-    category: "Furniture",
-    pricePerDay: 180,
-    img: img11,
-    tags: ["Indoor", "Outdoor", "Compact"],
-    unavailableRanges: [{ start: "2025-12-31", end: "2026-01-01" }],
-  },
-  {
-    id: 12,
-    title: "Warm Fairy Light Set",
-    category: "Lights",
-    pricePerDay: 70,
-    img: img12,
-    tags: ["Indoor", "Outdoor", "Pastel"],
-    unavailableRanges: [],
-  },
-  {
-    id: 13,
-    title: "Neon Event Signage",
-    category: "Lights",
-    pricePerDay: 130,
-    img: img13,
-    tags: ["Indoor", "Bold"],
-    unavailableRanges: [],
+    image: hero2,
+    color: "Brown", // new color (optional)
   },
 ];
 
 
-// helper: check if product is available for selected range
-const isAvailableForRange = (product, startDate, endDate) => {
-  if (!startDate || !endDate) return true; // no filter applied yet
 
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-
-  // If any unavailable range overlaps, then NOT available
-  return !product.unavailableRanges.some((range) => {
-    const rStart = new Date(range.start);
-    const rEnd = new Date(range.end);
-    return start <= rEnd && end >= rStart; // overlap
-  });
-};
+// ====================
+//  HELPER
+// ====================
+const today = new Date().toISOString().split("T")[0];
 
 const CategoryPage = () => {
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [showUnavailable, setShowUnavailable] = useState(false);
-
+  // ====================
+  //  FILTER STATES
+  // ====================
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
-
-  // PRICE RANGE FOR SINGLE SLIDER
-const [priceRange, setPriceRange] = useState([0, 500]);
+  const [selectedColors, setSelectedColors] = useState([]);
 
 
-const handleRangeChange = (e, index) => {
-  const value = Number(e.target.value);
-  setPriceRange((prev) => {
-    const updated = [...prev];
-    updated[index] = value;
+  const [priceRange, setPriceRange] = useState([0, 500]);
+  const [hoverPrice, setHoverPrice] = useState(null);
 
-    // prevent left exceeding right
-    if (updated[0] > updated[1]) {
-      updated[index ? 0 : 1] = value;
-    }
-    return updated;
-  });
-};
-const toggleTag = (tag) => {
-  setSelectedTags((prev) =>
-    prev.includes(tag)
-      ? prev.filter((t) => t !== tag)
-      : [...prev, tag]
-  );
-};
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-const [hoverPrice, setHoverPrice] = useState(null);
-
-
-  const filteredProducts = useMemo(() => {
-    return PRODUCTS.filter((p) => {
-      const matchesCategory =
-        selectedCategories.length === 0 || selectedCategories.includes(p.category);
-
-     const matchesPrice =
-  p.pricePerDay >= priceRange[0] && p.pricePerDay <= priceRange[1];
-
-
-      const matchesTags =
-        selectedTags.length === 0 ||
-        selectedTags.every((tag) => p.tags.includes(tag));
-
-      const available = isAvailableForRange(p, startDate, endDate);
-
-      if (!showUnavailable && !available) return false; // hide unavailable
-
-      return matchesCategory && matchesPrice && matchesTags;
-    });
-}, [startDate, endDate, showUnavailable, selectedCategories, selectedTags, priceRange]);
-
-  const resetFilters = () => {
-    setStartDate("");
-    setEndDate("");
-    setShowUnavailable(false);
-    setSelectedCategories([]);
-    setSelectedTags([]);
-    setPriceRange([0, 500]);
-
+  const toggleTag = (tag) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
   };
 
+  const handleRangeChange = (e, index) => {
+    const value = Number(e.target.value);
+    setPriceRange((prev) => {
+      const updated = [...prev];
+      updated[index] = value;
+
+      // Prevent cross-over
+      if (updated[0] > updated[1]) {
+        updated[index === 0 ? 1 : 0] = value;
+      }
+      return updated;
+    });
+  };
+
+  const resetFilters = () => {
+  setSelectedCategories([]);
+  setSelectedTags([]);
+  setSelectedColors([]);   // <-- ADD THIS
+  setPriceRange([0, 500]);
+};
+
+
+  // ====================
+  //  FILTERED PRODUCTS
+  // ====================
+  const filteredProducts = useMemo(() => {
+  return PRODUCTS.filter((p) => {
+    const inCategory =
+      selectedCategories.length === 0 ||
+      selectedCategories.includes(p.category);
+
+    const inPrice =
+      p.pricePerDay >= priceRange[0] &&
+      p.pricePerDay <= priceRange[1];
+
+    const inTags =
+      selectedTags.length === 0 ||
+      selectedTags.every((t) => p.tags.includes(t));
+
+    // ✅ NEW COLOR FILTER
+    const inColor =
+      selectedColors.length === 0 ||
+      selectedColors.includes(p.color);
+
+    // ⬅️ Make sure to include AND inColor here
+    return inCategory && inPrice && inTags && inColor;
+  });
+}, [selectedCategories, selectedTags, selectedColors, priceRange]);
+
+
+  // ====================
+  //  RENDER
+  // ====================
   return (
-    <section className="bg-[#FFF7F0] py-16">
-      <div className="page-wrapper max-w-7xl mx-auto px-6 lg:px-10">
-        {/* Heading */}
-        <div className="mb-10">
-          <h1
-            className="text-4xl font-semibold text-[#2D2926]"
-            style={{ fontFamily: '"Cormorant Garamond", serif' }}
+    <section className="py-20 px-6 bg-white">
+
+      {/* PAGE HEADING */}
+      <div className="page-wrapper max-w-4xl mx-auto text-center mb-10">
+        <h1 className="text-4xl md:text-5xl font-semibold text-[#2D2926]"
+            style={{ fontFamily: '"Cormorant Garamond", serif' }}>
+          Browse Our Collection
+        </h1>
+
+        <p
+          className="text-[#2D2926]/80 text-[18px] mt-4 leading-relaxed max-w-2xl mx-auto"
+          style={{ fontFamily: '"Cormorant Garamond", serif' }}
+        >
+          Filter by date, category, style, and budget to find props that match your event perfectly.
+        </p>
+      </div>
+
+      {/* MAIN CONTENT AREA (SIDEBAR + PRODUCTS) */}
+      <div className="max-w-7xl mx-auto">
+
+        {/* MOBILE FILTER TOGGLE */}
+        <div className="md:hidden mb-4">
+          <button
+            onClick={() => setMobileFiltersOpen((prev) => !prev)}
+            className="w-full py-3 bg-[#8B5C42] text-white rounded-lg font-medium"
           >
-            Browse Our Collection
-          </h1>
-          <p className="mt-2 text-[#2D2926]/70 max-w-2xl">
-            Filter by date, category, style, and budget to find props that match
-            your event mood perfectly. Availability is live so you can plan
-            with confidence.
-          </p>
+            {mobileFiltersOpen ? "Hide Filters" : "Show Filters"}
+          </button>
         </div>
 
-        <div className="grid lg:grid-cols-[320px,1fr] gap-10">
-          {/* FILTERS PANEL */}
-          <aside className="bg-white rounded-2xl shadow-sm border border-[#EAD9C7] p-6 h-fit">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-[#2D2926]">
-                Filters
-              </h2>
-              <button
-                onClick={resetFilters}
-                className="text-sm text-[#8B5C42] underline"
-              >
-                Clear all
-              </button>
-            </div>
+        {/* GRID STRUCTURE */}
+        <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-8 items-start">
 
-            {/* Date Range */}
+          {/* ====================== */}
+          {/* SIDEBAR — STICKY ON DESKTOP / SLIDE ON MOBILE */}
+          {/* ====================== */}
+
+          <aside
+            className={`
+              bg-white rounded-2xl shadow-sm border border-[#EAD9C7] p-6
+              transition-all duration-300 overflow-hidden
+              ${mobileFiltersOpen ? "max-h-[1400px] opacity-100 mb-4" : "max-h-0 opacity-0 mb-0"}
+              md:max-h-none md:opacity-100 md:overflow-visible md:mb-0 md:sticky md:top-28
+            `}
+          >
+
+            {/* ===== Availability (CAN EXPAND LATER IF NEEDED) ===== */}
+
+            {/* ===== CATEGORY FILTERS ===== */}
             <div className="mb-6">
               <p className="text-sm font-semibold text-[#2D2926] mb-2">
-                Date range availability
+                Categories
               </p>
-              <div className="flex gap-2">
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-1/2 border border-[#EAD9C7] rounded-lg px-3 py-2 text-sm"
-                />
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-1/2 border border-[#EAD9C7] rounded-lg px-3 py-2 text-sm"
-                />
-              </div>
-              <label className="flex items-center gap-2 mt-3 text-sm text-[#2D2926]">
-                <input
-                  type="checkbox"
-                  checked={showUnavailable}
-                  onChange={(e) => setShowUnavailable(e.target.checked)}
-                  className="rounded border-[#EAD9C7]"
-                />
-                Show unavailable items for planning ahead
-              </label>
-            </div>
 
-            {/* Categories */}
-            <div className="mb-6">
-              <p className="text-sm font-semibold text-[#2D2926] mb-2">
-                Category
-              </p>
               <div className="flex flex-wrap gap-2">
                 {ALL_CATEGORIES.map((cat) => (
                   <button
                     key={cat}
-                    onClick={() => toggleCategory(cat)}
-                    className={`px-3 py-1 rounded-full text-xs border ${
-                      selectedCategories.includes(cat)
-                        ? "bg-[#8B5C42] text-white border-[#8B5C42]"
-                        : "bg-white text-[#2D2926] border-[#EAD9C7] hover:bg-[#F4E5D9]"
-                    }`}
+                    onClick={() =>
+                      setSelectedCategories((prev) =>
+                        prev.includes(cat)
+                          ? prev.filter((c) => c !== cat)
+                          : [...prev, cat]
+                      )
+                    }
+                    className={`
+                      px-3 py-1 rounded-full border text-sm transition
+                      ${
+                        selectedCategories.includes(cat)
+                          ? "bg-[#8B5C42] text-white border-[#8B5C42]"
+                          : "bg-white text-[#2D2926] border-gray-300"
+                      }
+                    `}
                   >
                     {cat}
                   </button>
@@ -267,180 +252,177 @@ const [hoverPrice, setHoverPrice] = useState(null);
               </div>
             </div>
 
-            
+            {/* ===== PRICE SLIDER ===== */}
+            <div className="mb-6">
+              <p className="text-sm font-semibold text-[#2D2926] mb-2">
+                Price / day (AUD)
+              </p>
 
-   {/* PRICE RANGE SLIDER */}
+              {/* Slider Track */}
+              <div
+                className="range-slider relative"
+                onMouseMove={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = e.clientX - rect.left;
+                  const percent = Math.min(Math.max(x / rect.width, 0), 1);
+                  const price = Math.round(percent * 500);
+                  setHoverPrice(price);
+                }}
+                onMouseLeave={() => setHoverPrice(null)}
+              >
+                <div
+                  className="range-selected"
+                  style={{
+                    left: `${(priceRange[0] / 500) * 100}%`,
+                    width: `${((priceRange[1] - priceRange[0]) / 500) * 100}%`,
+                  }}
+                ></div>
+              </div>
+
+              {/* Range Inputs */}
+              <div className="range-input mt-2">
+                <input
+                  type="range"
+                  min="0"
+                  max="500"
+                  value={priceRange[0]}
+                  onChange={(e) => handleRangeChange(e, 0)}
+                />
+
+                <input
+                  type="range"
+                  min="0"
+                  max="500"
+                  value={priceRange[1]}
+                  onChange={(e) => handleRangeChange(e, 1)}
+                />
+              </div>
+
+              {/* Hover Display */}
+              {hoverPrice !== null && (
+                <div className="mt-1 text-center text-sm text-[#8B5C42] font-medium">
+                  Hover: ${hoverPrice}
+                </div>
+              )}
+
+              {/* Min/Max */}
+              <div className="flex justify-between mt-2 text-sm">
+                <span>Min: ${priceRange[0]}</span>
+                <span>Max: ${priceRange[1]}</span>
+              </div>
+            </div>
+
+            {/* ===== TAGS & STYLE ===== */}
+            <div className="mb-6">
+              <p className="text-sm font-semibold text-[#2D2926] mb-2">
+                Tags & Style
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {["Indoor", "Outdoor", "Pastel", "Bold", "Large", "Compact"].map(
+                  (tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => toggleTag(tag)}
+                      className={`
+                        px-3 py-1 rounded-full border text-sm transition
+                        ${
+                          selectedTags.includes(tag)
+                            ? "bg-[#8B5C42] text-white border-[#8B5C42]"
+                            : "bg-white text-[#2D2926] border-gray-300"
+                        }
+                      `}
+                    >
+                      {tag}
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
+            {/* ===== COLOR FILTER ===== */}
 <div className="mb-6">
-  <label className="block font-semibold text-gray-800 mb-2">
-    Price / day (AUD)
-  </label>
+  <p className="text-sm font-semibold text-[#2D2926] mb-2">Colors</p>
 
-  {/* Slider track */}
-<div
-  className="range-slider relative"
-  onMouseMove={(e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percent = Math.min(Math.max(x / rect.width, 0), 1);
-    const price = Math.round(percent * 500); // max price = 500
-    setHoverPrice(price);
-  }}
-  onMouseLeave={() => setHoverPrice(null)}
->
-    <div
-      className="range-selected"
-      style={{
-        left: `${(priceRange[0] / 500) * 100}%`,
-        width: `${((priceRange[1] - priceRange[0]) / 500) * 100}%`,
-      }}
-    ></div>
-  </div>
-
-  {/* Dual handles */}
-  <div className="range-input mt-2">
-    <input
-      type="range"
-      min="0"
-      max="500"
-      value={priceRange[0]}
-      onChange={(e) => handleRangeChange(e, 0)}
-    />
-
-    <input
-      type="range"
-      min="0"
-      max="500"
-      value={priceRange[1]}
-      onChange={(e) => handleRangeChange(e, 1)}
-    />
-  </div>
-  {hoverPrice !== null && (
-  <div className="mt-1 text-center text-sm text-[#8B5C42] font-medium">
-    Price: ${hoverPrice}
-  </div>
-)}
-
-  {/* Price labels */}
-  <div className="flex justify-between mt-2 text-sm">
-    <span>Min: ${priceRange[0]}</span>
-    <span>Max: ${priceRange[1]}</span>
-  </div>
-</div>
-{/* TAGS & SPECS */}
-<div className="mt-6">
-  <p className="text-sm font-semibold text-[#2D2926] mb-2">
-    Tags & specs
-  </p>
-
-  <div className="flex flex-wrap gap-2">
-    {[
-      "Indoor",
-      "Outdoor",
-      "Pastel",
-      "Bold",
-      "Large",
-      "Compact",
-    ].map((tag) => (
+  <div className="flex flex-wrap gap-3">
+    {COLORS.map((c) => (
       <button
-        key={tag}
-        onClick={() => toggleTag(tag)}
+        key={c.name}
+        onClick={() =>
+          setSelectedColors((prev) =>
+            prev.includes(c.name)
+              ? prev.filter((x) => x !== c.name)
+              : [...prev, c.name]
+          )
+        }
         className={`
-          px-3 py-1 rounded-full border text-sm 
-          ${
-            selectedTags.includes(tag)
-              ? "bg-[#8B5C42] text-white border-[#8B5C42]"
-              : "bg-white text-[#2D2926] border-gray-300"
-          }
+          w-6 h-6 rounded-full border-2 transition
+          ${selectedColors.includes(c.name)
+            ? "ring-2 ring-[#8B5C42]"
+            : ""}
         `}
-      >
-        {tag}
-      </button>
+        style={{
+          backgroundColor: c.value,
+          borderColor: c.border,
+        }}
+        title={c.name}
+      ></button>
     ))}
   </div>
 </div>
 
-</aside>
 
+            {/* ===== CLEAR ALL ===== */}
+            <button
+              onClick={resetFilters}
+              className="w-full py-2 mt-3 rounded-lg bg-gray-200 text-[#2D2926] font-medium hover:bg-gray-300"
+            >
+              Clear All
+            </button>
 
-        
-          {/* PRODUCTS GRID */}
+          </aside>
+
+          {/* ====================== */}
+          {/* PRODUCT GRID */}
+          {/* ====================== */}
+
           <main>
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm text-[#2D2926]/70">
-                Showing{" "}
-                <span className="font-semibold text-[#2D2926]">
-                  {filteredProducts.length}
-                </span>{" "}
-                items
-              </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+              {filteredProducts.map((product) => (
+              <a
+  href={`/product/${product.id}`}
+  className="block border rounded-xl p-5 shadow transition-all duration-300 group hover:shadow-lg hover:scale-[1.02]"
+>
+  {/* IMAGE */}
+  <div className="h-40 rounded mb-4 overflow-hidden">
+    <img
+      src={product.image}
+      alt={product.name}
+      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+    />
+  </div>
+
+  {/* NAME */}
+  <h3 className="font-bold text-lg text-[#2D2926]">{product.name}</h3>
+
+  {/* PRICE */}
+  <p className="text-[#8B5C42] font-semibold text-md mt-1">
+    ${product.pricePerDay}/day
+  </p>
+
+  {/* CATEGORY */}
+  <p className="text-sm text-gray-600 mt-1">Category: {product.category}</p>
+
+  {/* RENT NOW BUTTON (PUSHES CONTENT, NOT OVERLAP) */}
+  <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+    <button className="w-full bg-[#8B5C42] text-white px-6 py-2 rounded-lg text-sm shadow-md hover:bg-[#704A36] transition">
+      Rent Now
+    </button>
+  </div>
+</a>
+
+
+              ))}
             </div>
-
-            {filteredProducts.length === 0 ? (
-              <p className="text-[#2D2926]/70">
-                No items match your filters. Try adjusting the dates, price
-                range, or tags.
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filteredProducts.map((item) => {
-                  const available = isAvailableForRange(item, startDate, endDate);
-                  return (
-                    <div
-                      key={item.id}
-                      className="bg-white border border-black/5 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-transform duration-300 hover:scale-[1.02] flex flex-col"
-                    >
-                      <div className="h-52 overflow-hidden">
-                        <img
-                          src={item.img}
-                          alt={item.title}
-                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-                      <div className="p-4 flex flex-col flex-grow">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-xs font-medium uppercase tracking-wide text-[#8B5C42]">
-                            {item.category}
-                          </span>
-                          <span
-                            className={`text-xs px-2 py-1 rounded-full ${
-                              available
-                                ? "bg-green-100 text-green-700"
-                                : "bg-red-100 text-red-600"
-                            }`}
-                          >
-                            {available ? "Available" : "Booked"}
-                          </span>
-                        </div>
-
-                        <h3 className="font-semibold text-[#2D2926]">
-                          {item.title}
-                        </h3>
-                        <p className="text-sm text-[#2D2926]/70 mt-1">
-                          AUD ${item.pricePerDay}/day
-                        </p>
-
-                        <div className="flex flex-wrap gap-2 mt-3 text-[11px] text-[#2D2926]/70">
-                          {item.tags.map((t) => (
-                            <span
-                              key={t}
-                              className="px-2 py-1 rounded-full bg-[#F4E5D9]"
-                            >
-                              {t}
-                            </span>
-                          ))}
-                        </div>
-
-                        <button
-                          className="mt-4 w-full py-2 rounded-full bg-[#8B5C42] text-white text-sm font-medium hover:bg-[#704A36] transition"
-                        >
-                          View Details
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </main>
         </div>
       </div>

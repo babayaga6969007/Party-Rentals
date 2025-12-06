@@ -70,10 +70,10 @@ useEffect(() => {
           {[
             { to: "/", label: "Home" },
             { to: "/home2", label: "Home2" },
-            { to: "/category", label: "Category" },
+            { to: "/category", label: "Rental Products" },
             { to: "/about", label: "About" },
             { to: "/contact", label: "Contact" },
-            { to: "/product/1", label: "Product" },
+            
             { to: "/faqs", label: "FAQs" },
           ].map((item) => (
             <NavLink
