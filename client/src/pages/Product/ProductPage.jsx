@@ -269,34 +269,50 @@ const totalPrice =
           </div>
 
           {/* EVENT DATE */}
+{/* EVENT DATE (Single Input Range Picker) */}
 <div className="mt-6">
   <label className="block mb-2 text-[#2D2926]">Event Date</label>
 
-  {/* START DATE */}
   <input
     type="date"
     min={today}
-    value={startDate}
+value={startDate || ""}
     onChange={(e) => {
-      setStartDate(e.target.value);
-      setEndDate(""); // reset end date until user selects
-    }}
+  const newDate = e.target.value;
+
+  // If no start date selected → first click = single date
+  if (!startDate) {
+    setStartDate(newDate);
+    setEndDate("");
+    return;
+  }
+
+  // If start date exists but end date doesn't
+  if (!endDate) {
+    // If user selects a date *after* start date → make it a range
+    if (new Date(newDate) > new Date(startDate)) {
+      setEndDate(newDate);
+      return;
+    }
+
+    // If user selects a date *before or equal* → restart selection
+    setStartDate(newDate);
+    setEndDate("");
+    return;
+  }
+
+  // If a full range already selected, ANY new click restarts selection
+  setStartDate(newDate);
+  setEndDate("");
+}}
     className="w-60 p-2 border rounded-lg"
   />
 
-  {/* ONLY SHOW END DATE AFTER START DATE IS SELECTED */}
-  {startDate && (
-    <input
-      type="date"
-      min={startDate} // prevents selecting earlier date
-      value={endDate}
-      onChange={(e) => setEndDate(e.target.value)}
-      className="w-60 p-2 border rounded-lg mt-3"
-    />
-  )}
-
-  {/* DISPLAY SELECTED DATE OR RANGE */}
+  {/* DISPLAY SELECTED DATE + RANGE */}
   <div className="mt-4 p-3 bg-gray-100 rounded-lg text-[#2D2926]">
+
+    {!startDate && <p>No date selected</p>}
+
     {startDate && !endDate && (
       <p>Selected date: {formatDate(startDate)}</p>
     )}
@@ -307,7 +323,6 @@ const totalPrice =
       </p>
     )}
 
-    {!startDate && <p>No date selected</p>}
   </div>
 </div>
 

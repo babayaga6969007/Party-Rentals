@@ -56,3 +56,41 @@
 .page-wrapper {
   margin-top: 100px;
 }
+.range-slider {
+  position: relative;
+  height: 6px;
+  background: #ddd;
+  border-radius: 3px;
+}
+
+.range-slider .range-selected {
+  position: absolute;
+  height: 100%;
+  background: #8B5C42;
+  border-radius: 3px;
+}
+
+.range-input {
+  position: relative;
+}
+
+.range-input input {
+  position: absolute;
+  top: -6px;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  background: none;
+  pointer-events: none;
+  -webkit-appearance: none;
+}
+
+.range-input input::-webkit-slider-thumb {
+  pointer-events: auto;
+  -webkit-appearance: none;
+  height: 18px;
+  width: 18px;
+  background: #8B5C42;
+  border-radius: 50%;
+  cursor: pointer;
+}

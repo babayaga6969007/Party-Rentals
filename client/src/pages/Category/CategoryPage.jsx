@@ -123,28 +123,42 @@ const CategoryPage = () => {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
 
-  const [minPrice, setMinPrice] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(300);
+  // PRICE RANGE FOR SINGLE SLIDER
+const [priceRange, setPriceRange] = useState([0, 500]);
 
-  const toggleCategory = (cat) => {
-    setSelectedCategories((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
-    );
-  };
 
-  const toggleTag = (tag) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-  };
+const handleRangeChange = (e, index) => {
+  const value = Number(e.target.value);
+  setPriceRange((prev) => {
+    const updated = [...prev];
+    updated[index] = value;
+
+    // prevent left exceeding right
+    if (updated[0] > updated[1]) {
+      updated[index ? 0 : 1] = value;
+    }
+    return updated;
+  });
+};
+const toggleTag = (tag) => {
+  setSelectedTags((prev) =>
+    prev.includes(tag)
+      ? prev.filter((t) => t !== tag)
+      : [...prev, tag]
+  );
+};
+
+const [hoverPrice, setHoverPrice] = useState(null);
+
 
   const filteredProducts = useMemo(() => {
     return PRODUCTS.filter((p) => {
       const matchesCategory =
         selectedCategories.length === 0 || selectedCategories.includes(p.category);
 
-      const matchesPrice =
-        p.pricePerDay >= minPrice && p.pricePerDay <= maxPrice;
+     const matchesPrice =
+  p.pricePerDay >= priceRange[0] && p.pricePerDay <= priceRange[1];
+
 
       const matchesTags =
         selectedTags.length === 0 ||
@@ -156,7 +170,7 @@ const CategoryPage = () => {
 
       return matchesCategory && matchesPrice && matchesTags;
     });
-  }, [startDate, endDate, showUnavailable, selectedCategories, selectedTags, minPrice, maxPrice]);
+}, [startDate, endDate, showUnavailable, selectedCategories, selectedTags, priceRange]);
 
   const resetFilters = () => {
     setStartDate("");
@@ -164,8 +178,8 @@ const CategoryPage = () => {
     setShowUnavailable(false);
     setSelectedCategories([]);
     setSelectedTags([]);
-    setMinPrice(0);
-    setMaxPrice(300);
+    setPriceRange([0, 500]);
+
   };
 
   return (
@@ -253,60 +267,102 @@ const CategoryPage = () => {
               </div>
             </div>
 
-            {/* Price Range */}
-            <div className="mb-6">
-              <p className="text-sm font-semibold text-[#2D2926] mb-2">
-                Price / day (AUD)
-              </p>
-              <div className="flex items-center justify-between text-xs text-[#2D2926]/70 mb-1">
-                <span>Min: ${minPrice}</span>
-                <span>Max: ${maxPrice}</span>
-              </div>
-              <div className="flex gap-3 items-center">
-                <input
-                  type="range"
-                  min={0}
-                  max={300}
-                  value={minPrice}
-                  onChange={(e) =>
-                    setMinPrice(Math.min(Number(e.target.value), maxPrice))
-                  }
-                  className="w-1/2"
-                />
-                <input
-                  type="range"
-                  min={0}
-                  max={300}
-                  value={maxPrice}
-                  onChange={(e) =>
-                    setMaxPrice(Math.max(Number(e.target.value), minPrice))
-                  }
-                  className="w-1/2"
-                />
-              </div>
-            </div>
+            
 
-            {/* Tags */}
-            <div>
-              <p className="text-sm font-semibold text-[#2D2926] mb-2">
-                Tags & specs
-              </p>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                {TAGS.map((tag) => (
-                  <label key={tag} className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedTags.includes(tag)}
-                      onChange={() => toggleTag(tag)}
-                      className="rounded border-[#EAD9C7]"
-                    />
-                    <span>{tag}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </aside>
+   {/* PRICE RANGE SLIDER */}
+<div className="mb-6">
+  <label className="block font-semibold text-gray-800 mb-2">
+    Price / day (AUD)
+  </label>
 
+  {/* Slider track */}
+<div
+  className="range-slider relative"
+  onMouseMove={(e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percent = Math.min(Math.max(x / rect.width, 0), 1);
+    const price = Math.round(percent * 500); // max price = 500
+    setHoverPrice(price);
+  }}
+  onMouseLeave={() => setHoverPrice(null)}
+>
+    <div
+      className="range-selected"
+      style={{
+        left: `${(priceRange[0] / 500) * 100}%`,
+        width: `${((priceRange[1] - priceRange[0]) / 500) * 100}%`,
+      }}
+    ></div>
+  </div>
+
+  {/* Dual handles */}
+  <div className="range-input mt-2">
+    <input
+      type="range"
+      min="0"
+      max="500"
+      value={priceRange[0]}
+      onChange={(e) => handleRangeChange(e, 0)}
+    />
+
+    <input
+      type="range"
+      min="0"
+      max="500"
+      value={priceRange[1]}
+      onChange={(e) => handleRangeChange(e, 1)}
+    />
+  </div>
+  {hoverPrice !== null && (
+  <div className="mt-1 text-center text-sm text-[#8B5C42] font-medium">
+    Price: ${hoverPrice}
+  </div>
+)}
+
+  {/* Price labels */}
+  <div className="flex justify-between mt-2 text-sm">
+    <span>Min: ${priceRange[0]}</span>
+    <span>Max: ${priceRange[1]}</span>
+  </div>
+</div>
+{/* TAGS & SPECS */}
+<div className="mt-6">
+  <p className="text-sm font-semibold text-[#2D2926] mb-2">
+    Tags & specs
+  </p>
+
+  <div className="flex flex-wrap gap-2">
+    {[
+      "Indoor",
+      "Outdoor",
+      "Pastel",
+      "Bold",
+      "Large",
+      "Compact",
+    ].map((tag) => (
+      <button
+        key={tag}
+        onClick={() => toggleTag(tag)}
+        className={`
+          px-3 py-1 rounded-full border text-sm 
+          ${
+            selectedTags.includes(tag)
+              ? "bg-[#8B5C42] text-white border-[#8B5C42]"
+              : "bg-white text-[#2D2926] border-gray-300"
+          }
+        `}
+      >
+        {tag}
+      </button>
+    ))}
+  </div>
+</div>
+
+</aside>
+
+
+        
           {/* PRODUCTS GRID */}
           <main>
             <div className="flex items-center justify-between mb-4">
