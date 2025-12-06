@@ -5,7 +5,7 @@ const Contact = () => {
     <section className="py-20 px-6 bg-white">
 
       {/* Page Heading */}
-      <div className="max-w-4xl mx-auto text-center mb-16">
+      <div className="page-wrapper max-w-4xl mx-auto text-center mb-16">
         <h1
           className="text-4xl md:text-5xl font-semibold text-[#2D2926]"
           style={{ fontFamily: '"Cormorant Garamond", serif' }}
@@ -29,7 +29,7 @@ const Contact = () => {
         <div className="space-y-8">
           <div>
             <h2
-              className="text-2xl font-semibold text-[#2D2926] mb-4"
+              className="page-wrapper text-2xl font-semibold text-[#2D2926] mb-4"
               style={{ fontFamily: '"Cormorant Garamond", serif' }}
             >
               Get in Touch
@@ -59,6 +59,7 @@ const Contact = () => {
               <p className="text-[#2D2926]/70">hello@newprojectdesigns.com</p>
             </div>
           </div>
+          
 
           {/* Address */}
           <div className="flex items-start gap-4">
@@ -72,6 +73,7 @@ Suite A                <br />
               </p>
             </div>
           </div>
+
 
           {/* Business Hours */}
           <div className="pt-4">
@@ -118,6 +120,28 @@ Suite A                <br />
                 placeholder="Enter your email"
               />
             </div>
+
+            {/* Address Line */}
+            <div>
+              <label className="block mb-2 text-[#2D2926]">Address Line</label>
+              <input
+                type="text"
+                className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
+                focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
+                placeholder="Enter your address"
+              />
+            </div>
+                        {/* Event / Rental Date */}
+            <div>
+              <label className="block mb-2 text-[#2D2926]">Event / Rental Date</label>
+              <input
+                type="date"
+                className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
+                focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
+              />
+            </div>
+
+
             {/* Title */}
 <div>
   <label className="block mb-2 text-[#2D2926]">Title</label>

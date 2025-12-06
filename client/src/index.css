@@ -53,3 +53,6 @@
   padding-left: 4px !important;   /* adjust freely */
   padding-right: 4px !important;
 }
+.page-wrapper {
+  margin-top: 100px;
+}

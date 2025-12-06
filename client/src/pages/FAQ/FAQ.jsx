@@ -84,7 +84,7 @@ const FAQ = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white py-16 px-4">
+    <div className="page-wrapper min-h-screen bg-white py-16 px-4">
       
       {/* Page heading */}
       <h1

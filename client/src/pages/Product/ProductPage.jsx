@@ -1,25 +1,23 @@
 import { useState } from "react";
-import DatePickerModule from "react-multi-date-picker";
-const DatePicker = DatePickerModule.default;
-import { FiLock, FiHeadphones, FiCheckCircle, FiRefreshCw } from "react-icons/fi";
+import {
+  FiLock,
+  FiHeadphones,
+  FiCheckCircle,
+  FiRefreshCw,
+} from "react-icons/fi";
 
+import lightsImg from "../../assets/addons/lights.png";
+import flowersImg from "../../assets/addons/flowers.png";
 
-import DateObject from "react-date-object";
-import { FiX } from "react-icons/fi";
-
-// gallery images (just reusing your hero images as sample product gallery)
+// Product Images
 import hero1 from "../../assets/home2/hero1.png";
 import hero2 from "../../assets/home2/hero2.png";
 import hero3 from "../../assets/home2/hero3.png";
 import hero4 from "../../assets/home2/hero4.png";
 
-// add-on preview images 
-import lightsImg from "../../assets/home2/hero1.png";
-import flowersImg from "../../assets/home2/hero2.png";
+const productImages = [hero1, hero2, hero3, hero4];
 
-const images = [hero1, hero2, hero3, hero4];
-
-const pricePerDay = 40; // base rental per day
+// Trust Badges
 const trustBadges = [
   { label: "Secure Payments", icon: FiLock },
   { label: "Fast Customer Support", icon: FiHeadphones },
@@ -28,167 +26,147 @@ const trustBadges = [
 ];
 
 const ProductPage = () => {
-  const [selectedImg, setSelectedImg] = useState(images[0]);
-  const [selectedDates, setSelectedDates] = useState([]);
+  // DATE RANGE SELECTION
+const today = new Date().toISOString().split("T")[0]; // disable past dates
 
+const [startDate, setStartDate] = useState("");
+const [endDate, setEndDate] = useState("");
+
+// Convert date to readable format
+const formatDate = (d) =>
+  new Date(d).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+// Calculate number of days selected
+const selectedDays =
+  startDate && endDate
+    ? Math.max(
+        1,
+        Math.ceil(
+          (new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)
+        ) + 1
+      )
+    : startDate
+    ? 1
+    : 0;
+
+
+  // ⭐ THIS IS WHERE THE HOOKS MUST GO
+  const [activeImage, setActiveImage] = useState(0);
+
+  const handleNext = () => {
+    setActiveImage((prev) => (prev + 1) % productImages.length);
+  };
+
+  const handlePrev = () => {
+    setActiveImage((prev) =>
+      prev === 0 ? productImages.length - 1 : prev - 1
+    );
+  };
+
+  // Base product price
+  const pricePerDay = 40;
+
+  // Quantity of main product
+  const [productQty, setProductQty] = useState(1);
+  const handleProductQtyChange = (inc) => {
+    setProductQty((prev) => Math.max(1, prev + inc));
+  };
+
+  // Days selection
+  const [days, setDays] = useState(1);
+
+  // Addon quantities
   const [addons, setAddons] = useState({
     lights: 0,
     flowers: 0,
   });
 
-  // Minimum date: tomorrow
-  const today = new DateObject().add(1, "day");
-
-  // --- ADDON HANDLER ---
-  const handleAddonChange = (type, increment) => {
+  const handleAddonChange = (type, inc) => {
     setAddons((prev) => ({
       ...prev,
-      [type]: Math.max(0, prev[type] + increment),
+      [type]: Math.max(0, prev[type] + inc),
     }));
   };
 
-  // --- CALCULATE TOTAL PRICE ---
-  const days = selectedDates.length;
-  const addonsTotal =
-    addons.lights * 10 * days + addons.flowers * 15 * days;
+  // Date selection
+  const [selectedDate, setSelectedDate] = useState("");
 
-  const totalPrice = days * pricePerDay + addonsTotal;
+  // Add-on total calculation
+  const addonsTotal = addons.lights * 10 + addons.flowers * 15;
+
+  // Final total price
+// priority: use date range if selected, else manual days input
+const totalRentalDays = selectedDays > 0 ? selectedDays : days;
+
+const totalPrice =
+  totalRentalDays * pricePerDay * productQty + addonsTotal;
 
   return (
-    <div className="w-full bg-[#FFF7F0] py-16 px-6">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
-        
-        {/* LEFT — GALLERY */}
+    <>
+      {/* MAIN PRODUCT GRID */}
+      <div className="page-wrapper max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-2 gap-12">
+
+        {/* LEFT COLUMN */}
         <div>
-          <div className="rounded-2xl overflow-hidden shadow-lg h-[420px] bg-white">
-            <img
-              src={selectedImg}
-              className="w-full h-full object-cover"
-              alt="product"
-            />
-          </div>
+          {/* MAIN IMAGE WITH ARROWS */}
+<div className="relative w-full h-[420px] rounded-xl overflow-hidden shadow-lg">
 
-          {/* Thumbnails */}
-          <div className="flex gap-4 mt-4">
-            {images.map((img, i) => (
-              <div
-                key={i}
-                onClick={() => setSelectedImg(img)}
-                className={`w-24 h-24 rounded-xl overflow-hidden border cursor-pointer ${
-                  selectedImg === img
-                    ? "border-[#8B5C42] border-4"
-                    : "border-transparent"
-                }`}
-              >
-                <img src={img} className="w-full h-full object-cover" />
-              </div>
-            ))}
-          </div>
-        </div>
+  {/* Main Image */}
+  <img
+    src={productImages[activeImage]}
+    className="w-full h-full object-cover"
+    alt="Product"
+  />
 
-        {/* RIGHT — DETAILS */}
-        <div>
-          <h1
-            className="text-4xl font-semibold text-[#2D2926]"
-            style={{ fontFamily: '"Cormorant Garamond", serif' }}
-          >
-            Elegant Golden Backdrop Stand
-          </h1>
+  {/* LEFT ARROW */}
+  <button
+    onClick={handlePrev}
+    className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white p-2 rounded-full shadow"
+  >
+    ❮
+  </button>
 
-          <p className="text-gray-600 mt-2">
-            Premium metal frame • 8ft x 6ft • Ideal for events and ceremonies.
-          </p>
+  {/* RIGHT ARROW */}
+  <button
+    onClick={handleNext}
+    className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white p-2 rounded-full shadow"
+  >
+    ❯
+  </button>
 
-          <p className="text-3xl font-bold text-[#8B5C42] mt-6">
-            ${pricePerDay}/day
-          </p>
+</div>
 
-          {/* DATE SELECTION */}
-          <div className="bg-white p-5 rounded-2xl shadow-md mt-6">
-            <h3 className="text-xl font-semibold text-[#2D2926] mb-4">
-              Select Rental Dates
-            </h3>
 
-            <div className="bg-[#FFF7F0] p-4 rounded-xl">
-              <DatePicker
-  multiple
-  minDate={today}
-  value={selectedDates}
-  format="MMMM DD, YYYY"
-  placeholder="Click Here For Choosing"
-  inputClass="custom-date-input"   // ← ADD THIS LINE
+          {/* THUMBNAILS */}
+<div className="grid grid-cols-4 gap-3 mt-4">
+  {productImages.map((img, i) => (
+    <img
+      key={i}
+      src={img}
+      onClick={() => setActiveImage(i)}
+      className={`
+        w-full h-20 object-cover rounded-xl shadow cursor-pointer 
+        transition border-2 
+        ${i === activeImage ? "border-[#8B5C42]" : "border-transparent"}
+      `}
+    />
+  ))}
+</div>
 
-  // ENFORCE CONSECUTIVE DATES
-  onChange={(dates) => {
-    if (!dates || dates.length === 0) {
-      setSelectedDates([]);
-      return;
-    }
 
-    if (dates.length === 1) {
-      setSelectedDates(dates);
-      return;
-    }
-
-    const sorted = [...dates].sort((a, b) => a - b);
-    const fullRange = [];
-    let curr = new DateObject(sorted[0]);
-    const end = sorted[sorted.length - 1];
-
-    while (curr <= end) {
-      fullRange.push(new DateObject(curr));
-      curr = curr.add(1, "day");
-    }
-
-    setSelectedDates(fullRange);
-  }}
-
-  style={{
-    width: "100%",
-    padding: "14px",  // wider
-    borderRadius: "12px",
-    fontSize: "16px",
-    border: "1px solid #E6D5C3",
-  }}
-/>
-
-            </div>
-
-            {/* SHOW RANGE */}
-            {selectedDates.length > 0 && (
-              <div className="mt-4 bg-[#FFF7F0] p-4 rounded-xl animate-fadeIn">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold text-[#2D2926]">Selected Range:</h4>
-
-                  <button
-                    onClick={() => setSelectedDates([])}
-                    className="text-[#8B5C42] flex items-center gap-1"
-                  >
-                    <FiX /> Clear
-                  </button>
-                </div>
-
-                <p className="text-gray-700 mt-2">
-                  {selectedDates[0].format("MMMM DD, YYYY")} →{" "}
-                  {selectedDates[selectedDates.length - 1].format("MMMM DD, YYYY")}
-                </p>
-
-                <p className="mt-4 text-lg text-[#2D2926] font-semibold">
-                   Total: ${totalPrice}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* ADD ONS */}
+          {/* ⭐ RECOMMENDED ADDONS UNDER IMAGE */}
           <div className="mt-10">
             <h3 className="text-2xl font-semibold text-[#2D2926] mb-4">
               Recommended Add-Ons
             </h3>
 
             <div className="grid grid-cols-2 gap-4">
-              
-              {/* Lights */}
+
+              {/* Lights Add-on */}
               <div className="bg-white p-4 rounded-xl shadow-md">
                 <img
                   src={lightsImg}
@@ -214,7 +192,7 @@ const ProductPage = () => {
                 </div>
               </div>
 
-              {/* Flowers */}
+              {/* Flowers Add-on */}
               <div className="bg-white p-4 rounded-xl shadow-md">
                 <img
                   src={flowersImg}
@@ -242,28 +220,171 @@ const ProductPage = () => {
 
             </div>
           </div>
-
-          <button className="w-full mt-10 bg-[#8B5C42] text-white py-4 rounded-full text-lg shadow-lg hover:bg-[#704A36] transition">
-            Add to Cart
-          </button>
-          
         </div>
-        
 
-      </div>
-      {/* TRUST BADGES WITH ICONS */}
-<div className="max-w-7xl mx-auto mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-  {trustBadges.map(({ label, icon: Icon }, i) => (
-    <div
-      key={i}
-      className="p-5 bg-white rounded-xl shadow hover:shadow-xl hover:scale-105 transform transition-all duration-300 flex flex-col items-center gap-3"
-    >
-      <Icon className="text-[#8B5C42]" size={28} />
-      <span className="text-sm font-medium text-[#2D2926]">{label}</span>
-    </div>
-  ))}
+        {/* RIGHT COLUMN */}
+        <div>
+          <h1 className="text-4xl font-semibold text-[#2D2926] mb-4">
+            Wedding Golden Arch Backdrop
+          </h1>
+
+          {/* Price */}
+          <p className="text-3xl font-semibold text-[#8B5C42]">
+            ${pricePerDay}/day
+          </p>
+
+          {/* ⭐ PRODUCT QUANTITY */}
+          <div className="flex items-center gap-4 mt-4">
+            <p className="font-medium text-lg">Quantity:</p>
+
+            <button
+              onClick={() => handleProductQtyChange(-1)}
+              className="px-3 py-1 bg-gray-200 rounded"
+            >
+              -
+            </button>
+
+            <span className="text-xl">{productQty}</span>
+
+            <button
+              onClick={() => handleProductQtyChange(1)}
+              className="px-3 py-1 bg-[#8B5C42] text-white rounded"
+            >
+              +
+            </button>
+          </div>
+
+          {/* DAYS */}
+          <div className="mt-6">
+            <label className="block mb-2 text-[#2D2926]">
+              Number of Days
+            </label>
+            <input
+              type="number"
+              min="1"
+              className="w-40 p-2 border rounded-lg"
+              value={days}
+              onChange={(e) => setDays(Number(e.target.value))}
+            />
+          </div>
+
+          {/* EVENT DATE */}
+<div className="mt-6">
+  <label className="block mb-2 text-[#2D2926]">Event Date</label>
+
+  {/* START DATE */}
+  <input
+    type="date"
+    min={today}
+    value={startDate}
+    onChange={(e) => {
+      setStartDate(e.target.value);
+      setEndDate(""); // reset end date until user selects
+    }}
+    className="w-60 p-2 border rounded-lg"
+  />
+
+  {/* ONLY SHOW END DATE AFTER START DATE IS SELECTED */}
+  {startDate && (
+    <input
+      type="date"
+      min={startDate} // prevents selecting earlier date
+      value={endDate}
+      onChange={(e) => setEndDate(e.target.value)}
+      className="w-60 p-2 border rounded-lg mt-3"
+    />
+  )}
+
+  {/* DISPLAY SELECTED DATE OR RANGE */}
+  <div className="mt-4 p-3 bg-gray-100 rounded-lg text-[#2D2926]">
+    {startDate && !endDate && (
+      <p>Selected date: {formatDate(startDate)}</p>
+    )}
+
+    {startDate && endDate && (
+      <p>
+        Selected range: {formatDate(startDate)} – {formatDate(endDate)}
+      </p>
+    )}
+
+    {!startDate && <p>No date selected</p>}
+  </div>
 </div>
-    </div>
+
+
+          {/* TOTAL */}
+         <div className="mt-8 text-2xl font-semibold text-[#2D2926]">
+  Total ({totalRentalDays} {totalRentalDays === 1 ? "day" : "days"}): 
+  ${totalPrice}
+</div>
+
+
+          {/* BUTTON */}
+          <button className="mt-8 w-full bg-[#8B5C42] text-white py-3 rounded-lg">
+            Confirm Booking
+          </button>
+
+          {/* ⭐ ACCORDIONS BELOW BUTTON */}
+          <div className="mt-10 space-y-4">
+
+            {/* DESCRIPTION */}
+            <details open className="bg-white p-5 rounded-xl shadow">
+              <summary className="font-semibold text-lg cursor-pointer text-[#2D2926]">
+                Description
+              </summary>
+              <p className="mt-3 text-gray-700">
+                High-quality decorative arch backdrop perfect for events.
+                Durable, elegant, and customizable with add-ons.
+              </p>
+            </details>
+
+            {/* STOCK */}
+            <details className="bg-white p-5 rounded-xl shadow">
+              <summary className="font-semibold text-lg cursor-pointer text-[#2D2926]">
+                Stock Availability
+              </summary>
+              <p className="mt-3 text-gray-700">
+                Available stock: <strong>5 units</strong>.
+              </p>
+            </details>
+
+            {/* TERMS */}
+            <details className="bg-white p-5 rounded-xl shadow">
+              <summary className="font-semibold text-lg cursor-pointer text-[#2D2926]">
+                Terms & Conditions
+              </summary>
+              <p className="mt-3 text-gray-700">
+                • Payment required before dispatch. <br />
+                • Damages may incur additional charges. <br />
+                • Cancellation allowed up to 48 hours before event.
+              </p>
+            </details>
+
+          </div>
+        </div>
+      </div>
+
+      {/* ⭐ TRUST BADGE STRIP — FULL WIDTH, ABOVE FOOTER */}
+      <div className="max-w-7xl mx-auto px-6 mt-16 mb-16">
+        <div className="bg-[#FAF7F5] border border-[#E5DED6] rounded-2xl py-6 px-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+
+          {trustBadges.map((item, index) => {
+            const Icon = item.icon;
+            return (
+              <div key={index} className="flex items-center gap-3">
+                <div className="w-12 h-12 flex items-center justify-center rounded-full bg-[#8B5C42]/10">
+                  <Icon className="text-[#8B5C42]" size={26} />
+                </div>
+                <span className="text-[#2D2926] font-medium text-[16px]">
+                  {item.label}
+                </span>
+              </div>
+            );
+          })}
+
+        </div>
+      </div>
+    </>
   );
 };
 

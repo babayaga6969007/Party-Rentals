@@ -99,6 +99,7 @@ const PRODUCTS = [
   },
 ];
 
+
 // helper: check if product is available for selected range
 const isAvailableForRange = (product, startDate, endDate) => {
   if (!startDate || !endDate) return true; // no filter applied yet
@@ -169,7 +170,7 @@ const CategoryPage = () => {
 
   return (
     <section className="bg-[#FFF7F0] py-16">
-      <div className="max-w-7xl mx-auto px-6 lg:px-10">
+      <div className="page-wrapper max-w-7xl mx-auto px-6 lg:px-10">
         {/* Heading */}
         <div className="mb-10">
           <h1

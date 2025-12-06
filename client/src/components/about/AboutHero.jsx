@@ -6,7 +6,7 @@ const AboutHero = () => {
     <section className="w-full py-20 bg-white">
       
       {/* Heading */}
-      <div className="text-center mb-14">
+      <div className="page-wrapper text-center mb-14">
         <h2
           className="text-4xl font-semibold text-[#2D2926]"
           style={{ fontFamily: '"Cormorant Garamond", serif' }}

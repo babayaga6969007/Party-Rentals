@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "../components/layout/Layout";
 import ProtectedAdminRoute from "./ProtectedAdminRoute";
+import ScrollToTop from "../components/ScrollToTop";
 
 // Pages
 import Home from "../pages/Home/Home";
@@ -22,6 +23,7 @@ import EditProduct from "../admin/EditProduct";
 const AppRoutes = () => {
   return (
     <BrowserRouter>
+    <ScrollToTop />
       <Layout>
         <Routes>
           {/* Public Pages */}
