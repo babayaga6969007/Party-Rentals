@@ -252,65 +252,91 @@ const CategoryPage = () => {
               </div>
             </div>
 
+            
             {/* ===== PRICE SLIDER ===== */}
-            <div className="mb-6">
-              <p className="text-sm font-semibold text-[#2D2926] mb-2">
-                Price / day (AUD)
-              </p>
+<div className="mb-6">
+  <p className="text-sm font-semibold text-[#2D2926] mb-3">
+    Price
+  </p>
 
-              {/* Slider Track */}
-              <div
-                className="range-slider relative"
-                onMouseMove={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const x = e.clientX - rect.left;
-                  const percent = Math.min(Math.max(x / rect.width, 0), 1);
-                  const price = Math.round(percent * 500);
-                  setHoverPrice(price);
-                }}
-                onMouseLeave={() => setHoverPrice(null)}
-              >
-                <div
-                  className="range-selected"
-                  style={{
-                    left: `${(priceRange[0] / 500) * 100}%`,
-                    width: `${((priceRange[1] - priceRange[0]) / 500) * 100}%`,
-                  }}
-                ></div>
-              </div>
+  {/* TOP INPUT BOXES */}
+  <div className="flex items-center gap-3 mb-4">
+    <input
+      type="number"
+      value={priceRange[0]}
+      min={0}
+      max={500}
+      step="1"
+      onChange={(e) =>
+        setPriceRange([Number(e.target.value), priceRange[1]])
+      }
+      className="w-full p-2 border border-gray-300 rounded-md text-center"
+    />
 
-              {/* Range Inputs */}
-              <div className="range-input mt-2">
-                <input
-                  type="range"
-                  min="0"
-                  max="500"
-                  value={priceRange[0]}
-                  onChange={(e) => handleRangeChange(e, 0)}
-                />
+    <span className="text-gray-600">-</span>
 
-                <input
-                  type="range"
-                  min="0"
-                  max="500"
-                  value={priceRange[1]}
-                  onChange={(e) => handleRangeChange(e, 1)}
-                />
-              </div>
+    <input
+      type="number"
+      value={priceRange[1]}
+      min={0}
+      max={500}
+      step="1"
+      onChange={(e) =>
+        setPriceRange([priceRange[0], Number(e.target.value)])
+      }
+      className="w-full p-2 border border-gray-300 rounded-md text-center"
+    />
+  </div>
 
-              {/* Hover Display */}
-              {hoverPrice !== null && (
-                <div className="mt-1 text-center text-sm text-[#8B5C42] font-medium">
-                  Hover: ${hoverPrice}
-                </div>
-              )}
+  {/* SLIDER TRACK */}
+  <div className="relative h-2 bg-gray-300 rounded-md mb-6">
+    {/* selected range */}
+    <div
+      className="absolute h-2 bg-black rounded-md"
+      style={{
+        left: `${(priceRange[0] / 500) * 100}%`,
+        width: `${((priceRange[1] - priceRange[0]) / 500) * 100}%`,
+      }}
+    ></div>
+  </div>
 
-              {/* Min/Max */}
-              <div className="flex justify-between mt-2 text-sm">
-                <span>Min: ${priceRange[0]}</span>
-                <span>Max: ${priceRange[1]}</span>
-              </div>
-            </div>
+  {/* SLIDER HANDLES */}
+<div className="relative range-input" style={{ marginTop: "-10px" }}>
+    <input
+  type="range"
+  min="0"
+  max="500"
+  value={priceRange[0]}
+  onChange={(e) => handleRangeChange(e, 0)}
+  className="absolute w-full cursor-pointer pointer-events-auto"
+  style={{ top: "-25px" }}  
+/>
+
+<input
+  type="range"
+  min="0"
+  max="500"
+  value={priceRange[1]}
+  onChange={(e) => handleRangeChange(e, 1)}
+  className="absolute w-full cursor-pointer pointer-events-auto"
+  style={{ top: "-25px" }}  
+/>
+
+  </div>
+
+  {/* BOTTOM LABELS */}
+  <div
+  className="flex justify-between text-xs text-gray-600"
+  style={{ marginTop: "-4px" }}   // ★ lift labels up
+>
+  <span>0</span>
+  <span>125</span>
+  <span>250</span>
+  <span>375</span>
+  <span>500</span>
+</div>
+
+</div>
 
             {/* ===== TAGS & STYLE ===== */}
             <div className="mb-6">
@@ -390,7 +416,12 @@ const CategoryPage = () => {
   {filteredProducts.map((product) => (
     <a
       href={`/buyproducts`}
-      className="block border rounded-xl p-5 shadow transition-all duration-300 group hover:shadow-lg hover:scale-[1.02]"
+className="
+  block border border-gray-300 hover:border-gray-500
+  rounded-xl p-5 shadow 
+  transition-all duration-300 
+  group hover:shadow-lg hover:scale-[1.02]
+"
     >
       {/* IMAGE */}
       <div className="h-40 rounded mb-4 overflow-hidden">

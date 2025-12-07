@@ -2,6 +2,8 @@
 
 @import "tailwindcss";
 
+
+
 /* Perfect Infinite Loop Animation */
 @keyframes infinite-scroll {
   0% {
@@ -56,41 +58,64 @@
 .page-wrapper {
   margin-top: 100px;
 }
+/* ==========================================
+   CUSTOM RANGE SLIDER (WORKS IN CHROME)
+========================================== */
+
 .range-slider {
   position: relative;
-  height: 6px;
+  height: 4px;             
   background: #ddd;
   border-radius: 3px;
+  margin-top: 12px;
 }
 
 .range-slider .range-selected {
   position: absolute;
   height: 100%;
-  background: #8B5C42;
+  background: #000;
   border-radius: 3px;
 }
 
+/* Wrapper for the slider inputs */
 .range-input {
   position: relative;
+  height: 22px; /* ensures thumb fits correctly */
 }
 
-.range-input input {
+/* Base input tracks */
+.range-input input[type="range"] {
   position: absolute;
-  top: -6px;
   left: 0;
   width: 100%;
-  height: 6px;
-  background: none;
+  height: 22px;
+  background: transparent;
   pointer-events: none;
   -webkit-appearance: none;
+  appearance: none;
 }
 
-.range-input input::-webkit-slider-thumb {
+/* === Chrome / Edge / Safari thumb === */
+.range-input input[type="range"]::-webkit-slider-thumb {
   pointer-events: auto;
   -webkit-appearance: none;
   height: 18px;
   width: 18px;
-  background: #8B5C42;
   border-radius: 50%;
+  background: #000;
+  cursor: pointer;
+  margin-top: -8px;  /* ★ centers the thumb on 4px track */
+}
+
+/* === Firefox thumb === */
+.range-input input[type="range"]::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: #000;
   cursor: pointer;
 }
+.range-input input[type="range"]::-moz-range-track {
+  background: transparent;
+}
+
