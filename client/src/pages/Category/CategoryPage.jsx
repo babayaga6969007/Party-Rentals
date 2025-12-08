@@ -411,50 +411,67 @@ const CategoryPage = () => {
           {/* PRODUCT GRID */}
           {/* ====================== */}
 
-          <main>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
-              {filteredProducts.map((product) => (
-              <a
-  href={`/product/${product.id}`}
-className="
-  block border border-gray-300 hover:border-gray-500
-  rounded-xl p-5 shadow 
-  transition-all duration-300 
-  group hover:shadow-lg hover:scale-[1.02]
-"
->
-  {/* IMAGE */}
-  <div className="h-40 rounded mb-4 overflow-hidden">
-    <img
-      src={product.image}
-      alt={product.name}
-      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-    />
+         <main>
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+
+    {filteredProducts.map((product) => (
+      <a
+        href={`/buyproducts`}
+        className="
+          block border border-gray-300 hover:border-gray-500
+          rounded-xl shadow 
+          transition-all duration-300 
+          group hover:shadow-lg hover:scale-[1.02]
+        "
+      >
+
+        {/* IMAGE — NOW FULL WIDTH, NO PADDING */}
+        <div className="h-48 rounded-t-xl overflow-hidden">
+          <img
+            src={product.image}
+            alt={product.name}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        </div>
+
+        {/* CONTENT */}
+        <div className="p-5">
+
+          {/* NAME */}
+          <h3 className="font-bold text-lg text-[#2D2926]">
+            {product.name}
+          </h3>
+
+          {/* PRICE SECTION */}
+          <div className="mt-1 flex items-center gap-2">
+            <span className="text-black line-through text-sm">
+              ${product.pricePerDay}
+            </span>
+
+            <span className="text-red-600 font-bold text-lg">
+              ${product.salePrice || Math.round(product.pricePerDay * 0.85)}
+            </span>
+          </div>
+
+          {/* CATEGORY */}
+          <p className="text-sm text-gray-600 mt-1">
+            Category: {product.category}
+          </p>
+
+          {/* BUTTON */}
+          <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <button className="w-full bg-[#8B5C42] text-white px-6 py-2 rounded-lg text-sm shadow-md hover:bg-[#704A36] transition">
+              Rent Now
+            </button>
+          </div>
+
+        </div>
+      </a>
+    ))}
+
   </div>
+</main>
 
-  {/* NAME */}
-  <h3 className="font-bold text-lg text-[#2D2926]">{product.name}</h3>
-
-  {/* PRICE */}
-  <p className="text-[#8B5C42] font-semibold text-md mt-1">
-    ${product.pricePerDay}/day
-  </p>
-
-  {/* CATEGORY */}
-  <p className="text-sm text-gray-600 mt-1">Category: {product.category}</p>
-
-  {/* RENT NOW BUTTON (PUSHES CONTENT, NOT OVERLAP) */}
-  <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-    <button className="w-full bg-[#8B5C42] text-white px-6 py-2 rounded-lg text-sm shadow-md hover:bg-[#704A36] transition">
-      Rent Now
-    </button>
-  </div>
-</a>
-
-
-              ))}
-            </div>
-          </main>
         </div>
       </div>
     </section>
