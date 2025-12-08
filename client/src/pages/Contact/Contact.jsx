@@ -36,9 +36,7 @@ const Contact = () => {
             </h2>
 
             <p className="text-[#2D2926]/80 leading-relaxed">
-              Whether you’re planning a birthday, wedding, corporate event, or
-              intimate celebration, our team is here to assist you with rentals,
-              designs, and custom requests.
+              Whether you're planning a birthday, wedding, corporate event, or an intimate celebration, our team supports you at every step — from selecting the right rentals to crafting stunning decor themes. We help you bring your vision to life with customized designs, seamless setup, and tailored solutions for any style or budget. No matter the scale of your event, we ensure every detail feels thoughtful, beautiful, and uniquely yours.
             </p>
           </div>
 
@@ -92,82 +90,120 @@ Suite A                <br />
         </div>
 
         {/* RIGHT SIDE — Contact Form */}
-        <div className="p-8 bg-[#FAF7F5] border border-[#D9C7BE] rounded-2xl shadow-sm">
-          <h2
-            className="text-2xl font-semibold text-[#2D2926] mb-6"
-            style={{ fontFamily: '"Cormorant Garamond", serif' }}
-          >
-            Send a Message
-          </h2>
+<div className="p-8 bg-[#FAF7F5] border border-[#D9C7BE] rounded-2xl shadow-sm">
+  
 
-          <form className="space-y-6">
-            {/* Name */}
-            <div>
-              <label className="block mb-2 text-[#2D2926]">Your Name</label>
-              <input
-                type="text"
-                className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
-                placeholder="Enter your name"
-              />
-            </div>
+  <form className="space-y-6">
 
-            {/* Email */}
-            <div>
-              <label className="block mb-2 text-[#2D2926]">Your Email</label>
-              <input
-                type="email"
-                className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
-                placeholder="Enter your email"
-              />
-            </div>
+    {/* Name */}
+    <div>
+      <label className="block mb-2 text-[#2D2926]">Your Name</label>
+      <input
+        type="text"
+        className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
+        focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
+        placeholder="Enter your name"
+      />
+    </div>
 
-            {/* Address Line */}
-            <div>
-              <label className="block mb-2 text-[#2D2926]">Address Line</label>
-              <input
-                type="text"
-                className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
-                focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
-                placeholder="Enter your address"
-              />
-            </div>
-                        {/* Event / Rental Date */}
-            <div>
-              <label className="block mb-2 text-[#2D2926]">Event / Rental Date</label>
-              <input
-                type="date"
-                className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
-                focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
-              />
-            </div>
+    {/* Email */}
+    <div>
+      <label className="block mb-2 text-[#2D2926]">Your Email</label>
+      <input
+        type="email"
+        className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
+        focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
+        placeholder="Enter your email"
+      />
+    </div>
 
-
-            {/* Title */}
-<div>
-  <label className="block mb-2 text-[#2D2926]">Title</label>
-  <input
-    type="text"
-    className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
-    placeholder="Enter message title"
-  />
-</div>
-
-            {/* Message */}
-            <div>
-              <label className="block mb-2 text-[#2D2926]">Your Message</label>
-              <textarea
-                rows="4"
-                className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
-                placeholder="Write your message..."
-              ></textarea>
-            </div>
-
-            <button className="w-full py-3 rounded-lg bg-[#8B5C42] text-white font-medium hover:bg-[#704A36] transition">
-              Send Message
-            </button>
-          </form>
-        </div>
+    {/* Address + City (side-by-side on desktop) */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Address Line */}
+      <div>
+        <label className="block mb-2 text-[#2D2926]">Address Line</label>
+        <input
+          type="text"
+          className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
+          focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
+          placeholder="Enter your address"
+        />
       </div>
+
+      {/* City */}
+      <div>
+        <label className="block mb-2 text-[#2D2926]">City</label>
+        <input
+          type="text"
+          className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
+          focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
+          placeholder="Enter city"
+        />
+      </div>
+    </div>
+
+    {/* State / Region */}
+    <div>
+      <label className="block mb-2 text-[#2D2926]">State / Province / Region</label>
+      <input
+        type="text"
+        className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
+        focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
+        placeholder="Enter state or region"
+      />
+    </div>
+
+    {/* Postal Code */}
+    <div>
+      <label className="block mb-2 text-[#2D2926]">Postal / ZIP Code</label>
+      <input
+        type="text"
+        className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
+        focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
+        placeholder="Enter postal code"
+      />
+    </div>
+
+    {/* Event / Rental Date */}
+    <div>
+      <label className="block mb-2 text-[#2D2926]">Event / Rental Date</label>
+      <input
+        type="date"
+        className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
+        focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
+      />
+    </div>
+
+    {/* Title */}
+    <div>
+      <label className="block mb-2 text-[#2D2926]">Title</label>
+      <input
+        type="text"
+        className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
+        focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
+        placeholder="Enter message title"
+      />
+    </div>
+
+    {/* Message */}
+    <div>
+      <label className="block mb-2 text-[#2D2926]">Your Message</label>
+      <textarea
+        rows="4"
+        className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
+        focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
+        placeholder="Write your message..."
+      ></textarea>
+    </div>
+
+    <button className="w-full py-3 rounded-lg bg-[#8B5C42] text-white font-medium 
+    hover:bg-[#704A36] transition">
+      Send Message
+    </button>
+
+  </form>
+</div>
+</div>
 
       {/* Google Maps Section */}
       <div className="max-w-6xl mx-auto mt-20">
