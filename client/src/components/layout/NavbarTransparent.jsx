@@ -10,6 +10,8 @@ const NavbarTransparent = () => {
   const isScrollPage = pathname === "/" || pathname === "/home2";
 
   const [scrolled, setScrolled] = useState(isScrollPage ? false : true);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
 
   // Scroll behavior
 useEffect(() => {
@@ -25,6 +27,7 @@ useEffect(() => {
     setScrolled(window.scrollY > heroHeight - 150); 
     // -50 gives a smoother transition slightly before the exact end
   };
+  
 
   // Run once on load
   handleScroll();
@@ -122,17 +125,51 @@ useEffect(() => {
 
           {/* Mobile Menu */}
           <button
-            className={`md:hidden p-2 rounded-full backdrop-blur-md transition 
-              ${scrolled ? "bg-[#8B5C42]" : "bg-white/20"}
-            `}
-          >
-            <FiMenu
-              size={22}
-              className={`${scrolled ? "text-white" : "text-white"}`}
-            />
-          </button>
+  onClick={() => setMobileOpen(!mobileOpen)}
+  className={`md:hidden p-2 rounded-full backdrop-blur-md transition 
+    ${scrolled ? "bg-[#8B5C42]" : "bg-white/20"}
+  `}
+>
+  <FiMenu size={22} className="text-white" />
+</button>
+
         </div>
       </div>
+      {/* MOBILE MENU DROPDOWN */}
+{mobileOpen && (
+  <div
+    className={`
+      md:hidden w-full px-6 py-4 transition-all duration-300 animate-fadeIn
+      ${scrolled ? "bg-white shadow-md" : "bg-black/40 backdrop-blur-lg"}
+    `}
+  >
+    <div className="flex flex-col gap-4">
+
+      {[
+        { to: "/", label: "Home" },
+        { to: "/home2", label: "Home2" },
+        { to: "/category", label: "Rental Products" },
+        { to: "/about", label: "About" },
+        { to: "/contact", label: "Contact" },
+        { to: "/faqs", label: "FAQs" },
+        { to: "/shop", label: "Shop" },
+      ].map((item) => (
+        <NavLink
+          key={item.to}
+          to={item.to}
+          onClick={() => setMobileOpen(false)}
+          className={`text-lg ${
+            scrolled ? "text-[#2D2926]" : "text-white"
+          }`}
+        >
+          {item.label}
+        </NavLink>
+      ))}
+
+    </div>
+  </div>
+)}
+
     </nav>
   );
 };

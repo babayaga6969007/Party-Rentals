@@ -32,62 +32,43 @@ const AboutHero = () => {
          
         </div>
 
-        {/* Right Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          
-          {/* 1 */}
-          <div className="border rounded-2xl p-6 shadow-sm hover:shadow-md transition bg-[#FFF7F0]">
-            <h4 className="text-xl font-semibold text-[#8B5C42]">
-              Event Styling
-            </h4>
-            <p className="text-sm text-gray-600 mt-2">
-              Transforming spaces with curated props, décor, and rental setups.
-            </p>
-            <a href="/services" className="text-[#8B5C42] font-medium mt-3 inline-block">
-              READ MORE →
-            </a>
-          </div>
+       {/* Right Cards */}
+<div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
-          {/* 2 */}
-          <div className="border rounded-2xl p-6 shadow-sm hover:shadow-md transition bg-[#FDF4EC]">
-            <h4 className="text-xl font-semibold text-[#8B5C42]">
-              Party Rentals
-            </h4>
-            <p className="text-sm text-gray-600 mt-2">
-              Wide variety of furniture, lighting, and themed props for all events.
-            </p>
-            <a href="/services" className="text-[#8B5C42] font-medium mt-3 inline-block">
-              READ MORE →
-            </a>
-          </div>
+  {/* 1 */}
+  <div className="border border-gray-200 hover:border-gray-400 rounded-2xl p-6 shadow-sm hover:shadow-md transition bg-[#FFF7F0]">
+    <h4 className="text-xl font-semibold text-[#8B5C42]">Event Styling</h4>
+    <p className="text-[15px] text-gray-600 mt-3 leading-relaxed">
+      Transforming spaces with curated props, décor, and rental setups.
+    </p>
+  </div>
 
-          {/* 3 */}
-          <div className="border rounded-2xl p-6 shadow-sm hover:shadow-md transition bg-[#FFF7F2]">
-            <h4 className="text-xl font-semibold text-[#8B5C42]">
-              Custom Setups
-            </h4>
-            <p className="text-sm text-gray-600 mt-2">
-              Tailored arrangements designed based on themes, occasions, and venues.
-            </p>
-            <a href="/services" className="text-[#8B5C42] font-medium mt-3 inline-block">
-              READ MORE →
-            </a>
-          </div>
+  {/* 2 */}
+  <div className="border border-gray-200 hover:border-gray-400 rounded-2xl p-6 shadow-sm hover:shadow-md transition bg-[#FDF4EC]">
+    <h4 className="text-xl font-semibold text-[#8B5C42]">Party Rentals</h4>
+    <p className="text-[15px] text-gray-600 mt-3 leading-relaxed">
+      Wide variety of furniture, lighting, and themed props for all events.
+    </p>
+  </div>
 
-          {/* 4 */}
-          <div className="border rounded-2xl p-6 shadow-sm hover:shadow-md transition bg-[#FDF7F0]">
-            <h4 className="text-xl font-semibold text-[#8B5C42]">
-              Delivery & Setup
-            </h4>
-            <p className="text-sm text-gray-600 mt-2">
-              Hassle-free delivery, installation, and pickup by our expert team.
-            </p>
-            <a href="/services" className="text-[#8B5C42] font-medium mt-3 inline-block">
-              READ MORE →
-            </a>
-          </div>
+  {/* 3 */}
+  <div className="border border-gray-200 hover:border-gray-400 rounded-2xl p-6 shadow-sm hover:shadow-md transition bg-[#FFF7F2]">
+    <h4 className="text-xl font-semibold text-[#8B5C42]">Custom Setups</h4>
+    <p className="text-[15px] text-gray-600 mt-3 leading-relaxed">
+      Tailored arrangements designed based on themes, occasions, and venues.
+    </p>
+  </div>
 
-        </div>
+  {/* 4 */}
+  <div className="border border-gray-200 hover:border-gray-400 rounded-2xl p-6 shadow-sm hover:shadow-md transition bg-[#FDF7F0]">
+    <h4 className="text-xl font-semibold text-[#8B5C42]">Delivery & Setup</h4>
+    <p className="text-[15px] text-gray-600 mt-3 leading-relaxed">
+      Hassle-free delivery, installation, and pickup by our expert team.
+    </p>
+  </div>
+
+</div>
+
       </div>
     </section>
   );
