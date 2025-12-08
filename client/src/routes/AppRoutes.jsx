@@ -14,6 +14,11 @@ import CategoryPage from "../pages/Category/CategoryPage";
 import Shop from "../pages/Shop/shop";
 import SecondHProducts from "../pages/SecondHProducts/buyproducts";
 
+// 🛒 NEW Checkout Flow Pages
+import CartPage from "../pages/CartPage";
+import CheckoutPage from "../pages/CheckoutPage";
+import OrderCompletePage from "../pages/OrderCompletePage";
+
 // Admin Pages
 import AdminLogin from "../admin/Login";
 import Products from "../admin/Products";
@@ -21,13 +26,13 @@ import AddProduct from "../admin/AddProduct";
 import Orders from "../admin/Orders";  
 import EditProduct from "../admin/EditProduct";
 
-
 const AppRoutes = () => {
   return (
     <BrowserRouter>
-    <ScrollToTop />
+      <ScrollToTop />
       <Layout>
         <Routes>
+
           {/* Public Pages */}
           <Route path="/" element={<Home />} />
           <Route path="/faqs" element={<FAQ />} />  
@@ -39,7 +44,12 @@ const AppRoutes = () => {
           <Route path="/shop" element={<Shop />} />
           <Route path="/buyproducts" element={<SecondHProducts />} />
 
-          {/* Admin Login - Unprotected */}
+          {/* 🛒 Checkout Flow */}
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/order-complete" element={<OrderCompletePage />} />
+
+          {/* Admin Login */}
           <Route path="/admin/login" element={<AdminLogin />} />
 
           {/* Admin Protected Routes */}
@@ -69,14 +79,16 @@ const AppRoutes = () => {
               </ProtectedAdminRoute>
             }
           />
+
           <Route
-  path="/admin/products/edit/:id"
-  element={
-    <ProtectedAdminRoute>
-      <EditProduct />
-    </ProtectedAdminRoute>
-  }
-/>
+            path="/admin/products/edit/:id"
+            element={
+              <ProtectedAdminRoute>
+                <EditProduct />
+              </ProtectedAdminRoute>
+            }
+          />
+
         </Routes>
       </Layout>
     </BrowserRouter>

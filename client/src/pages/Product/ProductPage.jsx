@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+
 import {
   FiLock,
   FiHeadphones,
@@ -335,9 +337,12 @@ value={startDate || ""}
 
 
           {/* BUTTON */}
-          <button className="mt-8 w-full bg-[#8B5C42] text-white py-3 rounded-lg">
-            Confirm Booking
-          </button>
+          <Link to="/cart">
+  <button className="mt-8 w-full bg-[#8B5C42] text-white py-3 rounded-lg">
+    Confirm Booking
+  </button>
+</Link>
+
 
           {/* ⭐ ACCORDIONS BELOW BUTTON */}
           <div className="mt-10 space-y-4">
