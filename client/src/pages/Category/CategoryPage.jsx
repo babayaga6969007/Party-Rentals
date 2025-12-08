@@ -416,7 +416,7 @@ const CategoryPage = () => {
 
     {filteredProducts.map((product) => (
       <a
-        href={`/buyproducts`}
+        href={`/product/1`}
         className="
           block border border-gray-300 hover:border-gray-500
           rounded-xl shadow 
