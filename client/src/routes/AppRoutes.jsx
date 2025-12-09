@@ -8,7 +8,7 @@ import Home from "../pages/Home/Home";
 import FAQ from "../pages/FAQ/FAQ";
 import Contact from "../pages/Contact/Contact";
 import About from "../pages/About/About";
-import Home2 from "../pages/Home2/Home2";
+
 import ProductPage from "../pages/Product/ProductPage";
 import CategoryPage from "../pages/Category/CategoryPage";
 import Shop from "../pages/Shop/shop";
@@ -38,7 +38,7 @@ const AppRoutes = () => {
           <Route path="/faqs" element={<FAQ />} />  
           <Route path="/contact" element={<Contact />} />
           <Route path="/about" element={<About />} />
-          <Route path="/home2" element={<Home2 />} />
+ 
           <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/category" element={<CategoryPage />} />
           <Route path="/shop" element={<Shop />} />

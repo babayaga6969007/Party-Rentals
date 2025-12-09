@@ -36,7 +36,7 @@ const Contact = () => {
             </h2>
 
             <p className="text-[#2D2926]/80 leading-relaxed">
-              Whether you're planning a birthday, wedding, corporate event, or an intimate celebration, our team supports you at every step — from selecting the right rentals to crafting stunning decor themes. We help you bring your vision to life with customized designs, seamless setup, and tailored solutions for any style or budget. No matter the scale of your event, we ensure every detail feels thoughtful, beautiful, and uniquely yours.
+              Whether you're planning a birthday, wedding, corporate event, or an intimate celebration, our team supports you at every step — from selecting the right rentals to crafting stunning decor themes. 
             </p>
           </div>
 
@@ -117,66 +117,11 @@ Suite A                <br />
       />
     </div>
 
-    {/* Address + City (side-by-side on desktop) */}
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {/* Address Line */}
-      <div>
-        <label className="block mb-2 text-[#2D2926]">Address Line</label>
-        <input
-          type="text"
-          className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
-          focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
-          placeholder="Enter your address"
-        />
-      </div>
-
-      {/* City */}
-      <div>
-        <label className="block mb-2 text-[#2D2926]">City</label>
-        <input
-          type="text"
-          className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
-          focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
-          placeholder="Enter city"
-        />
-      </div>
-    </div>
-
-    {/* State / Region */}
-    <div>
-      <label className="block mb-2 text-[#2D2926]">State / Province / Region</label>
-      <input
-        type="text"
-        className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
-        focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
-        placeholder="Enter state or region"
-      />
-    </div>
-
-    {/* Postal Code */}
-    <div>
-      <label className="block mb-2 text-[#2D2926]">Postal / ZIP Code</label>
-      <input
-        type="text"
-        className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
-        focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
-        placeholder="Enter postal code"
-      />
-    </div>
-
-    {/* Event / Rental Date */}
-    <div>
-      <label className="block mb-2 text-[#2D2926]">Event / Rental Date</label>
-      <input
-        type="date"
-        className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
-        focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
-      />
-    </div>
+    
 
     {/* Title */}
     <div>
-      <label className="block mb-2 text-[#2D2926]">Title</label>
+      <label className="block mb-2 text-[#2D2926]">Title (or Order Number)</label>
       <input
         type="text"
         className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 

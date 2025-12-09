@@ -7,7 +7,7 @@ const NavbarTransparent = () => {
   const { pathname } = useLocation();
 
   // Pages that should have scrolling effect
-  const isScrollPage = pathname === "/" || pathname === "/home2";
+  const isScrollPage = pathname === "/";
 
   const [scrolled, setScrolled] = useState(isScrollPage ? false : true);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -72,7 +72,7 @@ useEffect(() => {
         >
           {[
             { to: "/", label: "Home" },
-            { to: "/home2", label: "Home2" },
+            
             { to: "/category", label: "Rental Products" },
             { to: "/about", label: "About" },
             { to: "/contact", label: "Contact" },
