@@ -1,6 +1,10 @@
+
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CheckoutSteps from "../components/cart/CheckoutSteps";
+import hero1 from "../assets/home2/hero1.png";
+import hero2 from "../assets/home2/hero2.png";
+import hero3 from "../assets/home2/hero3.png";
 
 const DEMO_ITEMS = [
   {
@@ -9,6 +13,7 @@ const DEMO_ITEMS = [
     description: "Medium size, electric pump",
     price: 45,
     qty: 2,
+    image: hero1
   },
   {
     id: 2,
@@ -16,6 +21,7 @@ const DEMO_ITEMS = [
     description: "5m, warm white",
     price: 25,
     qty: 3,
+    image: hero2
   },
   {
     id: 3,
@@ -23,8 +29,10 @@ const DEMO_ITEMS = [
     description: "Multicolor banner pack",
     price: 18,
     qty: 1,
+    image: hero3
   },
 ];
+
 
 export default function CartPage() {
   const [items, setItems] = useState(DEMO_ITEMS);
@@ -95,17 +103,24 @@ export default function CartPage() {
                   key={item.id}
                   className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border rounded-xl px-3 py-3"
                 >
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {item.name}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {item.description}
-                    </p>
-                    <p className="mt-1 text-sm font-medium text-gray-900">
-                      ${item.price}
-                    </p>
-                  </div>
+                  <div className="flex items-center gap-4">
+
+  {/* Product Image */}
+  <img
+    src={item.image}
+    alt={item.name}
+    className="w-20 h-20 rounded-lg object-cover border"
+  />
+
+  {/* Product Details */}
+  <div>
+    <p className="text-sm font-semibold text-gray-900">{item.name}</p>
+    <p className="text-xs text-gray-500">{item.description}</p>
+    <p className="mt-1 text-sm font-medium text-gray-900">${item.price}</p>
+  </div>
+
+</div>
+
 
                   <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
                     <div className="flex items-center border rounded-full px-2 py-1">
