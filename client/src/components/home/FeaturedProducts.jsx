@@ -10,14 +10,14 @@ import img12 from "../../assets/featured/12.png";
 import img13 from "../../assets/featured/13.png";
 
 const products = [
-  { id: 6, img: img6, title: "Product Name 1", price: "AUD $500", availability: 2 },
-  { id: 7, img: img7, title: "Product Name 2", price: "AUD $600", availability: 1 },
-  { id: 8, img: img8, title: "Product Name 3", price: "AUD $300", availability: 4 },
-  { id: 9, img: img9, title: "Product Name 4", price: "AUD $450", availability: 2 },
-  { id: 10, img: img10, title: "Product Name 5", price: "AUD $550", availability: 3 },
-  { id: 11, img: img11, title: "Product Name 6", price: "AUD $350", availability: 2 },
-  { id: 12, img: img12, title: "Product Name 7", price: "AUD $650", availability: 1 },
-  { id: 13, img: img13, title: "Product Name 8", price: "AUD $400", availability: 2 },
+  { id: 6, img: img6, title: "Product Name 1", price: "USD $500", availability: 2 },
+  { id: 7, img: img7, title: "Product Name 2", price: "USD $600", availability: 1 },
+  { id: 8, img: img8, title: "Product Name 3", price: "USD $300", availability: 4 },
+  { id: 9, img: img9, title: "Product Name 4", price: "USD $450", availability: 2 },
+  { id: 10, img: img10, title: "Product Name 5", price: "USD $550", availability: 3 },
+  { id: 11, img: img11, title: "Product Name 6", price: "USD $350", availability: 2 },
+  { id: 12, img: img12, title: "Product Name 7", price: "USD $650", availability: 1 },
+  { id: 13, img: img13, title: "Product Name 8", price: "USD $400", availability: 2 },
 ];
 
 const FeaturedProducts = () => {

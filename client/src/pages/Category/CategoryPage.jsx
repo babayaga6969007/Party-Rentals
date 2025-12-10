@@ -97,6 +97,15 @@ const PRODUCTS = [
 //  HELPER
 // ====================
 const today = new Date().toISOString().split("T")[0];
+const CATEGORY_CHIPS = [
+  { label: "Backdrops", value: "Backdrop", img: hero1 },
+  { label: "Furniture", value: "Furniture", img: hero2 },
+  { label: "Lighting", value: "Lights", img: hero3 },
+  { label: "Florals", value: "Florals", img: hero4 },
+  { label: "Tables", value: "Tables", img: hero1 },
+  { label: "Props", value: "Props", img: hero2 }, // demo, no product yet
+];
+
 
 const CategoryPage = () => {
   // ====================
@@ -187,6 +196,50 @@ const CategoryPage = () => {
         >
           Filter by date, category, style, and budget to find props that match your event perfectly.
         </p>
+      </div>
+      
+      {/* BROWSE BY CATEGORY – ROUND ICONS */}
+      <div className="max-w-7xl mx-auto px-6 mt-2 mb-10">
+        
+
+        <div className="flex flex-wrap justify-center gap-8">
+          {CATEGORY_CHIPS.map((cat) => (
+            <button
+              key={cat.label}
+              type="button"
+              onClick={() =>
+                setSelectedCategories((prev) =>
+                  prev.includes(cat.value)
+                    ? prev.filter((c) => c !== cat.value) // click again = clear
+                    : [...prev, cat.value]
+                )
+              }
+              className="flex flex-col items-center group focus:outline-none"
+            >
+              <div
+                className={`
+                  w-20 h-20 rounded-full overflow-hidden shadow-md border-2
+                  transition-all duration-300
+                  ${
+                    selectedCategories.includes(cat.value)
+                      ? "border-[#8B5C42] scale-110"
+                      : "border-transparent group-hover:border-gray-300"
+                  }
+                `}
+              >
+                <img
+                  src={cat.img}
+                  alt={cat.label}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <span className="mt-2 text-xs text-[#2D2926] group-hover:text-[#8B5C42]">
+                {cat.label}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* MAIN CONTENT AREA (SIDEBAR + PRODUCTS) */}
@@ -473,6 +526,7 @@ const CategoryPage = () => {
 </main>
 
         </div>
+        
       </div>
     </section>
   );
