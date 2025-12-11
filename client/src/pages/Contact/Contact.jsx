@@ -29,7 +29,7 @@ const Contact = () => {
         <div className="space-y-8">
           <div>
             <h2
-              className="page-wrapper text-2xl font-semibold text-[#2D2926] mb-4"
+              className=" text-2xl font-semibold text-[#2D2926] mb-4"
               style={{ fontFamily: '"Cormorant Garamond", serif' }}
             >
               Get in Touch

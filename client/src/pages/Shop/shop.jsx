@@ -459,7 +459,10 @@ const CategoryPage = () => {
           </p>
 
           {/* BUTTON */}
-          <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<div className="mt-4 
+     opacity-100 md:opacity-0 
+     md:group-hover:opacity-100 
+     transition-opacity duration-300">
             <button className="w-full bg-[#8B5C42] text-white px-6 py-2 rounded-lg text-sm shadow-md hover:bg-[#704A36] transition">
               View Product
             </button>

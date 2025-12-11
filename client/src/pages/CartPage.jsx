@@ -32,6 +32,21 @@ const DEMO_ITEMS = [
     image: hero3
   },
 ];
+const RECOMMENDED_ITEMS = [
+  {
+    id: 101,
+    name: "Pastel Balloon Garland",
+    price: 55,
+    image: hero1,
+  },
+  {
+    id: 102,
+    name: "Event Fairy Light Stand",
+    price: 75,
+    image: hero2,
+  },
+];
+
 
 
 export default function CartPage() {
@@ -64,15 +79,32 @@ export default function CartPage() {
     setItems((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const handleProceed = () => {
-    // Pass data to checkout page through navigation state
-    navigate("/checkout", {
-      state: {
-        items,
-        pricing: { subtotal, discount, deliveryFee, total },
-      },
-    });
-  };
+  const handleAddRecommended = (item) => {
+  setItems((prev) => {
+    const exists = prev.find((p) => p.id === item.id);
+
+    if (exists) {
+      // Increase quantity if item already exists
+      return prev.map((p) =>
+        p.id === item.id ? { ...p, qty: p.qty + 1 } : p
+      );
+    }
+
+    // Otherwise add as new item
+    return [...prev, { ...item, qty: 1 }];
+  });
+};
+
+
+ const handleProceed = () => {
+  if (total < 1000) {
+    alert("Minimum order limit is $1000. Please add more items to proceed.");
+    return;
+  }
+
+  navigate("/checkout"); // or your actual checkout page
+};
+
 
   return (
     <div className="page-wrapper-checkout min-h-screen bg-gray-50">
@@ -101,7 +133,7 @@ export default function CartPage() {
               {items.map((item) => (
                 <div
                   key={item.id}
-                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border rounded-xl px-3 py-3"
+className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border border-gray-300 rounded-xl px-3 py-3"
                 >
                   <div className="flex items-center gap-4">
 
@@ -109,7 +141,7 @@ export default function CartPage() {
   <img
     src={item.image}
     alt={item.name}
-    className="w-20 h-20 rounded-lg object-cover border"
+className="w-20 h-20 rounded-lg object-cover border border-gray-300"
   />
 
   {/* Product Details */}
@@ -183,14 +215,53 @@ export default function CartPage() {
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={handleProceed}
-            disabled={items.length === 0}
-            className="mt-5 w-full py-3 rounded-full bg-black text-white text-sm font-semibold hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Go to Checkout
-          </button>
+         <button
+  type="button"
+  onClick={handleProceed}
+  disabled={items.length === 0}
+  className="mt-5 w-full py-3 rounded-full bg-black text-white text-sm font-semibold hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  Go to Checkout
+</button>
+{/* PEOPLE ALSO BOUGHT */}
+<div className="mt-8">
+  <h4 className="text-sm font-semibold text-gray-900 mb-4">
+    People also bought
+  </h4>
+
+  <div className="flex flex-col gap-4">
+    {RECOMMENDED_ITEMS.map((item) => (
+      <div
+        key={item.id}
+        className="flex items-center gap-4 border border-gray-200 rounded-xl p-3 bg-white shadow-sm"
+      >
+        {/* IMAGE */}
+        <img
+          src={item.image}
+          alt={item.name}
+          className="w-16 h-16 rounded-lg object-cover border"
+        />
+
+        {/* INFO */}
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-gray-900">{item.name}</p>
+          <p className="text-sm text-gray-700">${item.price}</p>
+        </div>
+
+        {/* BUTTON */}
+        <button
+          type="button"
+          onClick={() => handleAddRecommended(item)}
+          className="px-3 py-1 text-xs bg-[#8B5C42] text-white rounded-lg hover:bg-[#704A36] transition"
+        >
+          Add
+        </button>
+      </div>
+    ))}
+  </div>
+</div>
+
+
         </div>
       </div>
     </div>

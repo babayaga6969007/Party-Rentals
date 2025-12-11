@@ -46,7 +46,7 @@ export default function CheckoutPage() {
           {/* Billing details */}
           <section className="mb-6">
             <h3 className="text-sm font-semibold mb-2 text-gray-800">
-              Billing details
+              Contact details
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div>
@@ -188,27 +188,7 @@ export default function CheckoutPage() {
                 </div>
               </label>
 
-              {/* COD */}
-              <label className="flex items-center gap-3 border rounded-xl px-3 py-2 cursor-pointer hover:border-black transition">
-                <input type="radio" name="paymentMethod" className="accent-black" />
-                <div>
-                  <p className="font-semibold">Cash on Delivery</p>
-                  <p className="text-xs text-gray-500">
-                    Pay in cash when the order arrives.
-                  </p>
-                </div>
-              </label>
-
-              {/* Bank Transfer */}
-              <label className="flex items-center gap-3 border rounded-xl px-3 py-2 cursor-pointer hover:border-black transition">
-                <input type="radio" name="paymentMethod" className="accent-black" />
-                <div>
-                  <p className="font-semibold">Bank Transfer</p>
-                  <p className="text-xs text-gray-500">
-                    NEFT / IMPS to our business account.
-                  </p>
-                </div>
-              </label>
+              
             </div>
           </section>
         </div>
@@ -260,6 +240,23 @@ export default function CheckoutPage() {
               ${pricing.total.toFixed(2)}
             </span>
           </div>
+
+          {/* TERMS AGREEMENT CHECKBOX */}
+<div className="mt-4 flex items-start gap-2 text-sm">
+  <input
+    type="checkbox"
+    id="agree"
+    className="mt-1 w-4 h-4 border-gray-400 rounded"
+  />
+  
+  <label htmlFor="agree" className="text-gray-700 leading-tight">
+    By clicking this box, you agree to our{" "}
+    <a href="/" className="text-[#8B5C42] font-medium underline hover:text-[#704A36]">
+      Terms and Conditions
+    </a>.
+  </label>
+</div>
+
 
           <div className="mt-5 flex flex-col gap-2">
             <button

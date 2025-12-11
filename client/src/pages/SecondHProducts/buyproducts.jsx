@@ -27,6 +27,7 @@ const trustBadges = [
   { label: "Hassle-Free Rentals", icon: FiRefreshCw },
 ];
 
+
 const ProductPage = () => {
   // DATE RANGE SELECTION
 const today = new Date().toISOString().split("T")[0]; // disable past dates
@@ -106,6 +107,14 @@ const totalRentalDays = selectedDays > 0 ? selectedDays : days;
 
 const totalPrice =
   totalRentalDays * pricePerDay * productQty + addonsTotal;
+
+const fullDescription =
+  "High-quality decorative arch backdrop perfect for events. Durable, elegant, and customizable with add-ons. This stunning backdrop enhances weddings, birthdays, parties, photoshoots, and corporate events. Built with premium material for stability and available in multiple colors and custom add-ons.";
+
+const shortDescription = fullDescription.substring(0, 120) + "...";
+
+const [showFullDesc, setShowFullDesc] = useState(false);
+
 
   return (
     <>
@@ -230,15 +239,29 @@ const totalPrice =
             Wedding Golden Arch Backdrop
           </h1>
 
-          {/* Price */}
-          <p className="text-3xl font-semibold text-[#8B5C42]">
-            ${pricePerDay}
-          </p>
+         {/* PRICE + STOCK (Responsive layout) */}
+<div className="mt-2 flex flex-col md:flex-row md:items-center md:gap-6">
+
+  {/* Price */}
+  <p className="text-3xl font-semibold text-[#8B5C42]">
+    ${pricePerDay}
+  </p>
+
+  {/* Stock — beside price on desktop, below on mobile */}
+  <div className="mt-2 md:mt-0 bg-[#FFF7F0] border border-[#E5DED6] rounded-lg px-4 py-2 inline-block">
+    <p className="text-sm font-medium text-[#2D2926]">
+      Stock Availability: <span className="text-[#8B5C42] font-semibold">5</span>
+    </p>
+  </div>
+
+</div>
 
           {/* ⭐ PRODUCT QUANTITY */}
           <div className="flex items-center gap-4 mt-4">
             <p className="font-medium text-lg">Quantity:</p>
+            
 
+            
             <button
               onClick={() => handleProductQtyChange(-1)}
               className="px-3 py-1 bg-gray-200 rounded"
@@ -274,43 +297,36 @@ const totalPrice =
 </Link>
 
 
-          {/* ⭐ ACCORDIONS BELOW BUTTON */}
           <div className="mt-10 space-y-4">
 
-            {/* DESCRIPTION */}
-            <details open className="bg-white p-5 rounded-xl shadow">
-              <summary className="font-semibold text-lg cursor-pointer text-[#2D2926]">
-                Description
-              </summary>
-              <p className="mt-3 text-gray-700">
-                High-quality decorative arch backdrop perfect for events.
-                Durable, elegant, and customizable with add-ons.
-              </p>
-            </details>
+  {/* DESCRIPTION */}
+  <div className="bg-white p-5 rounded-xl shadow">
+    <h3 className="font-semibold text-lg text-[#2D2926]">Description</h3>
 
-            {/* STOCK */}
-            <details className="bg-white p-5 rounded-xl shadow">
-              <summary className="font-semibold text-lg cursor-pointer text-[#2D2926]">
-                Stock Availability
-              </summary>
-              <p className="mt-3 text-gray-700">
-                Available stock: <strong>5 units</strong>.
-              </p>
-            </details>
+    <p className="mt-3 text-gray-700 leading-relaxed">
+      {showFullDesc ? fullDescription : shortDescription}
+    </p>
 
-            {/* TERMS */}
-            <details className="bg-white p-5 rounded-xl shadow">
-              <summary className="font-semibold text-lg cursor-pointer text-[#2D2926]">
-                Terms & Conditions
-              </summary>
-              <p className="mt-3 text-gray-700">
-                • Payment required before dispatch. <br />
-                • Damages may incur additional charges. <br />
-                • Cancellation allowed up to 48 hours before event.
-              </p>
-            </details>
+    <button
+      onClick={() => setShowFullDesc(!showFullDesc)}
+      className="mt-2 text-[#8B5C42] font-medium underline"
+    >
+      {showFullDesc ? "Read Less" : "Read More"}
+    </button>
+  </div>
 
-          </div>
+  {/* TERMS & CONDITIONS */}
+  <div className="bg-white p-5 rounded-xl shadow">
+    <a
+      href="/"
+      className="font-semibold text-lg text-[#8B5C42] underline hover:text-[#704A36]"
+    >
+      Terms & Conditions
+    </a>
+  </div>
+
+</div>
+
         </div>
       </div>
 

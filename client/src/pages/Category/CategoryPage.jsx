@@ -199,7 +199,7 @@ const CategoryPage = () => {
       </div>
       
       {/* BROWSE BY CATEGORY – ROUND ICONS */}
-      <div className="max-w-7xl mx-auto px-6 mt-2 mb-10">
+<div className="max-w-7xl mx-auto px-6 mt-2 mb-10 md:pl-20">
         
 
         <div className="flex flex-wrap justify-center gap-8">
@@ -273,37 +273,6 @@ const CategoryPage = () => {
 
             {/* ===== Availability (CAN EXPAND LATER IF NEEDED) ===== */}
 
-            {/* ===== CATEGORY FILTERS ===== */}
-            <div className="mb-6">
-              <p className="text-sm font-semibold text-[#2D2926] mb-2">
-                Categories
-              </p>
-
-              <div className="flex flex-wrap gap-2">
-                {ALL_CATEGORIES.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() =>
-                      setSelectedCategories((prev) =>
-                        prev.includes(cat)
-                          ? prev.filter((c) => c !== cat)
-                          : [...prev, cat]
-                      )
-                    }
-                    className={`
-                      px-3 py-1 rounded-full border text-sm transition
-                      ${
-                        selectedCategories.includes(cat)
-                          ? "bg-[#8B5C42] text-white border-[#8B5C42]"
-                          : "bg-white text-[#2D2926] border-gray-300"
-                      }
-                    `}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            </div>
 
             {/* ===== PRICE SLIDER ===== */}
 <div className="mb-6">
@@ -512,7 +481,10 @@ const CategoryPage = () => {
           </p>
 
           {/* BUTTON */}
-          <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<div className="mt-4 
+     opacity-100 md:opacity-0 
+     md:group-hover:opacity-100 
+     transition-opacity duration-300">
             <button className="w-full bg-[#8B5C42] text-white px-6 py-2 rounded-lg text-sm shadow-md hover:bg-[#704A36] transition">
               Rent Now
             </button>

@@ -97,9 +97,7 @@ export default function OrderCompletePage() {
             >
               Return to Home
             </Link>
-            <button className="px-6 py-3 rounded-full border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-100">
-              Track My Order
-            </button>
+           
           </div>
         </div>
       </div>

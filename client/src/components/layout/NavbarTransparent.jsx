@@ -122,6 +122,18 @@ useEffect(() => {
               className={`${scrolled ? "text-white" : "text-white"}`}
             />
           </a>
+          {/* Custom Enquiry Button (Desktop Only) */}
+<Link
+  to="/contact"
+  className={`
+    hidden md:block px-5 py-2 rounded-full text-sm font-medium transition
+    ${scrolled ? "bg-[#8B5C42] text-white hover:bg-[#704A36]" 
+               : "bg-white/20 text-white backdrop-blur-md hover:bg-white/40"}
+  `}
+>
+  Custom Enquiry
+</Link>
+
 
           {/* Mobile Menu */}
           <button
@@ -147,7 +159,7 @@ useEffect(() => {
 
       {[
         { to: "/", label: "Home" },
-        { to: "/home2", label: "Home2" },
+        
         { to: "/category", label: "Rental Products" },
         { to: "/about", label: "About" },
         { to: "/contact", label: "Contact" },
@@ -165,6 +177,16 @@ useEffect(() => {
           {item.label}
         </NavLink>
       ))}
+<Link
+  to="/contact"
+  onClick={() => setMobileOpen(false)}
+  className={`
+    text-lg font-medium mt-3 px-4 py-2 rounded-lg text-center
+    ${scrolled ? "bg-[#8B5C42] text-white" : "bg-white/20 text-white"}
+  `}
+>
+  Custom Enquiry
+</Link>
 
     </div>
   </div>
