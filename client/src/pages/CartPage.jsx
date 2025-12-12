@@ -6,6 +6,7 @@ import hero1 from "../assets/home2/hero1.png";
 import hero2 from "../assets/home2/hero2.png";
 import hero3 from "../assets/home2/hero3.png";
 
+
 const DEMO_ITEMS = [
   {
     id: 1,
@@ -223,43 +224,6 @@ className="w-20 h-20 rounded-lg object-cover border border-gray-300"
 >
   Go to Checkout
 </button>
-{/* PEOPLE ALSO BOUGHT */}
-<div className="mt-8">
-  <h4 className="text-sm font-semibold text-gray-900 mb-4">
-    People also bought
-  </h4>
-
-  <div className="flex flex-col gap-4">
-    {RECOMMENDED_ITEMS.map((item) => (
-      <div
-        key={item.id}
-        className="flex items-center gap-4 border border-gray-200 rounded-xl p-3 bg-white shadow-sm"
-      >
-        {/* IMAGE */}
-        <img
-          src={item.image}
-          alt={item.name}
-          className="w-16 h-16 rounded-lg object-cover border"
-        />
-
-        {/* INFO */}
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-gray-900">{item.name}</p>
-          <p className="text-sm text-gray-700">${item.price}</p>
-        </div>
-
-        {/* BUTTON */}
-        <button
-          type="button"
-          onClick={() => handleAddRecommended(item)}
-          className="px-3 py-1 text-xs bg-[#8B5C42] text-white rounded-lg hover:bg-[#704A36] transition"
-        >
-          Add
-        </button>
-      </div>
-    ))}
-  </div>
-</div>
 
 
         </div>

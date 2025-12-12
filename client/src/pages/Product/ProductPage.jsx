@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import AddToCartModal from "../../components/cart/AddToCartModal";
 
 import {
   FiLock,
@@ -27,12 +28,16 @@ const trustBadges = [
   { label: "Hassle-Free Rentals", icon: FiRefreshCw },
 ];
 
+
 const ProductPage = () => {
   // DATE RANGE SELECTION
 const today = new Date().toISOString().split("T")[0]; // disable past dates
 
 const [startDate, setStartDate] = useState("");
 const [endDate, setEndDate] = useState("");
+const [openModal, setOpenModal] = useState(false);
+const [chosenProduct, setChosenProduct] = useState(null);
+const [chosenAddons, setChosenAddons] = useState([]);
 
 // Convert date to readable format
 const formatDate = (d) =>
@@ -356,11 +361,32 @@ value={startDate || ""}
 
 
           {/* BUTTON */}
-          <Link to="/cart">
-  <button className="mt-8 w-full bg-[#8B5C42] text-white py-3 rounded-lg">
-    Confirm Booking
-  </button>
-</Link>
+          <button
+  className="mt-8 w-full bg-[#8B5C42] text-white py-3 rounded-lg"
+  onClick={() => {
+    const selectedAddons = [];
+
+    if (addons.lights > 0)
+      selectedAddons.push({ name: "Warm LED Lights", qty: addons.lights, price: 10 });
+
+    if (addons.flowers > 0)
+      selectedAddons.push({ name: "Flower Garland Set", qty: addons.flowers, price: 15 });
+
+    setChosenProduct({
+      name: "Wedding Golden Arch Backdrop",
+      qty: productQty,
+      pricePerDay,
+      image: productImages[0],
+      totalPrice: totalPrice,
+    });
+
+    setChosenAddons(selectedAddons);
+    setOpenModal(true);
+  }}
+>
+  Confirm Booking
+</button>
+
 
 
           <div className="mt-10 space-y-4">
@@ -397,25 +423,42 @@ value={startDate || ""}
       </div>
 
       {/* ⭐ TRUST BADGE STRIP — FULL WIDTH, ABOVE FOOTER */}
-      <div className="max-w-7xl mx-auto px-6 mt-16 mb-16">
-        <div className="bg-[#FAF7F5] border border-[#E5DED6] rounded-2xl py-6 px-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+      {/* ⭐ TRUST BADGE STRIP — FULL WIDTH, ABOVE FOOTER */}
+<div className="max-w-7xl mx-auto px-6 mt-16 mb-16">
+  <div className="bg-[#FAF7F5] border border-[#E5DED6] rounded-2xl py-6 px-8 
+                  flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
 
-          {trustBadges.map((item, index) => {
-            const Icon = item.icon;
-            return (
-              <div key={index} className="flex items-center gap-3">
-                <div className="w-12 h-12 flex items-center justify-center rounded-full bg-[#8B5C42]/10">
-                  <Icon className="text-[#8B5C42]" size={26} />
-                </div>
-                <span className="text-[#2D2926] font-medium text-[16px]">
-                  {item.label}
-                </span>
-              </div>
-            );
-          })}
-
+    {trustBadges.map((item, index) => {
+      const Icon = item.icon;
+      return (
+        <div key={index} className="flex items-center gap-3">
+          <div className="w-12 h-12 flex items-center justify-center rounded-full bg-[#8B5C42]/10">
+            <Icon className="text-[#8B5C42]" size={26} />
+          </div>
+          <span className="text-[#2D2926] font-medium text-[16px]">
+            {item.label}
+          </span>
         </div>
-      </div>
+      );
+    })}
+  </div>
+</div>
+
+{/* ⭐ MODAL — MUST BE OUTSIDE MAP & INSIDE RETURN */}
+<AddToCartModal
+  open={openModal}
+  onClose={() => setOpenModal(false)}
+  product={chosenProduct}
+  addons={chosenAddons}
+  onGoToCart={() => {
+    setOpenModal(false);
+    window.location.href = "/cart";
+  }}
+  onAddRecommended={(item) => {
+    console.log("User added:", item);
+  }}
+/>
+
     </>
   );
 };

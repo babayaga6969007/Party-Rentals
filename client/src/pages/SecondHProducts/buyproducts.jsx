@@ -114,6 +114,21 @@ const fullDescription =
 const shortDescription = fullDescription.substring(0, 120) + "...";
 
 const [showFullDesc, setShowFullDesc] = useState(false);
+// ⭐ ADD POPUP STATE
+const [showPopup, setShowPopup] = useState(false);
+
+// Fake “added to cart” product info
+const addedItem = {
+  name: "Wedding Golden Arch Backdrop",
+  price: pricePerDay,
+  qty: productQty,
+  image: productImages[activeImage],
+};
+
+// When user confirms booking
+const handleConfirmBooking = () => {
+  setShowPopup(true);
+};
 
 
   return (
@@ -290,11 +305,13 @@ const [showFullDesc, setShowFullDesc] = useState(false);
 
 
           {/* BUTTON */}
-          <Link to="/cart">
-  <button className="mt-8 w-full bg-[#8B5C42] text-white py-3 rounded-lg">
-    Add to cart
-  </button>
-</Link>
+          <button
+  onClick={handleConfirmBooking}
+  className="mt-8 w-full bg-[#8B5C42] text-white py-3 rounded-lg"
+>
+  Confirm Booking
+</button>
+
 
 
           <div className="mt-10 space-y-4">
@@ -350,6 +367,100 @@ const [showFullDesc, setShowFullDesc] = useState(false);
 
         </div>
       </div>
+      {/* ============================
+    ADD-TO-CART POPUP
+=============================== */}
+{showPopup && (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="bg-white w-[90%] max-w-xl rounded-2xl shadow-xl p-6 relative">
+
+      {/* Close Button */}
+      <button
+        onClick={() => setShowPopup(false)}
+        className="absolute top-3 right-3 text-xl"
+      >
+        ✖
+      </button>
+
+      {/* Title */}
+      <h2 className="text-2xl font-bold text-[#2D2926] mb-4">
+        Just Added to Your Bag
+      </h2>
+
+      {/* PRODUCT ROW */}
+      <div className="flex items-center gap-4 border-b pb-4">
+        <img
+          src={addedItem.image}
+          className="w-20 h-20 rounded-lg object-cover"
+        />
+
+        <div>
+          <p className="font-semibold text-[#2D2926]">{addedItem.name}</p>
+          <p className="text-sm text-gray-600">Qty: {addedItem.qty}</p>
+          <p className="font-semibold mt-1">${addedItem.price}</p>
+        </div>
+      </div>
+
+      {/* SUBTOTAL */}
+      <div className="flex justify-between mt-4 text-lg font-semibold">
+        <span>Subtotal</span>
+        <span>${addedItem.price * addedItem.qty}</span>
+      </div>
+
+      {/* BUTTONS */}
+      <div className="mt-6 flex gap-4">
+        <button
+          className="flex-1 border border-gray-400 py-3 rounded-full hover:bg-gray-100"
+          onClick={() => setShowPopup(false)}
+        >
+          Continue Shopping
+        </button>
+
+<Link
+  to="/cart"
+  state={{
+    product: addedItem,
+    addons: addons,
+    total: totalPrice,
+  }}
+  className="flex-1"
+>
+          <button className="w-full py-3 rounded-full bg-[#8B5C42] text-white hover:bg-[#704A36]">
+            Bag & Checkout →
+          </button>
+        </Link>
+      </div>
+
+      {/* ALSO BOUGHT */}
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold mb-3">Customers Also Bought</h3>
+
+        <div className="grid grid-cols-2 gap-4">
+          {/* Example item 1 */}
+          <div className="border rounded-lg p-3 text-center hover:shadow-md">
+            <img
+              src={lightsImg}
+              className="h-20 w-full object-cover rounded mb-2"
+            />
+            <p className="text-sm">Warm LED Lights</p>
+            <p className="font-semibold">${10}</p>
+          </div>
+
+          {/* Example item 2 */}
+          <div className="border rounded-lg p-3 text-center hover:shadow-md">
+            <img
+              src={flowersImg}
+              className="h-20 w-full object-cover rounded mb-2"
+            />
+            <p className="text-sm">Flower Garland Set</p>
+            <p className="font-semibold">${15}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
     </>
   );
 };
