@@ -87,6 +87,31 @@ Suite A                <br />
               <li>Sun: Closed</li>
             </ul>
           </div>
+          {/* CUSTOM ENQUIRY SECTION */}
+<div className="mt-8">
+  <h3
+    className="text-xl font-semibold text-[#2D2926] mb-1"
+    style={{ fontFamily: '"Cormorant Garamond", serif' }}
+  >
+    Custom Enquiry
+  </h3>
+
+  <p className="text-[#2D2926]/70 text-sm mb-4">
+    Need something unique? Our team can help you plan the perfect setup.
+  </p>
+
+  <a
+    href="/contact"
+    className="
+      inline-block bg-[#8B5C42] text-white font-medium 
+      px-5 py-2 rounded-lg shadow-sm 
+      hover:bg-[#704A36] transition
+    "
+  >
+    Send Enquiry →
+  </a>
+</div>
+
         </div>
 
         {/* RIGHT SIDE — Contact Form */}
