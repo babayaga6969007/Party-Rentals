@@ -70,7 +70,7 @@ const AddProduct = () => {
     <AdminLayout>
       <h1 className="text-3xl font-semibold mb-6">Add New Product</h1>
 
-      <form className="space-y-6 max-w-lg" onSubmit={handleSubmit}>
+      <form className=" space-y-6 max-w-lg" onSubmit={handleSubmit}>
         
         {/* Title */}
         <div>

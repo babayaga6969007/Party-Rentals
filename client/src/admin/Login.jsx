@@ -13,7 +13,7 @@ const AdminLogin = () => {
     try {
       const res = await api("/api/admin/login", "POST", { email, password });
       localStorage.setItem("admin_token", res.token);
-      window.location.href = "/admin/products";
+      window.location.href = "/admin/dashboard";
     } catch (err) {
       setError(err.message || "Invalid login");
     }

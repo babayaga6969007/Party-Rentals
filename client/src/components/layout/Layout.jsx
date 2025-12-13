@@ -4,12 +4,15 @@ import Footer from "./Footer";
 import FooterDark from "./FooterDark";
 
 const Layout = ({ children }) => {
-  const { pathname } = useLocation();   // ✅ FIXED: Now pathname exists
+  const { pathname } = useLocation();
+
+  // ✅ Detect admin routes
+  const isAdminRoute = pathname.startsWith("/admin");
 
   return (
     <div className="min-h-screen flex flex-col">
 
-      {/* Navbar */}
+      {/* Navbar (still visible everywhere — change later if needed) */}
       <NavbarTransparent />
 
       {/* Page content */}
@@ -17,11 +20,12 @@ const Layout = ({ children }) => {
         {children}
       </main>
 
-      {/* Dynamic Footer */}
-      {["/about", "/contact"].includes(pathname) 
-  ? <FooterDark /> 
-  : <Footer />
-}
+      {/* ✅ Footer logic */}
+      {!isAdminRoute && (
+        ["/about", "/contact"].includes(pathname)
+          ? <FooterDark />
+          : <Footer />
+      )}
 
     </div>
   );

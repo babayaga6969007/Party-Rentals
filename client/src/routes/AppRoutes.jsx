@@ -2,6 +2,19 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "../components/layout/Layout";
 import ProtectedAdminRoute from "./ProtectedAdminRoute";
 import ScrollToTop from "../components/ScrollToTop";
+import Dashboard from "../admin/Dashboard";
+import Categories from "../admin/Categories";
+import Attributes from "../admin/Attributes";
+import ActiveRentals from "../admin/ActiveRentals";
+import CompletedOrders from "../admin/CompletedOrders";
+import AvailabilityCalendar from "../admin/AvailabilityCalendar";
+import SalesReports from "../admin/SalesReports";
+import Inventory from "../admin/Inventory";
+
+
+
+
+
 
 // Pages
 import Home from "../pages/Home/Home";
@@ -88,6 +101,24 @@ const AppRoutes = () => {
               </ProtectedAdminRoute>
             }
           />
+          <Route path="/admin/dashboard" element={<Dashboard />} />
+          <Route path="/admin/categories" element={<Categories />} />
+          <Route path="/admin/attributes" element={<Attributes />} />
+          <Route path="/admin/orders/active" element={<ActiveRentals />} />
+          <Route path="/admin/orders/completed" element={<CompletedOrders />} />
+          <Route
+  path="/admin/AvailabilityCalendar"
+  element={<AvailabilityCalendar />}
+/>
+<Route path="/admin/reports/sales" element={<SalesReports />} />
+<Route path="/admin/inventory" element={<Inventory />} />
+
+
+
+
+
+
+
 
         </Routes>
       </Layout>

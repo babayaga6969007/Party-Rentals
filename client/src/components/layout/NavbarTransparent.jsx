@@ -42,7 +42,7 @@ useEffect(() => {
     <nav
       className={`
         fixed top-0 left-0 w-full z-50 px-6 transition-all duration-300
-        ${scrolled ? "bg-white shadow-md" : "bg-transparent"}
+        ${scrolled ? "bg-white shadow-none" : "bg-transparent"}
       `}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between h-30">
@@ -152,7 +152,7 @@ useEffect(() => {
   <div
     className={`
       md:hidden w-full px-6 py-4 transition-all duration-300 animate-fadeIn
-      ${scrolled ? "bg-white shadow-md" : "bg-black/40 backdrop-blur-lg"}
+      ${scrolled ? "bg-white shadow-none" : "bg-black/40 backdrop-blur-lg"}
     `}
   >
     <div className="flex flex-col gap-4">

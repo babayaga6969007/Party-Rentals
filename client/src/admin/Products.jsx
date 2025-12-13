@@ -51,7 +51,7 @@ const Products = () => {
 
   return (
     <AdminLayout>
-      <h1 className="text-3xl font-semibold mb-6">All Products</h1>
+      <h1 className=" text-3xl font-semibold mb-6">All Products</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {items.map((p) => (

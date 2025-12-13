@@ -1,0 +1,66 @@
+const mongoose = require("mongoose");
+
+const orderItemSchema = new mongoose.Schema(
+  {
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
+    name: { type: String, required: true },
+    productType: { type: String, enum: ["rental", "purchase"], required: true },
+
+    qty: { type: Number, required: true, min: 1 },
+
+    // pricing snapshot
+    unitPrice: { type: Number, required: true }, // per day for rental, per unit for purchase
+    lineTotal: { type: Number, required: true },
+
+    // rental only
+    startDate: { type: String, default: "" }, // yyyy-mm-dd
+    endDate: { type: String, default: "" },   // yyyy-mm-dd
+    days: { type: Number, default: 0 },
+
+    image: { type: String, default: "" },
+  },
+  { _id: false }
+);
+
+const orderSchema = new mongoose.Schema(
+  {
+    customer: {
+      name: { type: String, required: true },
+      email: { type: String, required: true },
+      phone: { type: String, default: "" },
+      addressLine: { type: String, required: true },
+      city: { type: String, default: "" },
+      state: { type: String, default: "" },
+      postalCode: { type: String, default: "" },
+    },
+
+    items: { type: [orderItemSchema], required: true },
+
+    pricing: {
+      subtotal: { type: Number, required: true },
+      discount: { type: Number, default: 0 },
+      deliveryFee: { type: Number, default: 0 },
+      tax: { type: Number, default: 0 },
+      total: { type: Number, required: true },
+    },
+
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "paid", "failed", "refunded"],
+      default: "pending",
+    },
+
+   statusHistory: [
+  {
+    status: String,
+    at: { type: Date, default: Date.now },
+    note: String,
+  },
+],
+
+    notes: { type: String, default: "" },
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("Order", orderSchema);
