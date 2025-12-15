@@ -11,7 +11,10 @@ const AdminLogin = () => {
     setError("");
 
     try {
-      const res = await api("/admin/login", "POST", { email, password });
+      const res = await api("/admin/login", {
+  method: "POST",
+  body: JSON.stringify({ email, password }),
+});
       localStorage.setItem("admin_token", res.token);
       window.location.href = "/admin/dashboard";
     } catch (err) {
