@@ -4,7 +4,10 @@ const router = express.Router();
 const authAdmin = require("../middleware/authAdmin");
 const attributeController = require("../controllers/attributeController");
 
-// PUBLIC
+// ✅ BASE PUBLIC (IMPORTANT)
+router.get("/", attributeController.getAllAttributesGrouped);
+
+// PUBLIC (by type)
 router.get("/:type", attributeController.getAttributesByType);
 
 // ADMIN

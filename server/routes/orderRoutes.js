@@ -4,6 +4,9 @@ const router = express.Router();
 const authAdmin = require("../middleware/authAdmin");
 const orderController = require("../controllers/orderController");
 
+// ✅ BASE PUBLIC (IMPORTANT)
+router.get("/", orderController.getAllOrdersPublic);
+
 // Public
 router.post("/", orderController.createOrder);
 

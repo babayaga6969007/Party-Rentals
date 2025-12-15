@@ -64,3 +64,20 @@ exports.getAttributesByType = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+// PUBLIC: Get all attributes grouped by type
+exports.getAllAttributesGrouped = async (req, res) => {
+  try {
+    const attributes = await Attribute.find({ isActive: true })
+      .sort({ type: 1, sortOrder: 1, name: 1 });
+
+    const grouped = attributes.reduce((acc, attr) => {
+      if (!acc[attr.type]) acc[attr.type] = [];
+      acc[attr.type].push(attr);
+      return acc;
+    }, {});
+
+    res.json({ attributes: grouped });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

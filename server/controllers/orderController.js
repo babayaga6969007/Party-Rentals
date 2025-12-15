@@ -190,3 +190,17 @@ exports.updateOrderStatusAdmin = async (req, res) => {
     res.status(500).json({ message: err.message || "Server error" });
   }
 };
+// PUBLIC: GET ALL ORDERS (limited, safe)
+exports.getAllOrdersPublic = async (req, res) => {
+  try {
+    const orders = await Order.find({})
+      .select("customer items pricing orderStatus paymentStatus createdAt")
+      .sort({ createdAt: -1 })
+      .limit(20);
+
+    res.json({ orders });
+  } catch (err) {
+    console.error("Get orders public error:", err);
+    res.status(500).json({ message: err.message || "Server error" });
+  }
+};
