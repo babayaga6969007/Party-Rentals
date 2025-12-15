@@ -20,34 +20,26 @@ const Products = () => {
 
   
   const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this product?")) return;
+  if (!confirm("Are you sure you want to delete this product?")) return;
 
-    try {
-      const token = localStorage.getItem("admin_token");
+  try {
+    const token = localStorage.getItem("admin_token");
 
-      const res = await fetch(
-        `http://localhost:5000/api/products/admin/delete/${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+    await api(`/products/admin/delete/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-      const data = await res.json();
+    alert("Product deleted successfully!");
+    loadProducts(); // refresh list
+  } catch (err) {
+    console.error(err);
+    alert(err.message || "Error deleting product");
+  }
+};
 
-      if (!res.ok) {
-        alert(data.message || "Error deleting product");
-        return;
-      }
-
-      alert("Product deleted successfully!");
-      loadProducts(); // refresh list
-    } catch (error) {
-      alert("Error deleting product");
-    }
-  };
 
   return (
     <AdminLayout>

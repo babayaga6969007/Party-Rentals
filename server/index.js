@@ -18,7 +18,26 @@ const app = express();
 ========================= */
 
 // CORS (open for now; can restrict later)
-app.use(cors());
+const allowedOrigins = [
+  "http://localhost:5173", // local dev
+  "https://party-rentals.vercel.app" // Vercel frontend
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // allow requests with no origin (Postman, curl, mobile apps)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS not allowed"));
+      }
+    },
+    credentials: true,
+  })
+);
 
 // Body parsers
 app.use(express.json());

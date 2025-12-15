@@ -1,5 +1,7 @@
 import { useState } from "react";
 import AdminLayout from "./AdminLayout";
+import { api } from "../utils/api";
+
 
 const COLOR_OPTIONS = [
   "White",
@@ -87,31 +89,23 @@ const AddProduct = () => {
     });
 
     try {
-      const token = localStorage.getItem("admin_token");
+  const token = localStorage.getItem("admin_token");
 
-      const res = await fetch(
-        "http://localhost:5000/api/products/admin/add",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
+  const data = await api("/products/admin/add", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
 
-      const data = await res.json();
+  alert("Product added successfully!");
+  window.location.href = "/admin/products";
+} catch (err) {
+  console.error(err);
+  alert(err.message || "Error adding product");
+}
 
-      if (!res.ok) {
-        alert(data.message || "Error adding product");
-        return;
-      }
-
-      alert("Product added successfully!");
-      window.location.href = "/admin/products";
-    } catch (err) {
-      alert("Server error");
-    }
   };
 
   return (

@@ -22,21 +22,29 @@ const EditProduct = () => {
   const [newPreviews, setNewPreviews] = useState([]);
 
   // Load product details
-  useEffect(() => {
-    fetch(`http://localhost:5000/api/products/${id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setProduct(data);
+useEffect(() => {
+  const loadProduct = async () => {
+    try {
+      const data = await api(`/products/${id}`);
 
-        setTitle(data.title);
-        setPricePerDay(data.pricePerDay);
-        setCategory(data.category);
-        setDescription(data.description || "");
-        setAvailabilityCount(data.availabilityCount || 1);
+      setProduct(data);
 
-        setExistingImages(data.images || []);
-      });
-  }, [id]);
+      setTitle(data.title);
+      setPricePerDay(data.pricePerDay);
+      setCategory(data.category);
+      setDescription(data.description || "");
+      setAvailabilityCount(data.availabilityCount || 1);
+
+      setExistingImages(data.images || []);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to load product");
+    }
+  };
+
+  loadProduct();
+}, [id]);
+
 
   // Handle new image upload
   const handleImageChange = (e) => {
@@ -73,16 +81,14 @@ const EditProduct = () => {
 
     const token = localStorage.getItem("admin_token");
 
-    const res = await fetch(
-      `http://localhost:5000/api/products/admin/edit/${id}`,
-      {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      }
-    );
+    await api(`/products/admin/edit/${id}`, {
+  method: "PUT",
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+  body: formData,
+});
+
 
     const data = await res.json();
 
