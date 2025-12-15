@@ -19,25 +19,31 @@ const app = express();
 
 // CORS (open for now; can restrict later)
 const allowedOrigins = [
-  "http://localhost:5173", // local dev
-  "https://party-rentals.vercel.app" // Vercel frontend
+  "http://localhost:5173",
+  "https://party-rentals-ochre.vercel.app",
+  "https://party-rentals.vercel.app"
 ];
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // allow requests with no origin (Postman, curl, mobile apps)
+    origin: (origin, callback) => {
+      // Allow server-to-server / Postman / Render health checks
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("CORS not allowed"));
+        return callback(null, true);
       }
+
+      return callback(
+        new Error(`CORS blocked for origin: ${origin}`)
+      );
     },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+app.options("*", cors());
 
 // Body parsers
 app.use(express.json());
