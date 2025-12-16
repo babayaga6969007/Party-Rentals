@@ -48,7 +48,7 @@ export default function OrderCompletePage() {
   const total = subtotal + shipping + tax;
 
   return (
-    <div className="page-wrapper-checkout min-h-screen bg-[#F6EFE7]">
+    <div className="page-wrapper-checkoutt min-h-screen bg-[#FFFFFF]">
       <CheckoutSteps currentStep={3} />
 
       <div className="max-w-6xl mx-auto px-4 py-12">

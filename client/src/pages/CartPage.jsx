@@ -108,7 +108,7 @@ export default function CartPage() {
 
 
   return (
-    <div className="page-wrapper-checkout min-h-screen bg-gray-50">
+    <div className="page-wrapper-checkoutt min-h-screen bg-[#FFFFFF]">
       <CheckoutSteps currentStep={1} />
 
       <div className="max-w-5xl mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6">
