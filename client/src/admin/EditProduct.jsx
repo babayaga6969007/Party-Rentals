@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import AdminLayout from "./AdminLayout";
+import { api } from "../utils/api";
+
 
 const EditProduct = () => {
   const { id } = useParams();
@@ -25,17 +27,18 @@ const EditProduct = () => {
 useEffect(() => {
   const loadProduct = async () => {
     try {
-      const data = await api(`/products/${id}`);
+      const res = await api(`/products/${id}`);
+const data = res.product || res;
 
-      setProduct(data);
+setProduct(data);
 
-      setTitle(data.title);
-      setPricePerDay(data.pricePerDay);
-      setCategory(data.category);
-      setDescription(data.description || "");
-      setAvailabilityCount(data.availabilityCount || 1);
+setTitle(data.title);
+setPricePerDay(data.pricePerDay);
+setCategory(data.category);
+setDescription(data.description || "");
+setAvailabilityCount(data.availabilityCount || 1);
+setExistingImages(data.images || []);
 
-      setExistingImages(data.images || []);
     } catch (err) {
       console.error(err);
       alert("Failed to load product");
@@ -60,9 +63,10 @@ useEffect(() => {
   };
 
   // Submit form
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+ const handleSubmit = async (e) => {
+  e.preventDefault();
 
+  try {
     const formData = new FormData();
 
     formData.append("title", title);
@@ -82,32 +86,21 @@ useEffect(() => {
     const token = localStorage.getItem("admin_token");
 
     await api(`/products/admin/edit/${id}`, {
-  method: "PUT",
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-  body: formData,
-});
-
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      alert(data.message || "Update failed");
-      return;
-    }
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
 
     alert("Product updated successfully!");
     window.location.href = "/admin/products";
-  };
-
-  if (!product) {
-    return (
-      <AdminLayout>
-        <p>Loading product...</p>
-      </AdminLayout>
-    );
+  } catch (err) {
+    console.error(err);
+    alert(err.message || "Update failed");
   }
+};
+
 
   return (
     <AdminLayout>
