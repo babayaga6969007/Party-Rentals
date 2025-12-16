@@ -12,15 +12,15 @@ const Layout = ({ children }) => {
   return (
     <div className="min-h-screen flex flex-col">
 
-      {/* Navbar (still visible everywhere — change later if needed) */}
-      <NavbarTransparent />
+      {/* ✅ Show Navbar ONLY on non-admin pages */}
+      {!isAdminRoute && <NavbarTransparent />}
 
       {/* Page content */}
       <main className="flex-grow">
         {children}
       </main>
 
-      {/* ✅ Footer logic */}
+      {/* ✅ Show Footer ONLY on non-admin pages */}
       {!isAdminRoute && (
         ["/about", "/contact"].includes(pathname)
           ? <FooterDark />

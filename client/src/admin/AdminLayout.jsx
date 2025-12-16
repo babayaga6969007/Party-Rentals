@@ -10,7 +10,7 @@ const AdminLayout = ({ children }) => {
       </aside>
 
       {/* Main Content — OFFSET BY SIDEBAR WIDTH */}
-      <main className="flex-1 ml-64 p-8 overflow-y-auto page-wrapper-checkout">
+      <main className="flex-1 ml-64 p-8 overflow-y-auto">
         {children}
       </main>
 
