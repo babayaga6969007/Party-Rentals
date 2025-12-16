@@ -108,7 +108,7 @@ Suite A                <br />
       hover:bg-[#704A36] transition
     "
   >
-    Send Enquiry →
+    Fill the Form →
   </a>
 </div>
 
