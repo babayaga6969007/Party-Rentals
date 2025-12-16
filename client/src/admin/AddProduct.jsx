@@ -42,13 +42,7 @@ const AddProduct = () => {
         : [...prev, color]
     );
   };
-  const toggleSize = (size) => {
-  setSizes((prev) =>
-    prev.includes(size)
-      ? prev.filter((s) => s !== size)
-      : [...prev, size]
-  );
-};
+ 
 
 
   const handleImageChange = (e) => {
@@ -58,55 +52,52 @@ const AddProduct = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (images.length === 0) {
-      alert("Upload at least one image");
-      return;
-    }
+  if (images.length === 0) {
+    alert("Upload at least one image");
+    return;
+  }
 
-    const formData = new FormData();
+  const formData = new FormData();
 
-    formData.append("title", title);
-    formData.append("category", category);
-    formData.append("description", description);
-    formData.append("productType", productType);
-    formData.append("availabilityCount", availabilityCount);
-    formData.append("colors", JSON.stringify(colors));
-    formData.append("sizes", JSON.stringify(sizes));
-    formData.append("size", size);
+  formData.append("title", title);
+  formData.append("category", category);
+  formData.append("description", description);
+  formData.append("productType", productType);
+  formData.append("availabilityCount", availabilityCount);
+  formData.append("colors", JSON.stringify(colors));
+  formData.append("size", size); // ✅ single size only
 
+  if (productType === "rental") {
+    formData.append("pricePerDay", pricePerDay);
+  } else {
+    formData.append("salePrice", salePrice);
+  }
 
-    if (productType === "rental") {
-      formData.append("pricePerDay", pricePerDay);
-    } else {
-      formData.append("salePrice", salePrice);
-    }
-    
-
-    images.forEach((img) => {
-      formData.append("images", img);
-    });
-
-    try {
-  const token = localStorage.getItem("admin_token");
-
-  const data = await api("/products/admin/add", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: formData,
+  images.forEach((img) => {
+    formData.append("images", img);
   });
 
-  alert("Product added successfully!");
-  window.location.href = "/admin/products";
-} catch (err) {
-  console.error(err);
-  alert(err.message || "Error adding product");
-}
+  try {
+    const token = localStorage.getItem("admin_token");
 
-  };
+    await api("/products/admin/add", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    alert("Product added successfully!");
+    window.location.href = "/admin/products";
+  } catch (err) {
+    console.error(err);
+    alert(err.message || "Error adding product");
+  }
+};
+
 
   return (
     <AdminLayout>
