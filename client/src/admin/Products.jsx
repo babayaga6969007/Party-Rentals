@@ -7,7 +7,7 @@ const Products = () => {
 
   const loadProducts = async () => {
     try {
-      const res = await api("/api/products");
+      const res = await api("/products");
       setItems(res.products);
     } catch {
       alert("Error loading products");
@@ -26,12 +26,11 @@ const Products = () => {
     const token = localStorage.getItem("admin_token");
 
     await api(`/products/admin/delete/${id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
+  method: "DELETE",
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
     alert("Product deleted successfully!");
     loadProducts(); // refresh list
   } catch (err) {
