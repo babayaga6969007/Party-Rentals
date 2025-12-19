@@ -83,8 +83,6 @@ const selectedDays =
     setProductQty((prev) => Math.max(1, prev + inc));
   };
 
-  // Days selection
-  const [days, setDays] = useState(1);
 
   // Addon quantities
   const [addons, setAddons] = useState({
@@ -114,7 +112,7 @@ const [showFullDesc, setShowFullDesc] = useState(false);
 
   // Final total price
 // priority: use date range if selected, else manual days input
-const totalRentalDays = selectedDays > 0 ? selectedDays : days;
+const totalRentalDays = selectedDays;
 
 const totalPrice =
   totalRentalDays * pricePerDay * productQty + addonsTotal;
@@ -280,75 +278,70 @@ const totalPrice =
             </button>
           </div>
 
-          {/* DAYS */}
-          <div className="mt-6">
-            <label className="block mb-2 text-[#2D2926]">
-              Number of Days
-            </label>
-            <input
-              type="number"
-              min="1"
-              className="w-40 p-2 border rounded-lg"
-              value={days}
-              onChange={(e) => setDays(Number(e.target.value))}
-            />
-          </div>
 
-          {/* EVENT DATE */}
-{/* EVENT DATE (Single Input Range Picker) */}
-<div className="mt-6">
-  <label className="block mb-2 text-[#2D2926]">Event Date</label>
 
-  <input
-    type="date"
-    min={today}
-value={startDate || ""}
-    onChange={(e) => {
-  const newDate = e.target.value;
 
-  // If no start date selected → first click = single date
-  if (!startDate) {
-    setStartDate(newDate);
-    setEndDate("");
-    return;
-  }
+{/* EVENT DATE SELECTION */}
+<div className="mt-6 bg-[#FAF7F5] p-5 rounded-xl border border-[#E5DED6]">
+  <h3 className="text-lg font-semibold text-[#2D2926] mb-4">
+    Event Date
+  </h3>
 
-  // If start date exists but end date doesn't
-  if (!endDate) {
-    // If user selects a date *after* start date → make it a range
-    if (new Date(newDate) > new Date(startDate)) {
-      setEndDate(newDate);
-      return;
-    }
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {/* START DATE */}
+    <div>
+      <label className="block mb-1 text-sm text-gray-600">
+        Start Date
+      </label>
+      <input
+        type="date"
+        min={today}
+        value={startDate}
+        onChange={(e) => {
+          setStartDate(e.target.value);
+          setEndDate("");
+        }}
+        className="w-full p-3 border rounded-lg"
+      />
+    </div>
 
-    // If user selects a date *before or equal* → restart selection
-    setStartDate(newDate);
-    setEndDate("");
-    return;
-  }
+    {/* END DATE */}
+    <div>
+      <label className="block mb-1 text-sm text-gray-600">
+        End Date
+      </label>
+      <input
+        type="date"
+        min={startDate || today}
+        value={endDate}
+        onChange={(e) => setEndDate(e.target.value)}
+        disabled={!startDate}
+        className="w-full p-3 border rounded-lg disabled:bg-gray-100"
+      />
+    </div>
+  </div>
 
-  // If a full range already selected, ANY new click restarts selection
-  setStartDate(newDate);
-  setEndDate("");
-}}
-    className="w-60 p-2 border rounded-lg"
-  />
-
-  {/* DISPLAY SELECTED DATE + RANGE */}
-  <div className="mt-4 p-3 bg-gray-100 rounded-lg text-[#2D2926]">
-
-    {!startDate && <p>No date selected</p>}
+  {/* DATE SUMMARY */}
+  <div className="mt-4 bg-white p-4 rounded-lg border text-sm text-[#2D2926]">
+    {!startDate && <p>Please select an event start date.</p>}
 
     {startDate && !endDate && (
-      <p>Selected date: {formatDate(startDate)}</p>
+      <p>
+        Event starts on <strong>{formatDate(startDate)}</strong>
+      </p>
     )}
 
     {startDate && endDate && (
       <p>
-        Selected range: {formatDate(startDate)} – {formatDate(endDate)}
+        Event duration:{" "}
+        <strong>
+          {formatDate(startDate)} – {formatDate(endDate)}
+        </strong>
+        <br />
+        Total Rental Days:{" "}
+        <strong>{selectedDays} day{selectedDays > 1 ? "s" : ""}</strong>
       </p>
     )}
-
   </div>
 </div>
 
@@ -361,31 +354,59 @@ value={startDate || ""}
 
 
           {/* BUTTON */}
-          <button
-  className="mt-8 w-full bg-[#8B5C42] text-white py-3 rounded-lg"
+          {/* CONFIRM BOOKING BUTTON */}
+{/* CONFIRM BOOKING BUTTON */}
+<button
+  type="button"
+  disabled={!startDate || !endDate}
   onClick={() => {
+    if (!startDate || !endDate) return;
+
     const selectedAddons = [];
 
-    if (addons.lights > 0)
-      selectedAddons.push({ name: "Warm LED Lights", qty: addons.lights, price: 10 });
+    if (addons.lights > 0) {
+      selectedAddons.push({
+        name: "Warm LED Lights",
+        qty: addons.lights,
+        price: 10,
+      });
+    }
 
-    if (addons.flowers > 0)
-      selectedAddons.push({ name: "Flower Garland Set", qty: addons.flowers, price: 15 });
+    if (addons.flowers > 0) {
+      selectedAddons.push({
+        name: "Flower Garland Set",
+        qty: addons.flowers,
+        price: 15,
+      });
+    }
 
     setChosenProduct({
       name: "Wedding Golden Arch Backdrop",
       qty: productQty,
       pricePerDay,
       image: productImages[0],
-      totalPrice: totalPrice,
+      startDate,
+      endDate,
+      totalPrice,
     });
 
     setChosenAddons(selectedAddons);
     setOpenModal(true);
   }}
+  className={`
+    mt-8 w-full py-3 rounded-lg text-sm font-semibold transition-all
+    ${
+      !startDate || !endDate
+        ? "bg-gray-400 text-white cursor-not-allowed"
+        : "bg-[#8B5C42] text-white hover:bg-[#704A36]"
+    }
+  `}
 >
-  Confirm Booking
+  {!startDate || !endDate
+    ? "Select Event Dates to Continue"
+    : "Confirm Booking"}
 </button>
+
 
 
 

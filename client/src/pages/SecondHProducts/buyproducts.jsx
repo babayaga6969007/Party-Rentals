@@ -433,30 +433,57 @@ const handleConfirmBooking = () => {
 
       {/* ALSO BOUGHT */}
       <div className="mt-8">
-        <h3 className="text-lg font-semibold mb-3">Customers Also Bought</h3>
+  <h3 className="text-lg font-semibold mb-3">Customers Also Bought</h3>
 
-        <div className="grid grid-cols-2 gap-4">
-          {/* Example item 1 */}
-          <div className="border rounded-lg p-3 text-center hover:shadow-md">
-            <img
-              src={lightsImg}
-              className="h-20 w-full object-cover rounded mb-2"
-            />
-            <p className="text-sm">Warm LED Lights</p>
-            <p className="font-semibold">${10}</p>
-          </div>
+  <div className="grid grid-cols-2 gap-4">
+    
+    {/* Example item 1 */}
+    <div className="border rounded-lg p-3 text-center hover:shadow-md transition">
+      <img
+        src={lightsImg}
+        className="h-20 w-full object-cover rounded mb-2"
+        alt="Warm LED Lights"
+      />
+      <p className="text-sm">Warm LED Lights</p>
+      <p className="font-semibold mb-2">$10</p>
 
-          {/* Example item 2 */}
-          <div className="border rounded-lg p-3 text-center hover:shadow-md">
-            <img
-              src={flowersImg}
-              className="h-20 w-full object-cover rounded mb-2"
-            />
-            <p className="text-sm">Flower Garland Set</p>
-            <p className="font-semibold">${15}</p>
-          </div>
-        </div>
-      </div>
+      <button
+        type="button"
+        className="w-full py-1.5 text-sm rounded-md bg-[#8B5C42] text-white hover:bg-[#704A36] transition"
+        onClick={() => {
+          // future: add to cart / addons
+          console.log("Add Warm LED Lights");
+        }}
+      >
+        Add
+      </button>
+    </div>
+
+    {/* Example item 2 */}
+    <div className="border rounded-lg p-3 text-center hover:shadow-md transition">
+      <img
+        src={flowersImg}
+        className="h-20 w-full object-cover rounded mb-2"
+        alt="Flower Garland Set"
+      />
+      <p className="text-sm">Flower Garland Set</p>
+      <p className="font-semibold mb-2">$15</p>
+
+      <button
+        type="button"
+        className="w-full py-1.5 text-sm rounded-md bg-[#8B5C42] text-white hover:bg-[#704A36] transition"
+        onClick={() => {
+          // future: add to cart / addons
+          console.log("Add Flower Garland Set");
+        }}
+      >
+        Add
+      </button>
+    </div>
+
+  </div>
+</div>
+
     </div>
   </div>
 )}
