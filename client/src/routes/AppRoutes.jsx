@@ -23,6 +23,7 @@ import Contact from "../pages/Contact/Contact";
 import About from "../pages/About/About";
 
 import ProductPage from "../pages/Product/ProductPage";
+import UpdatedProductPage from "../pages/Product/UpdatedProductPage";
 import CategoryPage from "../pages/Category/CategoryPage";
 import Shop from "../pages/Shop/shop";
 import SecondHProducts from "../pages/SecondHProducts/buyproducts";
@@ -53,6 +54,7 @@ const AppRoutes = () => {
           <Route path="/about" element={<About />} />
  
           <Route path="/product/:id" element={<ProductPage />} />
+          <Route path="/product/demo" element={<UpdatedProductPage />} />
           <Route path="/category" element={<CategoryPage />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/buyproducts" element={<SecondHProducts />} />
