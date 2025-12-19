@@ -105,7 +105,7 @@ function inRange(d, start, end) {
 }
 
 const SalesReports = () => {
-  const [startDate, setStartDate] = useState(addDaysISO(todayISO(), -14));
+const [startDate, setStartDate] = useState(addDaysISO(todayISO(), -30));
   const [endDate, setEndDate] = useState(todayISO());
   const [view, setView] = useState("All"); // All | Rental | Shop
 

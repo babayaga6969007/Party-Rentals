@@ -81,16 +81,16 @@ const Sidebar = () => {
         Gallery
       </button>
 
-      {open === "gallery" && (
+       {open === "gallery" && (
         <div className="ml-6 space-y-1">
-          <NavLink to="/admin/media" className={linkClass}>
+          <NavLink to="" className={linkClass}>
             Media Library
           </NavLink>
-          <NavLink to="/admin/media/upload" className={linkClass}>
+          <NavLink to="" className={linkClass}>
             Upload Media
           </NavLink>
         </div>
-      )}
+      )} 
 
       {/* Reports */}
       <button onClick={() => toggle("reports")} className={linkClass + " w-full text-left"}>
@@ -110,13 +110,13 @@ const Sidebar = () => {
       )}
 
       {/* Customers */}
-      <NavLink to="/admin/customers" className={linkClass}>
+      <NavLink to="" className={linkClass}>
         <FiUsers className="inline mr-2" />
         Customers
       </NavLink>
 
       {/* Calendar */}
-      <NavLink to="/admin/AvailabilityCalendar" className={linkClass}>
+      <NavLink to="" className={linkClass}>
         <FiCalendar className="inline mr-2" />
         Calendar
       </NavLink>
@@ -129,10 +129,10 @@ const Sidebar = () => {
 
       {open === "settings" && (
         <div className="ml-6 space-y-1">
-          <NavLink to="/admin/settings/store" className={linkClass}>
+          <NavLink to="" className={linkClass}>
             Store Settings
           </NavLink>
-          <NavLink to="/admin/settings/users" className={linkClass}>
+          <NavLink to="" className={linkClass}>
             Admin Users
           </NavLink>
         </div>
