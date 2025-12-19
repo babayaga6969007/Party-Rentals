@@ -309,7 +309,7 @@ const handleConfirmBooking = () => {
   onClick={handleConfirmBooking}
   className="mt-8 w-full bg-[#8B5C42] text-white py-3 rounded-lg"
 >
-  Confirm Booking
+  Confirm Order
 </button>
 
 
