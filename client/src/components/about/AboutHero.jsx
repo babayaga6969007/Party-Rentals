@@ -37,7 +37,7 @@ const AboutHero = () => {
 
   {/* 1 */}
   <div className="border border-gray-200 hover:border-gray-400 rounded-2xl p-6 shadow-sm hover:shadow-md transition bg-[#FFF7F0]">
-    <h4 className="text-xl font-semibold text-[#8B5C42]">Event Styling</h4>
+    <h4 className="text-xl font-semibold text-black">Event Styling</h4>
     <p className="text-[15px] text-gray-600 mt-3 leading-relaxed">
       Transforming spaces with curated props, décor, and rental setups.
     </p>
@@ -45,7 +45,7 @@ const AboutHero = () => {
 
   {/* 2 */}
   <div className="border border-gray-200 hover:border-gray-400 rounded-2xl p-6 shadow-sm hover:shadow-md transition bg-[#FDF4EC]">
-    <h4 className="text-xl font-semibold text-[#8B5C42]">Party Rentals</h4>
+    <h4 className="text-xl font-semibold text- black">Party Rentals</h4>
     <p className="text-[15px] text-gray-600 mt-3 leading-relaxed">
       Wide variety of furniture, lighting, and themed props for all events.
     </p>
@@ -53,7 +53,7 @@ const AboutHero = () => {
 
   {/* 3 */}
   <div className="border border-gray-200 hover:border-gray-400 rounded-2xl p-6 shadow-sm hover:shadow-md transition bg-[#FFF7F2]">
-    <h4 className="text-xl font-semibold text-[#8B5C42]">Custom Setups</h4>
+    <h4 className="text-xl font-semibold text-black">Custom Setups</h4>
     <p className="text-[15px] text-gray-600 mt-3 leading-relaxed">
       Tailored arrangements designed based on themes, occasions, and venues.
     </p>
@@ -61,7 +61,7 @@ const AboutHero = () => {
 
   {/* 4 */}
   <div className="border border-gray-200 hover:border-gray-400 rounded-2xl p-6 shadow-sm hover:shadow-md transition bg-[#FDF7F0]">
-    <h4 className="text-xl font-semibold text-[#8B5C42]">Delivery & Setup</h4>
+    <h4 className="text-xl font-semibold text-black">Delivery & Setup</h4>
     <p className="text-[15px] text-gray-600 mt-3 leading-relaxed">
       Hassle-free delivery, installation, and pickup by our expert team.
     </p>

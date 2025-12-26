@@ -48,7 +48,7 @@ const Contact = () => {
 
           {/* Email */}
           <div className="flex items-start gap-4">
-            <FiMail size={26} className="text-[#8B5C42]" />
+            <FiMail size={26} className="text-black" />
             <div>
               <p className="text-[#2D2926] font-medium text-lg">Email</p>
               <p className="text-[#2D2926]/70">hello@newprojectdesigns.com</p>
@@ -58,7 +58,7 @@ const Contact = () => {
 
           {/* Address */}
           <div className="flex items-start gap-4">
-            <FiMapPin size={26} className="text-[#8B5C42]" />
+            <FiMapPin size={26} className="text-black" />
             <div>
               <p className="text-[#2D2926] font-medium text-lg">Location</p>
               <p className="text-[#2D2926]/70">
@@ -99,8 +99,9 @@ Suite A                <br />
 
   <button
   onClick={() => setOpenForm(true)}
-  className="inline-block bg-[#8B5C42] text-white font-medium 
-  px-5 py-2 rounded-lg shadow-sm hover:bg-[#704A36] transition"
+  className="inline-block bg-black text-white font-medium 
+  px-5 py-2 rounded-lg shadow-sm transition-transform duration-200 ease-out
+  hover:scale-105"
 >
   Fill the Form →
 </button>
@@ -161,8 +162,8 @@ Suite A                <br />
       ></textarea>
     </div>
 
-    <button className="w-full py-3 rounded-lg bg-[#8B5C42] text-white font-medium 
-    hover:bg-[#704A36] transition">
+    <button className="w-full py-3 rounded-lg bg-black text-white font-medium  transition-transform duration-200 ease-out
+  hover:scale-105">
       Send Message
     </button>
 

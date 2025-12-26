@@ -162,7 +162,8 @@ const FAQ = () => {
 
   <a
     href="/contact"
-    className="inline-block bg-[#8B5C42] text-white px-8 py-3 rounded-full shadow-md hover:bg-[#704A36] transition"
+    className="inline-block bg-black text-white px-8 py-3 rounded-full shadow-md transition-transform duration-200 ease-out
+  hover:scale-105"
   >
     Contact Us
   </a>
