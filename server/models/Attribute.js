@@ -1,21 +1,30 @@
 const mongoose = require("mongoose");
 
-const attributeSchema = new mongoose.Schema(
+const AttributeOptionSchema = new mongoose.Schema(
   {
-    type: {
-      type: String,
-      required: true,
-      enum: ["color", "tag", "size", "material"],
-    },
-    name: { type: String, required: true, trim: true },
-value: { type: String, trim: true, default: "" },
+    label: { type: String, required: true, trim: true },
+    value: { type: String, trim: true },
+    hex: { type: String, trim: true },
+    priceDelta: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
     sortOrder: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
 
-// Prevent duplicates per type
-attributeSchema.index({ type: 1, name: 1 }, { unique: true });
+const AttributeSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    slug: { type: String, required: true, unique: true, lowercase: true },
+    type: {
+      type: String,
+      enum: ["select", "multi", "color", "addon"],
+      default: "multi",
+    },
+    required: { type: Boolean, default: false },
+    options: { type: [AttributeOptionSchema], default: [] },
+  },
+  { timestamps: true }
+);
 
-module.exports = mongoose.model("Attribute", attributeSchema);
+module.exports = mongoose.model("Attribute", AttributeSchema);

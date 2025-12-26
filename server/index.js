@@ -4,11 +4,13 @@ require("dotenv").config();
 
 const connectDB = require("./config/db");
 
-// ✅ Route imports
+/* =========================
+   ROUTE IMPORTS
+========================= */
 const adminAuthRoutes = require("./routes/adminAuthRoutes");
 const productRoutes = require("./routes/productRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
-const attributeRoutes = require("./routes/attributeRoutes");
+const attributeRoutes = require("./routes/attributeRoutes"); // admin attributes
 const orderRoutes = require("./routes/orderRoutes");
 
 const app = express();
@@ -17,7 +19,6 @@ const app = express();
    GLOBAL MIDDLEWARES
 ========================= */
 
-// CORS (open for now; can restrict later)
 const allowedOrigins = [
   "http://localhost:5173",
   "https://party-rentals-ochre.vercel.app",
@@ -27,22 +28,18 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow server-to-server / Postman / Render health checks
       if (!origin) return callback(null, true);
-
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-
-      return callback(
-        new Error(`CORS blocked for origin: ${origin}`)
-      );
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
 app.options(/.*/, cors());
 
 // Body parsers
@@ -50,7 +47,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 /* =========================
-   DEBUG (OPTIONAL – SAFE)
+   DEBUG (OPTIONAL)
 ========================= */
 app.post("/api/debug-body", (req, res) => {
   res.json({
@@ -78,17 +75,20 @@ app.get("/api/health", (req, res) => {
    API ROUTES
 ========================= */
 
-// Admin auth
+// 🔐 Admin auth
 app.use("/api/admin", adminAuthRoutes);
 
-// Core resources
+// 📦 Core resources
 app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
-app.use("/api/attributes", attributeRoutes);
+
+// ✅ ADMIN ATTRIBUTE MANAGER (THIS IS THE IMPORTANT ADDITION)
+app.use("/api/admin/attributes", attributeRoutes);
+
 app.use("/api/orders", orderRoutes);
 
 /* =========================
-   404 HANDLER (IMPORTANT)
+   404 HANDLER
 ========================= */
 app.use((req, res) => {
   res.status(404).json({
