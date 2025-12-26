@@ -126,3 +126,8 @@
   background: transparent;
 }
 
+/* Tailwind helper */
+.input {
+  @apply w-full p-3 rounded-lg border border-[#D9C7BE]
+  focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50;
+}

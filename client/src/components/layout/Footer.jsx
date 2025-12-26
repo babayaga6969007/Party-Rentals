@@ -16,7 +16,7 @@ const Footer = () => {
 
           <p className="text-[#2D2926]/80 leading-relaxed text-[15px]">
             Party Rentals provides premium event décor, props, lighting, and 
-            celebration essentials for all types of events across Australia. 
+            celebration essentials for all types of events across America. 
             From intimate gatherings to grand celebrations, we ensure 
             unforgettable experiences with style and convenience.
           </p>
@@ -80,21 +80,25 @@ const Footer = () => {
           </h3>
 
           <p className="text-[#2D2926]/80 leading-relaxed mb-4">
-            America-wide service  
+            America-wide service,  
             Reliable delivery & pickup  
             Friendly customer support
           </p>
 
-          <div className="flex items-center gap-3 text-[#2D2926] font-medium">
-            <FiPhone size={20} />
-            <span>+1 XXX XXX XXX</span>
+          <div className="text-[#2D2926]/80 leading-relaxed mb-4">
+            
+            <span>2031 Via Burton Street
+Suite A
+
+Anaheim CA, 92806
+</span>
           </div>
         </div>
       </div>
 
       {/* Bottom text */}
       <div className="text-center mt-12 text-sm text-[#2D2926]/70">
-        © {new Date().getFullYear()} Party Rentals America. All Rights Reserved.
+        © {new Date().getFullYear()} New Project Designs. All Rights Reserved.
       </div>
     </footer>
   );

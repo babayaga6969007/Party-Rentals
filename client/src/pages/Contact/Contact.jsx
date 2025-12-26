@@ -1,6 +1,10 @@
 import { FiPhone, FiMail, FiMapPin } from "react-icons/fi";
+import { useState } from "react";
+
+
 
 const Contact = () => {
+  const [openForm, setOpenForm] = useState(false);
   return (
     <section className="py-20 px-6 bg-white">
 
@@ -100,16 +104,14 @@ Suite A                <br />
     Need something unique? Our team can help you plan the perfect setup.
   </p>
 
-  <a
-    href="/contact"
-    className="
-      inline-block bg-[#8B5C42] text-white font-medium 
-      px-5 py-2 rounded-lg shadow-sm 
-      hover:bg-[#704A36] transition
-    "
-  >
-    Fill the Form →
-  </a>
+  <button
+  onClick={() => setOpenForm(true)}
+  className="inline-block bg-[#8B5C42] text-white font-medium 
+  px-5 py-2 rounded-lg shadow-sm hover:bg-[#704A36] transition"
+>
+  Fill the Form →
+</button>
+
 </div>
 
         </div>
@@ -196,6 +198,108 @@ Suite A                <br />
           ></iframe>
         </div>
       </div>
+      {openForm && (
+  <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4">
+    <div className="bg-white w-full max-w-3xl rounded-2xl shadow-xl overflow-y-auto max-h-[90vh]">
+
+      {/* Header */}
+      <div className="flex justify-between items-center p-5 border-b">
+        <h2 className="text-xl font-semibold text-[#2D2926]">
+          Event Enquiry Form
+        </h2>
+        <button
+          onClick={() => setOpenForm(false)}
+          className="text-2xl text-gray-500 hover:text-black"
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Form */}
+      <form className="p-6 space-y-5">
+
+        {/* Name */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input required placeholder="First Name"
+            className="input" />
+          <input required placeholder="Last Name"
+            className="input" />
+        </div>
+
+        {/* Email */}
+        <input required type="email" placeholder="Email"
+          className="input" />
+
+        {/* Services */}
+        <select required className="input">
+          <option value="">What services are you interested in?</option>
+          <option>Custom buildout for an event</option>
+          <option>Custom sign order</option>
+          <option>Props and more</option>
+          <option>Rental package</option>
+        </select>
+
+        {/* Event Date & Time */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input required type="date" className="input" />
+          <input type="time" className="input" />
+        </div>
+        <p className="text-sm text-gray-500">
+          Time in Pacific Time
+        </p>
+
+        {/* Address */}
+        <input required placeholder="Address Line 1" className="input" />
+        <input placeholder="Address Line 2" className="input" />
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <input required placeholder="City" className="input" />
+          <input required placeholder="State" className="input" />
+          <input required placeholder="ZIP Code" className="input" />
+        </div>
+
+        {/* Budget */}
+        <input required type="number" placeholder="Budget (e.g. 2000)"
+          className="input" />
+
+        {/* Event Conditions */}
+        <div className="space-y-2">
+          {[
+            "Roof top event",
+            "Outdoor",
+            "Indoor",
+            "Same day setup and pick up",
+            "1st level venue",
+            "2nd level or higher",
+            "Balloons attached to walls",
+            "Floral design attached to walls",
+            "Mock up design needed"
+          ].map(item => (
+            <label key={item} className="flex gap-2 items-center text-sm">
+              <input type="checkbox" />
+              {item}
+            </label>
+          ))}
+        </div>
+
+        {/* Description */}
+        <textarea required rows="4"
+          placeholder="Please add detailed description (size, color, quantity, packages etc.)"
+          className="input" />
+
+        {/* Submit */}
+        <button
+          type="submit"
+          className="w-full bg-[#8B5C42] text-white py-3 rounded-lg
+          hover:bg-[#704A36] transition"
+        >
+          Send
+        </button>
+      </form>
+    </div>
+  </div>
+)}
+
 
     </section>
   );

@@ -75,20 +75,20 @@ const FooterDark = () => {
           </h3>
 
           <p className="text-white/80 leading-relaxed mb-4">
-            Australia-wide service  
+            America-wide service, 
             Reliable delivery & pickup  
             Friendly support team
           </p>
 
-          <div className="flex items-center gap-3 text-white font-medium">
-            <FiPhone size={20} />
-            <span>+1 XXX XXX XXX</span>
+          <div className="text-white/80 leading-relaxed mb-4">
+            
+            <span>2031 Via Burton Street Suite A Anaheim CA, 92806</span>
           </div>
         </div>
       </div>
 
       <div className="text-center mt-12 text-sm text-white/70">
-        © {new Date().getFullYear()} Party Rentals. All Rights Reserved.
+        © {new Date().getFullYear()} New Project Designs. All Rights Reserved.
       </div>
     </footer>
   );
