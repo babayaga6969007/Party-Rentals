@@ -1,18 +1,48 @@
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
-const upload = multer({ dest: "uploads/" });
 
 const authAdmin = require("../middleware/authAdmin");
 const categoryController = require("../controllers/categoryController");
 
-// PUBLIC
+// Multer (optional – keep if you plan images later)
+const upload = multer({ dest: "uploads/" });
+
+/* =========================
+   PUBLIC ROUTES
+========================= */
+
+// Get all categories
 router.get("/", categoryController.getCategories);
+
+// Get category by slug (optional / future use)
 router.get("/:slug", categoryController.getCategoryBySlug);
 
-// ADMIN
-router.post("/admin/create", authAdmin, upload.array("images", 1), categoryController.createCategory);
-router.put("/admin/update/:id", authAdmin, upload.array("images", 1), categoryController.updateCategory);
-router.delete("/admin/delete/:id", authAdmin, categoryController.deleteCategory);
+/* =========================
+   ADMIN ROUTES
+========================= */
+
+// Create category
+router.post(
+  "/",
+  authAdmin,
+  upload.array("images", 1),
+  categoryController.createCategory
+);
+
+// Update category
+router.put(
+  "/:id",
+  authAdmin,
+  upload.array("images", 1),
+  categoryController.updateCategory
+);
+
+// Delete category
+router.delete(
+  "/:id",
+  authAdmin,
+  categoryController.deleteCategory
+);
 
 module.exports = router;

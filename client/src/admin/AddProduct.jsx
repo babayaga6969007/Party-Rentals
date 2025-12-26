@@ -7,6 +7,7 @@ import { useState, useEffect, useMemo } from "react";
 
 
 const AddProduct = () => {
+  
   useEffect(() => {
   const fetchAttributes = async () => {
     try {
@@ -33,11 +34,40 @@ const AddProduct = () => {
 
   fetchAttributes();
 }, []);
+useEffect(() => {
+  const fetchCategories = async () => {
+    try {
+      setCategoryLoading(true);
+      const token = localStorage.getItem("admin_token");
+
+      const res = await api("/categories", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = res?.data ?? res;
+      setCategories(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to load categories");
+    } finally {
+      setCategoryLoading(false);
+    }
+  };
+
+  fetchCategories();
+}, []);
+
 
   const [productType, setProductType] = useState("rental"); // rental | sale
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [categoryLoading, setCategoryLoading] = useState(true);
+
   const [description, setDescription] = useState("");
 
   const [pricePerDay, setPricePerDay] = useState("");
@@ -48,6 +78,13 @@ const AddProduct = () => {
   const [previews, setPreviews] = useState([]);
   const [attributeGroups, setAttributeGroups] = useState([]);
   const [attrLoading, setAttrLoading] = useState(true);
+  const filteredCategories = categories.filter(
+  (cat) => cat.type === productType
+);
+useEffect(() => {
+  setCategory("");
+}, [productType]);
+
 
   // selections:
   // { [groupId]: string[] of optionIds } for select/multi/color
@@ -185,18 +222,22 @@ overridePrice:
           <div>
             <label>Category</label>
             <select
-              className="w-full p-3 border border-gray-400 rounded-lg"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              required
-            >
-              <option value="">Select category</option>
-              <option>Backdrops</option>
-              <option>Tables</option>
-              <option>Furniture</option>
-              <option>Lights</option>
-              <option>Photo Props</option>
-            </select>
+  value={category}
+  onChange={(e) => setCategory(e.target.value)}
+  className="border border-gray-300 rounded-lg px-4 py-2 w-full"
+  disabled={categoryLoading}
+>
+  <option value="">
+    {categoryLoading ? "Loading categories..." : "Select category"}
+  </option>
+
+  {filteredCategories.map((cat) => (
+  <option key={cat._id} value={cat._id}>
+    {cat.name}
+  </option>
+))}
+
+</select>
           </div>
         </div>
 

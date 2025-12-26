@@ -1,50 +1,118 @@
 const mongoose = require("mongoose");
 
+/* =========================
+   SUB-SCHEMAS
+========================= */
+
+// Attribute selections (global attributes → selected options)
+const ProductAttributeSchema = new mongoose.Schema(
+  {
+    groupId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Attribute",
+      required: true,
+    },
+    optionIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+      },
+    ],
+  },
+  { _id: false }
+);
+
+// Add-ons with optional per-product price override
+const ProductAddonSchema = new mongoose.Schema(
+  {
+    optionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Attribute",
+      required: true,
+    },
+    overridePrice: {
+      type: Number,
+      default: null, // if null → use base price from Attribute option
+    },
+  },
+  { _id: false }
+);
+
+/* =========================
+   PRODUCT SCHEMA
+========================= */
+
 const productSchema = new mongoose.Schema(
   {
-    // Use title instead of name (matches your frontend)
+    /* BASIC INFO */
     title: {
       type: String,
       required: [true, "Product title is required"],
+      trim: true,
     },
 
     category: {
-      type: String,
-      required: true,
-      enum: [
-        "Backdrops",
-        "Furniture",
-        "Balloon Stands",
-        "Lights",
-        "Photo Props",
-        "Tables",
-        "Other",
-      ],
-    },
+  type: String,
+  required: true,
+},
 
-    pricePerDay: {
-      type: Number,
-      required: true,
-    },
-
-    availabilityCount: {
-      type: Number,
-      default: 1,
-    },
 
     description: {
       type: String,
-      required: false,
       maxlength: 2000,
     },
 
+    /* PRODUCT TYPE */
+    productType: {
+      type: String,
+      enum: ["rental", "sale"],
+      default: "rental",
+      required: true,
+    },
+
+    /* PRICING */
+    pricePerDay: {
+      type: Number,
+      required: function () {
+        return this.productType === "rental";
+      },
+    },
+
+    salePrice: {
+      type: Number,
+      required: function () {
+        return this.productType === "sale";
+      },
+    },
+
+    /* INVENTORY */
+    availabilityCount: {
+      type: Number,
+      default: 1,
+      min: 0,
+    },
+
+    /* IMAGES */
     images: [
       {
-        public_id: { type: String, required: false }, // make optional
+        public_id: { type: String },
         url: { type: String, required: true },
       },
     ],
 
+    /* GLOBAL ATTRIBUTES (dynamic) */
+    attributes: {
+      type: [ProductAttributeSchema],
+      default: [],
+    },
+
+    /* ADD-ONS (pricing overrides allowed) */
+    addons: {
+      type: [ProductAddonSchema],
+      default: [],
+    },
+
+    /* OPTIONAL METADATA (kept for future use) */
     tags: {
       type: [String],
       default: [],
@@ -63,6 +131,7 @@ const productSchema = new mongoose.Schema(
       default: false,
     },
 
+    /* RENTAL LOGIC */
     blockedDates: {
       type: [String], // yyyy-mm-dd
       default: [],

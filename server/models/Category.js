@@ -2,17 +2,28 @@ const mongoose = require("mongoose");
 
 const categorySchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, trim: true, unique: true },
-    slug: { type: String, required: true, trim: true, unique: true },
-    description: { type: String, default: "" },
-    image: {
-      public_id: { type: String, default: "" },
-      url: { type: String, default: "" },
+    name: {
+      type: String,
+      required: [true, "Category name is required"],
+      trim: true,
     },
-    isActive: { type: Boolean, default: true },
-    sortOrder: { type: Number, default: 0 },
+
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+    },
+
+    type: {
+      type: String,
+      enum: ["rental", "sale"],
+      required: true,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 module.exports = mongoose.model("Category", categorySchema);
