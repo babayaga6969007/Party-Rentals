@@ -76,12 +76,7 @@ export default function OrderCompletePage() {
               <p><span className="font-medium">Email:</span> {order.customer.email}</p>
             </div>
 
-            <Link
-              to="/"
-              className="inline-block px-8 py-3 rounded-full bg-[#F46A5E] text-white text-sm font-semibold hover:bg-[#e75c51] transition"
-            >
-              Track Your Order
-            </Link>
+          
           </div>
 
           {/* RIGHT — ORDER SUMMARY */}

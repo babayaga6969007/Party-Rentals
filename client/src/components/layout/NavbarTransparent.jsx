@@ -100,7 +100,7 @@ useEffect(() => {
           <a
   href="mailto:hello@newprojectdesigns.com"
   className={`p-2 rounded-full backdrop-blur-md  transition-transform duration-200 ease-out
-  hover:scale-110
+  hover:scale-105
     ${scrolled ? "bg-black" : "bg-white/20 hover:bg-white/40"}
   `}
 >
@@ -112,7 +112,7 @@ useEffect(() => {
           <a
             href="#"
             className={`p-2 rounded-full backdrop-blur-md  transition-transform duration-200 ease-out
-  hover:scale-110
+  hover:scale-105
               ${scrolled ? "bg-black" : "bg-white/20 hover:bg-white/40"}
             `}
           >
@@ -126,7 +126,7 @@ useEffect(() => {
   to="/contact"
   className={`
     hidden md:block px-5 py-2 rounded-full text-sm font-medium  transition-transform duration-200 ease-out
-  hover:scale-110
+  hover:scale-105
     ${scrolled ? "bg-black text-white hover:bg-black" 
                : "bg-white/20 text-white backdrop-blur-md hover:bg-white/40"}
   `}
