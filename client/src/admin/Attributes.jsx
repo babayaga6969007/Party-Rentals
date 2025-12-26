@@ -147,8 +147,8 @@ const Attributes = () => {
     { name: "Tags", type: "multi" },
     { name: "Colors", type: "color" },
     { name: "Add-ons", type: "addon" },
-    { name: "Materials", type: "multi" },     // suggested (nice for filtering)
-    { name: "Themes", type: "multi" },        // suggested (wedding, birthday, etc.)
+    { name: "Materials", type: "multi" },     
+    { name: "Themes", type: "multi" },
   ];
 
   return (
@@ -157,7 +157,7 @@ const Attributes = () => {
         <div>
           <h1 className="text-3xl font-semibold text-[#2D2926]">Attributes</h1>
           <p className="text-gray-600 mt-1">
-            Manage global attributes used across all products (WordPress-style).
+            Manage global attributes used across all products.
           </p>
         </div>
 
