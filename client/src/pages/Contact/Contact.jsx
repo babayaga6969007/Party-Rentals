@@ -1,4 +1,4 @@
-import { FiPhone, FiMail, FiMapPin } from "react-icons/fi";
+import {  FiMail, FiMapPin } from "react-icons/fi";
 import { useState } from "react";
 
 
@@ -44,14 +44,7 @@ const Contact = () => {
             </p>
           </div>
 
-          {/* Phone */}
-          <div className="flex items-start gap-4">
-            <FiPhone size={26} className="text-[#8B5C42]" />
-            <div>
-              <p className="text-[#2D2926] font-medium text-lg">Phone</p>
-              <p className="text-[#2D2926]/70">+1 XXX XXX XXX</p>
-            </div>
-          </div>
+          
 
           {/* Email */}
           <div className="flex items-start gap-4">

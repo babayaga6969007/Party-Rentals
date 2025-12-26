@@ -1,4 +1,4 @@
-import { FiFacebook, FiInstagram, FiLinkedin, FiPhone } from "react-icons/fi";
+import { FiFacebook, FiInstagram, FiPhone } from "react-icons/fi";
 
 const Footer = () => {
   return (
@@ -11,11 +11,11 @@ const Footer = () => {
             className="text-3xl font-semibold mb-4 text-[#2D2926]"
             style={{ fontFamily: '"Cormorant Garamond", serif' }}
           >
-            Party Rentals
+            New Project Designs
           </h2>
 
           <p className="text-[#2D2926]/80 leading-relaxed text-[15px]">
-            Party Rentals provides premium event décor, props, lighting, and 
+            We provide premium event décor, props, lighting, and 
             celebration essentials for all types of events across America. 
             From intimate gatherings to grand celebrations, we ensure 
             unforgettable experiences with style and convenience.
@@ -30,7 +30,7 @@ const Footer = () => {
           <div className="flex gap-4 mt-6 text-[#2D2926]">
             <FiFacebook size={22} className="hover:opacity-70 cursor-pointer" />
             <FiInstagram size={22} className="hover:opacity-70 cursor-pointer" />
-            <FiLinkedin size={22} className="hover:opacity-70 cursor-pointer" />
+            
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { FiPhone, FiInstagram, FiMenu } from "react-icons/fi";
+import { FiMail, FiInstagram, FiMenu } from "react-icons/fi";
 import logo from "../../assets/logo.png";
 
 const NavbarTransparent = () => {
@@ -97,24 +97,23 @@ useEffect(() => {
         {/* RIGHT ICONS */}
         <div className="flex items-center gap-5">
           
-          {/* Phone */}
           <a
-            href="tel:+00000000"
-            className={`p-2 rounded-full backdrop-blur-md transition 
-              ${scrolled ? "bg-[#8B5C42]" : "bg-white/20 hover:bg-white/40"}
-            `}
-          >
-            <FiPhone
-              size={18}
-              className={`${scrolled ? "text-white" : "text-white"}`}
-            />
-          </a>
+  href="mailto:hello@newprojectdesigns.com"
+  className={`p-2 rounded-full backdrop-blur-md  transition-transform duration-200 ease-out
+  hover:scale-110
+    ${scrolled ? "bg-black" : "bg-white/20 hover:bg-white/40"}
+  `}
+>
+  <FiMail size={18} className="text-white" />
+</a>
+
 
           {/* Instagram */}
           <a
             href="#"
-            className={`p-2 rounded-full backdrop-blur-md transition 
-              ${scrolled ? "bg-[#8B5C42]" : "bg-white/20 hover:bg-white/40"}
+            className={`p-2 rounded-full backdrop-blur-md  transition-transform duration-200 ease-out
+  hover:scale-110
+              ${scrolled ? "bg-black" : "bg-white/20 hover:bg-white/40"}
             `}
           >
             <FiInstagram
@@ -126,8 +125,9 @@ useEffect(() => {
 <Link
   to="/contact"
   className={`
-    hidden md:block px-5 py-2 rounded-full text-sm font-medium transition
-    ${scrolled ? "bg-[#8B5C42] text-white hover:bg-[#704A36]" 
+    hidden md:block px-5 py-2 rounded-full text-sm font-medium  transition-transform duration-200 ease-out
+  hover:scale-110
+    ${scrolled ? "bg-black text-white hover:bg-black" 
                : "bg-white/20 text-white backdrop-blur-md hover:bg-white/40"}
   `}
 >
@@ -139,7 +139,7 @@ useEffect(() => {
           <button
   onClick={() => setMobileOpen(!mobileOpen)}
   className={`md:hidden p-2 rounded-full backdrop-blur-md transition 
-    ${scrolled ? "bg-[#8B5C42]" : "bg-white/20"}
+    ${scrolled ? "bg-black" : "bg-white/20"}
   `}
 >
   <FiMenu size={22} className="text-white" />
@@ -182,7 +182,7 @@ useEffect(() => {
   onClick={() => setMobileOpen(false)}
   className={`
     text-lg font-medium mt-3 px-4 py-2 rounded-lg text-center
-    ${scrolled ? "bg-[#8B5C42] text-white" : "bg-white/20 text-white"}
+    ${scrolled ? "bg-black text-white" : "bg-white/20 text-white"}
   `}
 >
   Custom Enquiry

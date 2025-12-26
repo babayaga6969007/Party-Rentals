@@ -1,4 +1,4 @@
-import { FiFacebook, FiInstagram, FiLinkedin, FiPhone } from "react-icons/fi";
+import { FiFacebook, FiInstagram, } from "react-icons/fi";
 
 const FooterDark = () => {
   return (
@@ -11,11 +11,11 @@ const FooterDark = () => {
             className="text-3xl font-semibold mb-4 text-white"
             style={{ fontFamily: '"Cormorant Garamond", serif' }}
           >
-            Party Rentals
+            New Project Designs
           </h2>
 
           <p className="text-white/80 leading-relaxed text-[15px]">
-            Party Rentals provides premium event décor, props, lighting, and celebration essentials.
+            We provide premium event décor, props, lighting, and celebration essentials.
           </p>
 
           <p className="mt-5 text-white font-medium">
@@ -25,7 +25,7 @@ const FooterDark = () => {
           <div className="flex gap-4 mt-6 text-white">
             <FiFacebook size={22} className="hover:opacity-70 cursor-pointer" />
             <FiInstagram size={22} className="hover:opacity-70 cursor-pointer" />
-            <FiLinkedin size={22} className="hover:opacity-70 cursor-pointer" />
+          
           </div>
         </div>
 
