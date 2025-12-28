@@ -59,7 +59,7 @@ const AppRoutes = () => {
           <Route path="/product/demo" element={<UpdatedProductPage />} />
           <Route path="/category" element={<CategoryPage />} />
           <Route path="/shop" element={<Shop />} />
-          <Route path="/buyproducts" element={<SecondHProducts />} />
+<Route path="/buyproducts/:id" element={<SecondHProducts />} />
 
           {/* 🛒 Checkout Flow */}
           <Route path="/cart" element={<CartPage />} />

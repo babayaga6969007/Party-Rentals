@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useParams } from "react-router-dom";
+import { api } from "../../utils/api";
+
 
 import {
   FiLock,
@@ -17,7 +19,7 @@ import hero2 from "../../assets/home2/hero2.png";
 import hero3 from "../../assets/home2/hero3.png";
 import hero4 from "../../assets/home2/hero4.png";
 
-const productImages = [hero1, hero2, hero3, hero4];
+
 
 // Trust Badges
 const trustBadges = [
@@ -29,8 +31,21 @@ const trustBadges = [
 
 
 const ProductPage = () => {
+    // ====================
+  //  PRODUCT DATA (FROM BACKEND)
+  // ====================
+  const { id } = useParams();
+  const location = useLocation();
+
+  const [product, setProduct] = useState(null);
+  const productImages = product?.images?.map((img) => img.url) || [];
+
+  const [loadingProduct, setLoadingProduct] = useState(true);
+  const [productError, setProductError] = useState("");
+
   // DATE RANGE SELECTION
 const today = new Date().toISOString().split("T")[0]; // disable past dates
+
 
 const [startDate, setStartDate] = useState("");
 const [endDate, setEndDate] = useState("");
@@ -61,17 +76,20 @@ const selectedDays =
   const [activeImage, setActiveImage] = useState(0);
 
   const handleNext = () => {
-    setActiveImage((prev) => (prev + 1) % productImages.length);
-  };
+  if (productImages.length <= 1) return;
+  setActiveImage((prev) => (prev + 1) % productImages.length);
+};
 
-  const handlePrev = () => {
-    setActiveImage((prev) =>
-      prev === 0 ? productImages.length - 1 : prev - 1
-    );
-  };
 
-  // Base product price
-  const pricePerDay = 40;
+ const handlePrev = () => {
+  if (productImages.length <= 1) return;
+  setActiveImage((prev) =>
+    prev === 0 ? productImages.length - 1 : prev - 1
+  );
+};
+
+
+
 
   // Quantity of main product
   const [productQty, setProductQty] = useState(1);
@@ -97,21 +115,31 @@ const selectedDays =
 
   // Date selection
   const [selectedDate, setSelectedDate] = useState("");
+  
 
   // Add-on total calculation
+  const isSalePage = location.pathname.startsWith("/buyproducts");
+const pricePerDay = Number(product?.pricePerDay || 0);
+const salePrice = Number(product?.salePrice || 0);
+
   const addonsTotal = addons.lights * 10 + addons.flowers * 15;
 
   // Final total price
 // priority: use date range if selected, else manual days input
 const totalRentalDays = selectedDays > 0 ? selectedDays : days;
 
-const totalPrice =
-  totalRentalDays * pricePerDay * productQty + addonsTotal;
+const totalPrice = isSalePage
+  ? salePrice * productQty
+  : totalRentalDays * pricePerDay * productQty + addonsTotal;
 
-const fullDescription =
-  "High-quality decorative arch backdrop perfect for events. Durable, elegant, and customizable with add-ons. This stunning backdrop enhances weddings, birthdays, parties, photoshoots, and corporate events. Built with premium material for stability and available in multiple colors and custom add-ons.";
+
+const fullDescription = product?.description || "No description available.";
+
+
 
 const shortDescription = fullDescription.substring(0, 120) + "...";
+  
+
 
 const [showFullDesc, setShowFullDesc] = useState(false);
 // ⭐ ADD POPUP STATE
@@ -119,16 +147,63 @@ const [showPopup, setShowPopup] = useState(false);
 
 // Fake “added to cart” product info
 const addedItem = {
-  name: "Wedding Golden Arch Backdrop",
-  price: pricePerDay,
+  name: product?.title || "Product",
+  price: isSalePage ? salePrice : pricePerDay,
   qty: productQty,
-  image: productImages[activeImage],
+  image: productImages[activeImage] || hero1,
 };
 
 // When user confirms booking
 const handleConfirmBooking = () => {
   setShowPopup(true);
 };
+  // ====================
+  //  FETCH SINGLE PRODUCT
+  // ====================
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setLoadingProduct(true);
+        setProductError("");
+
+        // ✅ expected endpoint (if your backend already has it)
+        const res = await api(`/products/${id}`);
+        const data = res?.product || res;
+
+        setProduct(data);
+        
+        
+
+      } catch (err) {
+        console.error(err);
+        setProductError("Failed to load product");
+      } finally {
+        setLoadingProduct(false);
+      }
+    };
+
+    if (id) fetchProduct();
+  }, [id]);
+
+// ====================
+//  RESET ACTIVE IMAGE ON PRODUCT CHANGE
+// ====================
+useEffect(() => {
+  setActiveImage(0);
+}, [id]);
+
+
+if (loadingProduct) {
+  return <div className="page-wrapper max-w-7xl mx-auto px-6 py-20">Loading...</div>;
+}
+
+if (productError) {
+  return <div className="page-wrapper max-w-7xl mx-auto px-6 py-20">{productError}</div>;
+}
+
+if (!product) {
+  return <div className="page-wrapper max-w-7xl mx-auto px-6 py-20">Product not found</div>;
+}
 
 
   return (
@@ -143,45 +218,52 @@ const handleConfirmBooking = () => {
 
   {/* Main Image */}
   <img
-    src={productImages[activeImage]}
-    className="w-full h-full object-cover"
-    alt="Product"
-  />
+  src={productImages[activeImage] || hero1}
+  className="w-full h-full object-cover"
+  alt="Product"
+/>
+
 
   {/* LEFT ARROW */}
+  {productImages.length > 1 && (
   <button
     onClick={handlePrev}
     className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white p-2 rounded-full shadow"
   >
     ❮
   </button>
+)}
 
-  {/* RIGHT ARROW */}
+{productImages.length > 1 && (
   <button
     onClick={handleNext}
     className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white p-2 rounded-full shadow"
   >
     ❯
   </button>
+)}
+
 
 </div>
 
 
           {/* THUMBNAILS */}
-<div className="grid grid-cols-4 gap-3 mt-4">
-  {productImages.map((img, i) => (
-    <img
-      key={i}
-      src={img}
-      onClick={() => setActiveImage(i)}
-      className={`
-        w-full h-20 object-cover rounded-xl shadow cursor-pointer 
-        transition border-2 
-        ${i === activeImage ? "border-[#8B5C42]" : "border-transparent"}
-      `}
-    />
-  ))}
-</div>
+{productImages.length > 1 && (
+  <div className="grid grid-cols-4 gap-3 mt-4">
+    {productImages.map((img, i) => (
+      <img
+        key={i}
+        src={img}
+        onClick={() => setActiveImage(i)}
+        className={`w-full h-20 object-cover rounded-xl shadow cursor-pointer transition border-2 ${
+          i === activeImage ? "border-[#8B5C42]" : "border-transparent"
+        }`}
+        alt="Thumbnail"
+      />
+    ))}
+  </div>
+)}
+
 
 
           {/* ⭐ RECOMMENDED ADDONS UNDER IMAGE */}
@@ -250,22 +332,29 @@ const handleConfirmBooking = () => {
 
         {/* RIGHT COLUMN */}
         <div>
-          <h1 className="text-4xl font-semibold text-[#2D2926] mb-4">
-            Wedding Golden Arch Backdrop
-          </h1>
+         <h1 className="text-4xl font-semibold text-[#2D2926] mb-4">
+  {product?.title || "—"}
+</h1>
 
          {/* PRICE + STOCK (Responsive layout) */}
 <div className="mt-2 flex flex-col md:flex-row md:items-center md:gap-6">
 
   {/* Price */}
-  <p className="text-3xl font-semibold text-[#8B5C42]">
-    ${pricePerDay}
-  </p>
+ <p className="text-3xl font-semibold text-[#8B5C42]">
+  Rs {isSalePage ? salePrice : pricePerDay}
+  {!isSalePage && " / day"}
+</p>
+
 
   {/* Stock — beside price on desktop, below on mobile */}
   <div className="mt-2 md:mt-0 bg-[#FFF7F0] border border-[#E5DED6] rounded-lg px-4 py-2 inline-block">
     <p className="text-sm font-medium text-[#2D2926]">
-      Stock Availability: <span className="text-[#8B5C42] font-semibold">5</span>
+     Stock Availability:{" "}
+<span className="text-[#8B5C42] font-semibold">
+  {product?.availabilityCount ?? 0}
+</span>
+
+
     </p>
   </div>
 
@@ -307,10 +396,13 @@ const handleConfirmBooking = () => {
           {/* BUTTON */}
           <button
   onClick={handleConfirmBooking}
-  className="mt-8 w-full bg-[#8B5C42] text-white py-3 rounded-lg"
+  disabled={(product?.availabilityCount ?? 0) === 0}
+  className={`mt-8 w-full py-3 rounded-lg text-white 
+    ${(product?.availabilityCount ?? 0) === 0 ? "bg-gray-400 cursor-not-allowed" : "bg-[#8B5C42] hover:bg-[#704A36]"}`}
 >
-  Confirm Order
+  {(product?.availabilityCount ?? 0) === 0 ? "Out of Stock" : "Confirm Order"}
 </button>
+
 
 
 
@@ -397,7 +489,9 @@ const handleConfirmBooking = () => {
         <div>
           <p className="font-semibold text-[#2D2926]">{addedItem.name}</p>
           <p className="text-sm text-gray-600">Qty: {addedItem.qty}</p>
-          <p className="font-semibold mt-1">${addedItem.price}</p>
+<p className="font-semibold mt-1">
+  Rs {addedItem.price} {!isSalePage && "/ day"}
+</p>
         </div>
       </div>
 

@@ -4,6 +4,9 @@ import AdminLayout from "./AdminLayout";
 
 const Products = () => {
   const [items, setItems] = useState([]);
+  const [productFilter, setProductFilter] = useState("all"); 
+// "all" | "rental" | "sale"
+
 
   const loadProducts = async () => {
     try {
@@ -39,13 +42,45 @@ const Products = () => {
   }
 };
 
+// ====================
+//  FILTERED PRODUCTS (ADMIN)
+// ====================
+const filteredItems =
+  productFilter === "all"
+    ? items
+    : items.filter((p) => p.productType === productFilter);
 
   return (
     <AdminLayout>
-      <h1 className=" text-3xl font-semibold mb-6">All Products</h1>
+<div className="flex items-center gap-6 mb-6">
+  <h1 className="text-3xl font-semibold">All Products</h1>
+
+  {/* PRODUCT TYPE FILTER */}
+  <div className="flex gap-2">
+    {["all", "rental", "sale"].map((type) => (
+      <button
+        key={type}
+        onClick={() => setProductFilter(type)}
+        className={`px-4 py-1.5 rounded-lg text-sm font-medium border transition
+          ${
+            productFilter === type
+              ? "bg-black text-white border-black"
+              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+          }
+        `}
+      >
+        {type === "all"
+          ? "All"
+          : type === "rental"
+          ? "Rental"
+          : "Sale"}
+      </button>
+    ))}
+  </div>
+</div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {items.map((p) => (
+{filteredItems.map((p) => (
           <div key={p._id} className="bg-white p-4 rounded-xl shadow">
             <img
               src={p.images[0]?.url}
