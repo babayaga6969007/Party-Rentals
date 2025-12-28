@@ -480,20 +480,27 @@ selectedColors.includes(p.color || "");
 
           {/* PRICE SECTION */}
           <div className="mt-1 flex items-center gap-2">
-            <span className="text-black line-through text-sm">
-  $ {product.pricePerDay ?? product.salePrice}
+           <span className="text-black line-through text-sm">
+  $ {product.pricePerDay} / day
 </span>
 
+
 <span className="text-red-600 font-bold text-lg">
-  $ {product.salePrice ?? product.pricePerDay}
+  $ {Math.round((product.pricePerDay ?? 0) * 0.95)}/day
 </span>
+
 
           </div>
 
           {/* CATEGORY */}
           <p className="text-sm text-gray-600 mt-1">
-            Category: {typeof product.category === "object" ? product.category.name : "—"}
-          </p>
+  Category: {
+    categories.find(
+      (c) => String(c._id) === String(product.category)
+    )?.name || "—"
+  }
+</p>
+
 
           {/* BUTTON */}
 <div className="mt-4 
