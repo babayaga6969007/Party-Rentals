@@ -3,18 +3,10 @@ import hero1 from "../../assets/home2/hero1.png";
 import hero2 from "../../assets/home2/hero2.png";
 import hero3 from "../../assets/home2/hero3.png";
 import hero4 from "../../assets/home2/hero4.png";
+import { api } from "../../utils/api";
 
-// ====================
-//  CATEGORY DATA
-// ====================
-const ALL_CATEGORIES = [
-  "Backdrop",
-  "Furniture",
-  "Lights",
-  "Props",
-  "Florals",
-  "Tables",
-];
+
+
 const COLORS = [
   { name: "White", value: "#ffffff", border: "#ccc" },
   { name: "Black", value: "#000000", border: "#000" },
@@ -29,82 +21,14 @@ const COLORS = [
 ];
 
 
-// ====================
-//  MOCK PRODUCT DATA (Your existing dummy data)
-// ====================
-const PRODUCTS = [
-  {
-    id: 1,
-    name: "White Wedding Arch",
-    category: "Backdrop",
-    pricePerDay: 120,
-    tags: ["Outdoor", "Large"],
-    image: hero1,
-    color: "White",
-  },
-  {
-    id: 2,
-    name: "Vintage Sofa Set",
-    category: "Furniture",
-    pricePerDay: 200,
-    tags: ["Indoor", "Compact"],
-    image: hero2,
-    color: "Gold",
-  },
-  {
-    id: 3,
-    name: "Fairy Light Curtain",
-    category: "Lights",
-    pricePerDay: 40,
-    tags: ["Outdoor", "Pastel"],
-    image: hero3,
-    color: "Yellow",
-  },
-  {
-    id: 4,
-    name: "Neon Name Sign",
-    category: "Lights",
-    pricePerDay: 60,
-    tags: ["Bold"],
-    image: hero4,
-    color: "Red",
-  },
-  {
-    id: 5,
-    name: "Flower Garland Set",
-    category: "Florals",
-    pricePerDay: 75,
-    tags: ["Pastel", "Large"],
-    image: hero1,
-    color: "Pink",
-  },
-
-  // ⭐ NEW DEMO PRODUCT ADDED:
-  {
-    id: 6,
-    name: "Rustic Wooden Table",
-    category: "Tables",
-    pricePerDay: 95,
-    tags: ["Indoor", "Large"],
-    image: hero2,
-    color: "Brown", // new color (optional)
-  },
-];
-
 
 
 // ====================
 //  HELPER
 // ====================
 const today = new Date().toISOString().split("T")[0];
-const CATEGORY_CHIPS = [
-  { label: "Backdrops", value: "Backdrop", img: hero1 },
-  { label: "Furniture", value: "Furniture", img: hero2 },
-  { label: "Lighting", value: "Lights", img: hero3 },
-  { label: "Florals", value: "Florals", img: hero4 },
-  { label: "Tables", value: "Tables", img: hero1 },
-  { label: "Props", value: "Props", img: hero2 }, // demo, no product yet
-];
+
+
 
 
 const CategoryPage = () => {
@@ -118,8 +42,26 @@ const CategoryPage = () => {
 
   const [priceRange, setPriceRange] = useState([0, 500]);
   const [hoverPrice, setHoverPrice] = useState(null);
+    // ====================
+  //  BACKEND PRODUCTS STATE
+  // ====================
+  const [products, setProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [productsError, setProductsError] = useState("");
+
 
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [categories, setCategories] = useState([]);
+    // ====================
+  //  CATEGORY CHIPS (FROM BACKEND)
+  // ====================
+  const categoryChips = categories.map((c, idx) => ({
+    label: c.name,
+    value: String(c._id), // category ID
+    img: [hero1, hero2, hero3, hero4][idx % 4],
+  }));
+
+
 
   const toggleTag = (tag) => {
     setSelectedTags((prev) =>
@@ -147,34 +89,105 @@ const CategoryPage = () => {
   setSelectedColors([]);   // <-- ADD THIS
   setPriceRange([0, 500]);
 };
+  // ====================
+  //  FETCH PRODUCTS FROM BACKEND
+  // ====================
+   // ====================
+  //  FETCH PRODUCTS FROM BACKEND
+  // ====================
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoadingProducts(true);
+        setProductsError("");
+
+        const res = await api("/products");
+        setProducts(res?.products || []);
+      } catch (err) {
+        console.error(err);
+        setProductsError("Failed to load products");
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+  // ====================
+  //  FETCH CATEGORIES FROM BACKEND
+  // ====================
+ useEffect(() => {
+  const fetchCategories = async () => {
+    try {
+      const res = await api("/categories");
+
+      const allCategories = res?.data || res || [];
+
+
+      // ✅ ONLY RENTAL CATEGORIES FOR RENTAL PAGE
+const rentalCategories = allCategories.filter(
+  (c) => c.type === "rental"
+);
+
+
+      setCategories(rentalCategories);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  fetchCategories();
+}, []);
+// ====================
+//  AUTO-SELECT ALL CATEGORIES ON LOAD
+// ====================
+useEffect(() => {
+  if (categories.length > 0) {
+    const allCategoryIds = categories.map((c) => String(c._id));
+    setSelectedCategories(allCategoryIds);
+  }
+}, [categories]);
+
+
 
 
   // ====================
   //  FILTERED PRODUCTS
   // ====================
   const filteredProducts = useMemo(() => {
-  return PRODUCTS.filter((p) => {
-    const inCategory =
-      selectedCategories.length === 0 ||
-      selectedCategories.includes(p.category);
+return products.filter((p) => {
+      //  EXCLUDE SALE PRODUCTS ON RENTAL PAGE
+    if (p.productType !== "rental") return false;
 
-    const inPrice =
-      p.pricePerDay >= priceRange[0] &&
-      p.pricePerDay <= priceRange[1];
+    const productCategoryId =
+  typeof p.category === "object" ? p.category?._id : p.category;
 
-    const inTags =
-      selectedTags.length === 0 ||
-      selectedTags.every((t) => p.tags.includes(t));
+const inCategory =
+  selectedCategories.length === 0 ||
+  selectedCategories.includes(String(productCategoryId));
+
+
+    const price = Number(p.pricePerDay ?? p.salePrice ?? 0);
+
+const inPrice = price >= priceRange[0] && price <= priceRange[1];
+
+
+    const tags = Array.isArray(p.tags) ? p.tags : [];
+
+const inTags =
+  selectedTags.length === 0 ||
+  selectedTags.every((t) => tags.includes(t));
+
 
     // ✅ NEW COLOR FILTER
     const inColor =
       selectedColors.length === 0 ||
-      selectedColors.includes(p.color);
+selectedColors.includes(p.color || "");
 
     // ⬅️ Make sure to include AND inColor here
     return inCategory && inPrice && inTags && inColor;
   });
-}, [selectedCategories, selectedTags, selectedColors, priceRange]);
+}, [products, selectedCategories, selectedTags, selectedColors, priceRange]);
 
 
   // ====================
@@ -203,7 +216,7 @@ const CategoryPage = () => {
         
 
         <div className="flex flex-wrap justify-center gap-8">
-          {CATEGORY_CHIPS.map((cat) => (
+{categoryChips.map((cat) => (
             <button
               key={cat.label}
               type="button"
@@ -438,7 +451,7 @@ const CategoryPage = () => {
 
     {filteredProducts.map((product) => (
       <a
-        href={`/product/1`}
+        href={`/product/${product._id}`}
         className="
           block border border-gray-300 hover:border-gray-500
           rounded-xl shadow 
@@ -450,10 +463,11 @@ const CategoryPage = () => {
         {/* IMAGE — NOW FULL WIDTH, NO PADDING */}
         <div className="h-48 rounded-t-xl overflow-hidden">
           <img
-            src={product.image}
-            alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
+  src={product.images?.[0]?.url || hero1}
+  alt={product.title}
+  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+/>
+
         </div>
 
         {/* CONTENT */}
@@ -461,23 +475,24 @@ const CategoryPage = () => {
 
           {/* NAME */}
           <h3 className="font-bold text-lg text-[#2D2926]">
-            {product.name}
+            {product.title}
           </h3>
 
           {/* PRICE SECTION */}
           <div className="mt-1 flex items-center gap-2">
             <span className="text-black line-through text-sm">
-              ${product.pricePerDay}
-            </span>
+  $ {product.pricePerDay ?? product.salePrice}
+</span>
 
-            <span className="text-red-600 font-bold text-lg">
-              ${product.salePrice || Math.round(product.pricePerDay * 0.85)}
-            </span>
+<span className="text-red-600 font-bold text-lg">
+  $ {product.salePrice ?? product.pricePerDay}
+</span>
+
           </div>
 
           {/* CATEGORY */}
           <p className="text-sm text-gray-600 mt-1">
-            Category: {product.category}
+            Category: {typeof product.category === "object" ? product.category.name : "—"}
           </p>
 
           {/* BUTTON */}
