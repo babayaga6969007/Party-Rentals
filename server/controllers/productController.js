@@ -52,12 +52,13 @@ exports.addProduct = async (req, res) => {
     }
 
     // 4️⃣ Create product
-    const product = await Product.create({
-      ...req.body,
-      attributes,
-      addons,
-      images: uploadedImages,
-    });
+   const product = await Product.create({
+  ...req.body,
+  attributes,
+  addons,
+  images: uploadedImages,
+});
+
 
     res.json({
       message: "Product added successfully",
@@ -74,23 +75,48 @@ exports.addProduct = async (req, res) => {
 // ----------------------------------------------
 exports.editProduct = async (req, res) => {
   try {
-    let updates = { ...req.body };
+    const updates = {};
 
-    // Parse attributes & addons if present
+    // -------- BASIC FIELDS --------
+    if (req.body.title !== undefined) updates.title = req.body.title;
+    if (req.body.description !== undefined)
+      updates.description = req.body.description;
+    if (req.body.category !== undefined) updates.category = req.body.category;
+    if (req.body.productType !== undefined)
+      updates.productType = req.body.productType;
+    if (req.body.availabilityCount !== undefined)
+      updates.availabilityCount = Number(req.body.availabilityCount);
+
+    if (req.body.pricePerDay !== undefined)
+      updates.pricePerDay = Number(req.body.pricePerDay);
+
+    if (req.body.salePrice !== undefined)
+      updates.salePrice = Number(req.body.salePrice);
+
+    // -------- ATTRIBUTES --------
     if (req.body.attributes) {
       updates.attributes = JSON.parse(req.body.attributes);
     }
 
+    // -------- ADDONS (CRITICAL FIX) --------
     if (req.body.addons) {
-      updates.addons = JSON.parse(req.body.addons);
-    }
+  const parsedAddons = JSON.parse(req.body.addons);
 
-    // Parse existing images array (from frontend)
+  updates.addons = (parsedAddons || [])
+    .filter((a) => a?.optionId && a.optionId !== "null" && a.optionId !== "undefined")
+    .map((a) => ({
+      optionId: a.optionId,
+      overridePrice: a.overridePrice === "" || a.overridePrice === null ? null : Number(a.overridePrice),
+    }));
+}
+
+
+    // -------- EXISTING IMAGES --------
     if (req.body.existingImages) {
       updates.images = JSON.parse(req.body.existingImages);
     }
 
-    // If new images uploaded, add them
+    // -------- NEW IMAGES --------
     if (req.files?.length > 0) {
       const newUploaded = await uploadImagesToCloudinary(req.files);
       updates.images = updates.images
@@ -100,8 +126,8 @@ exports.editProduct = async (req, res) => {
 
     const updated = await Product.findByIdAndUpdate(
       req.params.id,
-      updates,
-      { new: true }
+      { $set: updates },   // 🔒 IMPORTANT
+      { new: true, runValidators: true }
     );
 
     res.json({ message: "Product updated", product: updated });
@@ -110,6 +136,7 @@ exports.editProduct = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // ----------------------------------------------
 // Delete Product
@@ -144,14 +171,18 @@ exports.deleteProduct = async (req, res) => {
 exports.getSingleProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
-      .populate("attributes.groupId")
-      .populate("addons.optionId");
+      .populate("attributes.groupId"); // ✅ ONLY this is valid
+
+    // ❌ DO NOT populate optionIds or addons.optionId (they are subdoc ids)
+    // .populate("attributes.optionIds")
+    // .populate("addons.optionId")
 
     res.json(product);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // ----------------------------------------------
 // GET All Products + Filters

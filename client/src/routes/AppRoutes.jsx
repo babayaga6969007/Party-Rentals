@@ -16,6 +16,8 @@ import Inventory from "../admin/Inventory";
 
 
 
+
+
 // Pages
 import Home from "../pages/Home/Home";
 import FAQ from "../pages/FAQ/FAQ";
@@ -38,7 +40,7 @@ import AdminLogin from "../admin/Login";
 import Products from "../admin/Products";
 import AddProduct from "../admin/AddProduct";
 import Orders from "../admin/Orders";  
-import EditProduct from "../admin/EditProduct";
+
 
 const AppRoutes = () => {
   return (
@@ -95,19 +97,22 @@ const AppRoutes = () => {
             }
           />
 
-          <Route
-            path="/admin/products/edit/:id"
-            element={
-              <ProtectedAdminRoute>
-                <EditProduct />
-              </ProtectedAdminRoute>
-            }
-          />
+          
           <Route path="/admin/dashboard" element={<Dashboard />} />
           <Route path="/admin/categories" element={<Categories />} />
           <Route path="/admin/attributes" element={<Attributes />} />
           <Route path="/admin/orders/active" element={<ActiveRentals />} />
           <Route path="/admin/orders/completed" element={<CompletedOrders />} />
+         
+<Route
+  path="/admin/products/edit/:id"
+  element={
+    <ProtectedAdminRoute>
+      <AddProduct />
+    </ProtectedAdminRoute>
+  }
+/>
+
           <Route
   path="/admin/AvailabilityCalendar"
   element={<AvailabilityCalendar />}

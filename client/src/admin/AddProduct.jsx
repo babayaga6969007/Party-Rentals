@@ -2,99 +2,168 @@
 import AdminLayout from "./AdminLayout";
 import { api } from "../utils/api";
 import { useState, useEffect, useMemo } from "react";
+import { useParams } from "react-router-dom";
 
 
 
 
 const AddProduct = () => {
-  
-  useEffect(() => {
-  const fetchAttributes = async () => {
-    try {
-      setAttrLoading(true);
-      const token = localStorage.getItem("admin_token");
+  /* =====================
+     ROUTE PARAMS
+  ===================== */
+  const { id } = useParams();
+  const isEditMode = Boolean(id);
 
-      const res = await api("/admin/attributes", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+  /* =====================
+     STATE — MUST COME FIRST
+  ===================== */
 
-      // IMPORTANT: api() may already return parsed JSON
-      const data = res?.data ?? res;
-      setAttributeGroups(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to load attributes");
-    } finally {
-      setAttrLoading(false);
-    }
-  };
+  // Images
+  const [existingImages, setExistingImages] = useState([]);
+  const [images, setImages] = useState([]);
+  const [previews, setPreviews] = useState([]);
 
-  fetchAttributes();
-}, []);
-useEffect(() => {
-  const fetchCategories = async () => {
-    try {
-      setCategoryLoading(true);
-      const token = localStorage.getItem("admin_token");
-
-      const res = await api("/categories", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = res?.data ?? res;
-      setCategories(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to load categories");
-    } finally {
-      setCategoryLoading(false);
-    }
-  };
-
-  fetchCategories();
-}, []);
-
-
-  const [productType, setProductType] = useState("rental"); // rental | sale
-
+  // Product core
+  const [productType, setProductType] = useState("rental");
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
-  const [categories, setCategories] = useState([]);
-  const [categoryLoading, setCategoryLoading] = useState(true);
-
   const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [availabilityCount, setAvailabilityCount] = useState(1);
 
+  // Pricing
   const [pricePerDay, setPricePerDay] = useState("");
   const [salePrice, setSalePrice] = useState("");
 
-  const [availabilityCount, setAvailabilityCount] = useState(1);
-  const [images, setImages] = useState([]);
-  const [previews, setPreviews] = useState([]);
+  // Categories
+  const [categories, setCategories] = useState([]);
+  const [categoryLoading, setCategoryLoading] = useState(true);
+
+  // Attributes
   const [attributeGroups, setAttributeGroups] = useState([]);
   const [attrLoading, setAttrLoading] = useState(true);
-  const filteredCategories = categories.filter(
-  (cat) => cat.type === productType
-);
-useEffect(() => {
-  setCategory("");
-}, [productType]);
 
-
-  // selections:
-  // { [groupId]: string[] of optionIds } for select/multi/color
+  // Selections
   const [selectedAttrs, setSelectedAttrs] = useState({});
+// groupId → optionId → { selected, overridePrice }
+const [selectedAddons, setSelectedAddons] = useState({});
 
-  // addons selections with per-product override price
-  // { [optionId]: { selected: boolean, overridePrice: string } }
-  const [selectedAddons, setSelectedAddons] = useState({});
- 
+  /* =====================
+     DERIVED DATA
+  ===================== */
 
+  const filteredCategories = categories.filter(
+    (cat) => cat.type === productType
+  );
+
+const getImgSrc = (img) =>
+  img?.url || img?.secure_url || img?.path || img;
+
+  // Fetch attributes
+  useEffect(() => {
+    const fetchAttributes = async () => {
+      try {
+        setAttrLoading(true);
+        const token = localStorage.getItem("admin_token");
+
+        const res = await api("/admin/attributes", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = res?.data ?? res;
+        setAttributeGroups(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error(err);
+        alert("Failed to load attributes");
+      } finally {
+        setAttrLoading(false);
+      }
+    };
+
+    fetchAttributes();
+  }, []);
+
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setCategoryLoading(true);
+        const token = localStorage.getItem("admin_token");
+
+        const res = await api("/categories", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = res?.data ?? res;
+        setCategories(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error(err);
+        alert("Failed to load categories");
+      } finally {
+        setCategoryLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // Load product (EDIT MODE)
+  useEffect(() => {
+    if (!isEditMode) return;
+    if (categories.length === 0 || attributeGroups.length === 0) return;
+
+    const loadProduct = async () => {
+      try {
+        const res = await api(`/products/${id}`);
+        const data = res.product || res;
+
+        setTitle(data.title || "");
+        setDescription(data.description || "");
+        setCategory(data.category || "");
+        setAvailabilityCount(data.availabilityCount || 1);
+        setProductType(data.productType);
+        setPricePerDay(data.pricePerDay || "");
+        setSalePrice(data.salePrice || "");
+
+        const attrSelections = {};
+data.attributes?.forEach((a) => {
+  const groupKey = String(a.groupId?._id || a.groupId);
+  const optionIds = (a.optionIds || []).map((x) => String(x));
+  attrSelections[groupKey] = optionIds;
+});
+setSelectedAttrs(attrSelections);
+
+
+      const addonSelections = {};
+(data.addons || []).forEach((a) => {
+  const optionKey = String(a.optionId); // ✅ since backend returns raw ObjectId
+  addonSelections[optionKey] = {
+    selected: true,
+    overridePrice: a.overridePrice ?? "",
+  };
+});
+setSelectedAddons(addonSelections);
+
+
+
+
+        setExistingImages(data.images || []);
+      } catch (err) {
+        console.error("Product load deferred, retrying…");
+      }
+    };
+
+    loadProduct();
+  }, [id, isEditMode, categories, attributeGroups]);
+
+  /* =====================
+     HANDLERS
+  ===================== */
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
@@ -103,49 +172,52 @@ useEffect(() => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  // Validate required groups (except addons)
-const requiredGroups = attributeGroups.filter((g) => g.required && g.type !== "addon");
+    e.preventDefault();
 
-for (const g of requiredGroups) {
-  const sel = selectedAttrs[g._id] || [];
-  if (sel.length === 0) {
-    alert(`Please select at least one option for: ${g.name}`);
-    return;
-  }
-}
-const attributesPayload = Object.entries(selectedAttrs).map(([groupId, optionIds]) => ({
-  groupId,
-  optionIds,
-}));
+    const requiredGroups = attributeGroups.filter(
+      (g) => g.required && g.type !== "addon"
+    );
 
-const addonsPayload = Object.entries(selectedAddons)
-  .filter(([, v]) => v?.selected)
-  .map(([optionId, v]) => ({
-    optionId,
-overridePrice:
-  v.overridePrice === "" || v.overridePrice === null
-    ? null
-    : Number(v.overridePrice),
-  }));
+    for (const g of requiredGroups) {
+const sel = selectedAttrs[String(g._id)] || [];
+      if (sel.length === 0) {
+        alert(`Please select at least one option for: ${g.name}`);
+        return;
+      }
+    }
+
+    const attributesPayload = Object.entries(selectedAttrs).map(
+      ([groupId, optionIds]) => ({ groupId, optionIds })
+    );
+
+   const addonsPayload = [];
+
+Object.entries(selectedAddons).forEach(([groupId, options]) => {
+  Object.entries(options).forEach(([optionId, v]) => {
+    if (!v?.selected) return;
+
+    addonsPayload.push({
+      optionId,
+      overridePrice:
+        v.overridePrice === "" || v.overridePrice === null
+          ? null
+          : Number(v.overridePrice),
+    });
+  });
+});
 
 
-  if (images.length === 0) {
-    alert("Upload at least one image");
-    return;
-  }
 
-  const formData = new FormData();
 
-  formData.append("title", title);
-  formData.append("category", category);
-  formData.append("description", description);
-  formData.append("productType", productType);
-  formData.append("availabilityCount", availabilityCount);
-  formData.append("attributes", JSON.stringify(attributesPayload));
-  formData.append("addons", JSON.stringify(addonsPayload));
+    const formData = new FormData();
 
- 
+    formData.append("title", title);
+    formData.append("category", category);
+    formData.append("description", description);
+    formData.append("productType", productType);
+    formData.append("availabilityCount", availabilityCount);
+    formData.append("attributes", JSON.stringify(attributesPayload));
+    formData.append("addons", JSON.stringify(addonsPayload));
 
   if (productType === "rental") {
     formData.append("pricePerDay", pricePerDay);
@@ -153,33 +225,42 @@ overridePrice:
     formData.append("salePrice", salePrice);
   }
 
-  images.forEach((img) => {
-    formData.append("images", img);
+  if (isEditMode) {
+    formData.append("existingImages", JSON.stringify(existingImages));
+  } else if (images.length === 0) {
+    alert("Upload at least one image");
+    return;
+  }
+
+  images.forEach((img) => formData.append("images", img));
+
+  // 4️⃣ Decide endpoint
+  const endpoint = isEditMode
+    ? `/products/admin/edit/${id}`
+    : "/products/admin/add";
+
+  const token = localStorage.getItem("admin_token");
+
+  // 5️⃣ Submit
+  await api(endpoint, {
+    method: isEditMode ? "PUT" : "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
   });
 
-  try {
-    const token = localStorage.getItem("admin_token");
-
-    await api("/products/admin/add", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
-
-    alert("Product added successfully!");
-    window.location.href = "/admin/products";
-  } catch (err) {
-    console.error(err);
-    alert(err.message || "Error adding product");
-  }
+  alert(isEditMode ? "Product updated!" : "Product added!");
+  window.location.href = "/admin/products";
 };
+
 
 
   return (
     <AdminLayout>
-      <h1 className="text-3xl font-semibold mb-8">Add New Product</h1>
+<h1 className="text-3xl font-semibold mb-8">
+  {isEditMode ? "Edit Product" : "Add New Product"}
+</h1>
 
       <form
         onSubmit={handleSubmit}
@@ -191,9 +272,16 @@ overridePrice:
           <div className="flex gap-4 mt-2">
             {["rental", "sale"].map((type) => (
               <button
-                type="button"
-                key={type}
-                onClick={() => setProductType(type)}
+              type="button"
+              key={type}
+              disabled={isEditMode}
+onClick={() => {
+  if (isEditMode) return;
+  setProductType(type);
+  setCategory(""); // ✅ clear only on manual switch
+}}
+              
+
                 className={`px-6 py-2 rounded-full border border-gray-400 transition
                   ${
                     productType === type
@@ -296,12 +384,13 @@ overridePrice:
       const required = !!g.required;
 
       // current selection for normal groups
-      const current = selectedAttrs[g._id] || [];
+const current = selectedAttrs[String(g._id)] || [];
 
       // helper: toggle option
       const toggleOption = (optionId) => {
         setSelectedAttrs((prev) => {
-          const prevList = prev[g._id] || [];
+const key = String(g._id);
+const prevList = prev[key] || [];
           let nextList = prevList;
 
           if (isSingle) {
@@ -312,7 +401,7 @@ overridePrice:
               : [...prevList, optionId];
           }
 
-          return { ...prev, [g._id]: nextList };
+return { ...prev, [key]: nextList };
         });
       };
 
@@ -334,8 +423,12 @@ overridePrice:
           {isAddon ? (
             <div className="space-y-3">
               {options.map((o) => {
-                const isSelected = !!selectedAddons[o._id]?.selected;
-                const overridePrice = selectedAddons[o._id]?.overridePrice ?? "";
+const oid = String(o._id || o.optionId || o);
+const groupKey = String(g._id);
+const isSelected = !!selectedAddons[groupKey]?.[oid]?.selected;
+const overridePrice = selectedAddons[groupKey]?.[oid]?.overridePrice ?? "";
+
+
 
                 return (
                   <div
@@ -350,14 +443,23 @@ overridePrice:
                         checked={isSelected}
                         onChange={(e) => {
                           const checked = e.target.checked;
-                          setSelectedAddons((prev) => ({
-                            ...prev,
-                            [o._id]: {
-                              selected: checked,
-                              // default override empty; base price shown from attribute option
-                              overridePrice: prev?.[o._id]?.overridePrice ?? "",
-                            },
-                          }));
+                         setSelectedAddons((prev) => {
+  const groupKey = String(g._id);
+
+  return {
+    ...prev,
+    [groupKey]: {
+      ...(prev[groupKey] || {}),
+      [oid]: {
+        selected: checked,
+        overridePrice: prev[groupKey]?.[oid]?.overridePrice ?? "",
+      },
+    },
+  };
+});
+
+
+
                         }}
                       />
                       <div>
@@ -378,14 +480,29 @@ overridePrice:
                         disabled={!isSelected}
                         value={overridePrice}
                         onChange={(e) => {
-                          setSelectedAddons((prev) => ({
-                            ...prev,
-                            [o._id]: {
-                              selected: true,
-                              overridePrice: e.target.value,
-                            },
-                          }));
-                        }}
+  if (!oid || oid === "null") return;
+
+  const value = e.target.value;
+
+  setSelectedAddons((prev) => {
+  const groupKey = String(g._id);
+
+  return {
+    ...prev,
+    [groupKey]: {
+      ...(prev[groupKey] || {}),
+      [oid]: {
+        selected: true,
+        overridePrice: value === "" ? "" : Number(value),
+      },
+    },
+  };
+});
+
+}}
+
+
+
                         className="w-36 p-2 border border-gray-300 rounded-lg disabled:bg-gray-100"
                         placeholder={`${Number(o.priceDelta || 0).toFixed(0)}`}
                       />
@@ -398,7 +515,9 @@ overridePrice:
             /* Normal groups: buttons/toggles */
             <div className="flex flex-wrap gap-3 mt-2">
               {options.map((o) => {
-                const active = current.includes(o._id);
+  const oid = String(o._id);
+  const active = current.includes(oid);
+
 
                 return (
                   <button
@@ -449,30 +568,49 @@ overridePrice:
         </div>
 
         {/* IMAGES */}
-        <div>
-          <label>Product Images (max 8)</label>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleImageChange}
-          />
+       {/* IMAGES */}
+<div>
+  <label>Product Images (max 8)</label>
+  <input
+    type="file"
+    multiple
+    accept="image/*"
+    onChange={handleImageChange}
+  />
 
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mt-4">
-            {previews.map((src, i) => (
-              <img
-                key={i}
-                src={src}
-                className="w-full h-24 object-cover rounded"
-              />
-            ))}
-          </div>
-        </div>
+  {/* Existing images (edit mode) */}
+  {existingImages.length > 0 && (
+    <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mt-4">
+      {existingImages.map((img, i) => (
+        <img
+          key={i}
+          src={img.url || img}
+          className="w-full h-24 object-cover rounded border"
+        />
+      ))}
+    </div>
+  )}
+
+  {/* New previews */}
+  {previews.length > 0 && (
+    <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mt-4">
+      {previews.map((src, i) => (
+        <img
+          key={i}
+          src={src}
+          className="w-full h-24 object-cover rounded"
+        />
+      ))}
+    </div>
+  )}
+</div>
+
 
         {/* SUBMIT */}
         <button className="w-full py-4 bg-[#8B5C42] text-white rounded-xl text-lg font-medium hover:bg-[#704A36] transition">
-          Add Product
-        </button>
+  {isEditMode ? "Update Product" : "Add Product"}
+</button>
+
       </form>
     </AdminLayout>
   );
