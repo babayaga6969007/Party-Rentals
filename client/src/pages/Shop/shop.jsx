@@ -3,6 +3,8 @@ import hero1 from "../../assets/home2/hero1.png";
 import hero2 from "../../assets/home2/hero2.png";
 import hero3 from "../../assets/home2/hero3.png";
 import hero4 from "../../assets/home2/hero4.png";
+import { api } from "../../utils/api";
+
 
 // ====================
 //  CATEGORY DATA
@@ -32,64 +34,6 @@ const COLORS = [
 // ====================
 //  MOCK PRODUCT DATA (Your existing dummy data)
 // ====================
-const PRODUCTS = [
-  {
-    id: 1,
-    name: "White Wedding Arch",
-    category: "Backdrop",
-    pricePerDay: 120,
-    tags: ["Outdoor", "Large"],
-    image: hero1,
-    color: "White",
-  },
-  {
-    id: 2,
-    name: "Vintage Sofa Set",
-    category: "Furniture",
-    pricePerDay: 200,
-    tags: ["Indoor", "Compact"],
-    image: hero2,
-    color: "Gold",
-  },
-  {
-    id: 3,
-    name: "Fairy Light Curtain",
-    category: "Lights",
-    pricePerDay: 40,
-    tags: ["Outdoor", "Pastel"],
-    image: hero3,
-    color: "Yellow",
-  },
-  {
-    id: 4,
-    name: "Neon Name Sign",
-    category: "Lights",
-    pricePerDay: 60,
-    tags: ["Bold"],
-    image: hero4,
-    color: "Red",
-  },
-  {
-    id: 5,
-    name: "Flower Garland Set",
-    category: "Florals",
-    pricePerDay: 75,
-    tags: ["Pastel", "Large"],
-    image: hero1,
-    color: "Pink",
-  },
-
-  // ⭐ NEW DEMO PRODUCT ADDED:
-  {
-    id: 6,
-    name: "Rustic Wooden Table",
-    category: "Tables",
-    pricePerDay: 95,
-    tags: ["Indoor", "Large"],
-    image: hero2,
-    color: "Brown", // new color (optional)
-  },
-];
 
 
 
@@ -109,6 +53,13 @@ const CategoryPage = () => {
 
   const [priceRange, setPriceRange] = useState([0, 500]);
   const [hoverPrice, setHoverPrice] = useState(null);
+  // ====================
+//  BACKEND DATA STATE
+// ====================
+const [products, setProducts] = useState([]);
+const [categories, setCategories] = useState([]);
+const [loadingProducts, setLoadingProducts] = useState(true);
+
 
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
@@ -138,20 +89,80 @@ const CategoryPage = () => {
   setSelectedColors([]);   // <-- ADD THIS
   setPriceRange([0, 500]);
 };
+// ====================
+//  FETCH PRODUCTS (SALE)
+// ====================
+useEffect(() => {
+  const fetchProducts = async () => {
+    try {
+      setLoadingProducts(true);
+
+      const res = await api("/products");
+      const allProducts = res?.products || [];
+
+      // ✅ ONLY SALE PRODUCTS FOR SHOP PAGE
+      const saleProducts = allProducts.filter(
+        (p) => p.productType === "sale"
+      );
+
+      setProducts(saleProducts);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
+  fetchProducts();
+}, []);
+// ====================
+//  FETCH SALE CATEGORIES
+// ====================
+useEffect(() => {
+  const fetchCategories = async () => {
+    try {
+      const res = await api("/categories");
+      const allCategories = res?.data || res || [];
+
+      // ✅ ONLY SALE CATEGORIES
+      const saleCategories = allCategories.filter(
+        (c) => c.type === "sale"
+      );
+
+      setCategories(saleCategories);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  fetchCategories();
+}, []);
+// ====================
+//  AUTO SELECT ALL CATEGORIES
+// ====================
+useEffect(() => {
+  if (categories.length > 0) {
+    setSelectedCategories(categories.map((c) => String(c._id)));
+  }
+}, [categories]);
+
 
 
   // ====================
   //  FILTERED PRODUCTS
   // ====================
   const filteredProducts = useMemo(() => {
-  return PRODUCTS.filter((p) => {
-    const inCategory =
-      selectedCategories.length === 0 ||
-      selectedCategories.includes(p.category);
+return products.filter((p) => {
+  const productCategoryId =
+  typeof p.category === "object" ? p.category._id : p.category;
 
-    const inPrice =
-      p.pricePerDay >= priceRange[0] &&
-      p.pricePerDay <= priceRange[1];
+    const inCategory =
+  selectedCategories.length === 0 ||
+  selectedCategories.includes(String(productCategoryId));
+
+    const price = Number(p.salePrice ?? 0);
+const inPrice = price >= priceRange[0] && price <= priceRange[1];
+
 
     const inTags =
       selectedTags.length === 0 ||
@@ -165,7 +176,7 @@ const CategoryPage = () => {
     // ⬅️ Make sure to include AND inColor here
     return inCategory && inPrice && inTags && inColor;
   });
-}, [selectedCategories, selectedTags, selectedColors, priceRange]);
+}, [products, selectedCategories, selectedTags, selectedColors, priceRange]);
 
 
   // ====================
@@ -416,7 +427,7 @@ const CategoryPage = () => {
 
     {filteredProducts.map((product) => (
       <a
-        href={`/buyproducts`}
+href={`/buyproducts/${product._id}`}
         className="
           block border border-gray-300 hover:border-gray-500
           rounded-xl shadow 
@@ -428,7 +439,7 @@ const CategoryPage = () => {
         {/* IMAGE — NOW FULL WIDTH, NO PADDING */}
         <div className="h-48 rounded-t-xl overflow-hidden">
           <img
-            src={product.image}
+src={product.images?.[0]?.url || hero1}
             alt={product.name}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
@@ -439,23 +450,30 @@ const CategoryPage = () => {
 
           {/* NAME */}
           <h3 className="font-bold text-lg text-[#2D2926]">
-            {product.name}
+            {product.title}
           </h3>
 
           {/* PRICE SECTION */}
           <div className="mt-1 flex items-center gap-2">
-            <span className="text-black line-through text-sm">
-              ${product.pricePerDay}
-            </span>
+  {/* ORIGINAL PRICE */}
+  <span className="text-black line-through text-sm">
+    $ {product.salePrice}
+  </span>
 
-            <span className="text-red-600 font-bold text-lg">
-              ${product.salePrice || Math.round(product.pricePerDay * 0.85)}
-            </span>
-          </div>
+  {/* 3% DISCOUNTED PRICE */}
+  <span className="text-red-600 font-bold text-lg">
+    $ {Math.round((product.salePrice ?? 0) * 0.97)}
+  </span>
+</div>
+
 
           {/* CATEGORY */}
           <p className="text-sm text-gray-600 mt-1">
-            Category: {product.category}
+Category: {
+  categories.find(
+    (c) => String(c._id) === String(product.category)
+  )?.name || "—"
+}
           </p>
 
           {/* BUTTON */}
