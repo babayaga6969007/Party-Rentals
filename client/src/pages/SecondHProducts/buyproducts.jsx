@@ -341,7 +341,7 @@ if (!product) {
 
   {/* Price */}
  <p className="text-3xl font-semibold text-[#8B5C42]">
-  Rs {isSalePage ? salePrice : pricePerDay}
+  $ {isSalePage ? salePrice : pricePerDay}
   {!isSalePage && " / day"}
 </p>
 
@@ -490,7 +490,7 @@ if (!product) {
           <p className="font-semibold text-[#2D2926]">{addedItem.name}</p>
           <p className="text-sm text-gray-600">Qty: {addedItem.qty}</p>
 <p className="font-semibold mt-1">
-  Rs {addedItem.price} {!isSalePage && "/ day"}
+  $ {addedItem.price} {!isSalePage && "/ day"}
 </p>
         </div>
       </div>
