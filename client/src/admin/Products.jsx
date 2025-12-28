@@ -53,8 +53,32 @@ const Products = () => {
               alt={p.title}
             />
 
-            <h3 className="font-semibold mt-3">{p.title}</h3>
-            <p className="text-gray-600">{p.pricePerDay}/day</p>
+           <h3 className="font-semibold mt-3">{p.title}</h3>
+
+{/* PRODUCT TYPE BADGE */}
+<p className="mt-1 text-sm font-medium">
+  Type:{" "}
+  <span
+    className={`px-2 py-0.5 rounded-full text-xs font-semibold
+      ${
+        p.productType === "rental"
+          ? "bg-blue-100 text-blue-700"
+          : "bg-green-100 text-green-700"
+      }
+    `}
+  >
+    {p.productType === "rental" ? "Rental" : "Sale"}
+  </span>
+</p>
+
+{/* PRICE */}
+<p className="text-gray-600 mt-1">
+  {p.productType === "rental" ? (
+    <>$ {p.pricePerDay} / day</>
+  ) : (
+    <>$ {p.salePrice}</>
+  )}
+</p>
 
             <div className="mt-3 flex justify-between">
               <a
