@@ -10,8 +10,6 @@ import {
   FiRefreshCw,
 } from "react-icons/fi";
 
-import lightsImg from "../../assets/addons/lights.png";
-import flowersImg from "../../assets/addons/flowers.png";
 
 
 // Trust Badges
@@ -32,6 +30,8 @@ const ProductPage = () => {
   const [product, setProduct] = useState(null);
   const [loadingProduct, setLoadingProduct] = useState(true);
   const [productError, setProductError] = useState("");
+    const maxStock = product?.availabilityCount ?? 1;
+
 
   // DATE RANGE SELECTION
 const today = new Date().toISOString().split("T")[0]; // disable past dates
@@ -40,7 +40,11 @@ const [startDate, setStartDate] = useState("");
 const [endDate, setEndDate] = useState("");
 const [openModal, setOpenModal] = useState(false);
 const [chosenProduct, setChosenProduct] = useState(null);
-const [chosenAddons, setChosenAddons] = useState([]);
+// ====================
+//  PEOPLE ALSO BUY (RELATED PRODUCTS)
+// ====================
+const [relatedProducts, setRelatedProducts] = useState([]);
+
 
 // Convert date to readable format
 const formatDate = (d) =>
@@ -70,20 +74,27 @@ const selectedDays =
 
   const [activeImage, setActiveImage] = useState(0);
 
-  const handleNext = () => {
-    setActiveImage((prev) => (prev + 1) % productImages.length);
-  };
+const handleNext = () => {
+  if (productImages.length <= 1) return;
+  setActiveImage((prev) => (prev + 1) % productImages.length);
+};
 
-  const handlePrev = () => {
-    setActiveImage((prev) =>
-      prev === 0 ? productImages.length - 1 : prev - 1
-    );
-  };
+const handlePrev = () => {
+  if (productImages.length <= 1) return;
+  setActiveImage((prev) =>
+    prev === 0 ? productImages.length - 1 : prev - 1
+  );
+};
 
 
 
   // Quantity of main product
   const [productQty, setProductQty] = useState(1);
+  // ====================
+//  RELATED PRODUCT QUANTITIES
+// ====================
+const [relatedQty, setRelatedQty] = useState({});
+
  const handleProductQtyChange = (inc) => {
   setProductQty((prev) => {
     const nextQty = prev + inc;
@@ -98,20 +109,23 @@ const selectedDays =
   });
 };
 
+const handleRelatedQtyChange = (productId, inc, maxStock) => {
+  setRelatedQty((prev) => {
+    const currentQty = prev[productId] || 0;
+    const nextQty = currentQty + inc;
 
+    if (nextQty < 0) return prev;
+    if (nextQty > maxStock) return prev;
 
-  // Addon quantities
-  const [addons, setAddons] = useState({
-    lights: 0,
-    flowers: 0,
-  });
-
-  const handleAddonChange = (type, inc) => {
-    setAddons((prev) => ({
+    return {
       ...prev,
-      [type]: Math.max(0, prev[type] + inc),
-    }));
-  };
+      [productId]: nextQty,
+    };
+  });
+};
+
+
+  
 const fullDescription =
   product?.description || "No description available.";
 
@@ -125,18 +139,29 @@ const [showFullDesc, setShowFullDesc] = useState(false);
   // Date selection
   const [selectedDate, setSelectedDate] = useState("");
 
-  // Add-on total calculation
-  const addonsTotal = addons.lights * 10 + addons.flowers * 15;
+
 
   // Final total price
 // priority: use date range if selected, else manual days input
 const totalRentalDays = selectedDays;
 const pricePerDay = Number(product?.pricePerDay || 0);
 
-const totalPrice =
-  totalRentalDays * pricePerDay * productQty + addonsTotal;
+// ====================
+//  RELATED PRODUCTS TOTAL
+// ====================
+const relatedTotal = relatedProducts.reduce((sum, rp) => {
+  const qty = relatedQty[rp._id] || 0;
+  return sum + qty * (rp.pricePerDay || 0);
+}, 0);
 
-  const maxStock = product?.availabilityCount ?? 1;
+// ====================
+//  FINAL TOTAL PRICE
+// ====================
+const totalPrice =
+  totalRentalDays *
+  (pricePerDay * productQty + relatedTotal);
+
+
 
     // ====================
   //  FETCH SINGLE RENTAL PRODUCT
@@ -161,6 +186,48 @@ const totalPrice =
 
     if (id) fetchProduct();
   }, [id]);
+
+  // ====================
+//  FETCH RELATED PRODUCTS (SAME CATEGORY, RENTAL, MAX 2)
+// ====================
+useEffect(() => {
+  const fetchRelated = async () => {
+    try {
+      if (!product) return;
+
+      // category could be ID or populated object
+      const currentCategoryId =
+        typeof product.category === "object"
+          ? String(product.category?._id)
+          : String(product.category);
+
+      const res = await api("/products");
+      const all = res?.products || [];
+
+      // Filter: rental + same category + not same product
+      const sameCategoryRental = all.filter((p) => {
+        const pCategoryId =
+          typeof p.category === "object" ? String(p.category?._id) : String(p.category);
+
+        return (
+          p.productType === "rental" &&
+          pCategoryId === currentCategoryId &&
+          String(p._id) !== String(product._id)
+        );
+      });
+
+      // Randomize + cap to 2
+      const shuffled = [...sameCategoryRental].sort(() => Math.random() - 0.5);
+      setRelatedProducts(shuffled.slice(0, 2));
+    } catch (err) {
+      console.error(err);
+      setRelatedProducts([]);
+    }
+  };
+
+  fetchRelated();
+}, [product]);
+
 
   // ====================
 //  SYNC QTY WITH STOCK
@@ -241,69 +308,87 @@ if (!product) {
 )}
 
 
+{/* ⭐ PEOPLE ALSO BUY (SAME CATEGORY, RENTAL) */}
+{relatedProducts.length > 0 && (
+  <div className="mt-10">
+    <h3 className="text-2xl font-semibold text-[#2D2926] mb-4">
+      Customers Also Bought
+    </h3>
 
-          {/* ⭐ RECOMMENDED ADDONS UNDER IMAGE */}
-          <div className="mt-10">
-            <h3 className="text-2xl font-semibold text-[#2D2926] mb-4">
-              Recommended Add-Ons
-            </h3>
-
-            <div className="grid grid-cols-2 gap-4">
-
-              {/* Lights Add-on */}
-              <div className="bg-white p-4 rounded-xl shadow-md">
-                <img
-                  src={lightsImg}
-                  className="w-full h-28 object-cover rounded-lg mb-3"
-                />
-                <p className="font-medium">Warm LED Lights</p>
-                <p className="text-[#8B5C42] font-semibold">$10/day</p>
-
-                <div className="flex items-center gap-3 mt-3">
-                  <button
-                    onClick={() => handleAddonChange("lights", -1)}
-                    className="px-3 py-1 bg-gray-200 rounded"
-                  >
-                    -
-                  </button>
-                  <span>{addons.lights}</span>
-                  <button
-                    onClick={() => handleAddonChange("lights", 1)}
-                    className="px-3 py-1 bg-[#8B5C42] text-white rounded"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              {/* Flowers Add-on */}
-              <div className="bg-white p-4 rounded-xl shadow-md">
-                <img
-                  src={flowersImg}
-                  className="w-full h-28 object-cover rounded-lg mb-3"
-                />
-                <p className="font-medium">Flower Garland Set</p>
-                <p className="text-[#8B5C42] font-semibold">$15/day</p>
-
-                <div className="flex items-center gap-3 mt-3">
-                  <button
-                    onClick={() => handleAddonChange("flowers", -1)}
-                    className="px-3 py-1 bg-gray-200 rounded"
-                  >
-                    -
-                  </button>
-                  <span>{addons.flowers}</span>
-                  <button
-                    onClick={() => handleAddonChange("flowers", 1)}
-                    className="px-3 py-1 bg-[#8B5C42] text-white rounded"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {relatedProducts.map((rp) => (
+        <div
+          key={rp._id}
+          className="bg-white p-4 rounded-xl shadow-md"
+        >
+          {/* CLICKABLE AREA */}
+          <Link to={`/product/${rp._id}`}>
+            <div className="w-full h-28 rounded-lg overflow-hidden mb-3">
+              <img
+                src={rp.images?.[0]?.url || ""}
+                alt={rp.title}
+                className="w-full h-full object-cover"
+              />
             </div>
+
+            <p className="font-medium text-[#2D2926] line-clamp-1">
+              {rp.title}
+            </p>
+          </Link>
+
+          <p className="text-[#8B5C42] font-semibold mt-1">
+            Rs {rp.pricePerDay} / day
+          </p>
+
+          {/* QUANTITY CONTROLS */}
+          <div className="flex items-center gap-3 mt-3">
+            <button
+              onClick={() =>
+                handleRelatedQtyChange(
+                  rp._id,
+                  -1,
+                  rp.availabilityCount ?? 0
+                )
+              }
+              className="px-3 py-1 border rounded"
+            >
+              −
+            </button>
+
+            <span className="min-w-[20px] text-center">
+              {relatedQty[rp._id] || 0}
+            </span>
+
+            <button
+              onClick={() =>
+                handleRelatedQtyChange(
+                  rp._id,
+                  1,
+                  rp.availabilityCount ?? 0
+                )
+              }
+              disabled={
+                (relatedQty[rp._id] || 0) >= (rp.availabilityCount ?? 0)
+              }
+              className={`px-3 py-1 rounded border
+                ${
+                  (relatedQty[rp._id] || 0) >= (rp.availabilityCount ?? 0)
+                    ? "bg-gray-300 cursor-not-allowed"
+                    : "bg-white hover:bg-gray-100"
+                }
+              `}
+            >
+              +
+            </button>
           </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
+
+
         </div>
 
         {/* RIGHT COLUMN */}
@@ -435,6 +520,22 @@ $ {pricePerDay} / day
   ${totalPrice}
 </div>
 
+{Object.keys(relatedQty).length > 0 && (
+  <div className="mt-3 text-sm text-gray-600">
+    {relatedProducts.map((rp) => {
+      const qty = relatedQty[rp._id] || 0;
+      if (qty === 0) return null;
+
+      return (
+        <p key={rp._id}>
+          {rp.title} × {qty}
+        </p>
+      );
+    })}
+  </div>
+)}
+
+
 
           {/* BUTTON */}
           {/* CONFIRM BOOKING BUTTON */}
@@ -444,24 +545,6 @@ $ {pricePerDay} / day
   disabled={!startDate || !endDate}
   onClick={() => {
     if (!startDate || !endDate) return;
-
-    const selectedAddons = [];
-
-    if (addons.lights > 0) {
-      selectedAddons.push({
-        name: "Warm LED Lights",
-        qty: addons.lights,
-        price: 10,
-      });
-    }
-
-    if (addons.flowers > 0) {
-      selectedAddons.push({
-        name: "Flower Garland Set",
-        qty: addons.flowers,
-        price: 15,
-      });
-    }
 
   setChosenProduct({
   name: product?.title || "Product",
@@ -474,7 +557,6 @@ $ {pricePerDay} / day
 });
 
 
-    setChosenAddons(selectedAddons);
     setOpenModal(true);
   }}
   className={`
@@ -554,7 +636,7 @@ $ {pricePerDay} / day
   open={openModal}
   onClose={() => setOpenModal(false)}
   product={chosenProduct}
-  addons={chosenAddons}
+  addons={[]}
   onGoToCart={() => {
     setOpenModal(false);
     window.location.href = "/cart";

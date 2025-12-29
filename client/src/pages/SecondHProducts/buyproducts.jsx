@@ -93,9 +93,20 @@ const selectedDays =
 
   // Quantity of main product
   const [productQty, setProductQty] = useState(1);
-  const handleProductQtyChange = (inc) => {
-    setProductQty((prev) => Math.max(1, prev + inc));
-  };
+ const handleProductQtyChange = (inc) => {
+  setProductQty((prev) => {
+    const nextQty = prev + inc;
+
+    // Minimum = 1
+    if (nextQty < 1) return 1;
+
+    // Maximum = available stock
+    if (nextQty > maxStock) return maxStock;
+
+    return nextQty;
+  });
+};
+
 
   // Days selection
   const [days, setDays] = useState(1);
@@ -123,6 +134,8 @@ const pricePerDay = Number(product?.pricePerDay || 0);
 const salePrice = Number(product?.salePrice || 0);
 
   const addonsTotal = addons.lights * 10 + addons.flowers * 15;
+  const maxStock = product?.availabilityCount ?? 1;
+
 
   // Final total price
 // priority: use date range if selected, else manual days input
@@ -191,6 +204,15 @@ const handleConfirmBooking = () => {
 useEffect(() => {
   setActiveImage(0);
 }, [id]);
+
+// ====================
+//  SYNC QTY WITH STOCK
+// ====================
+useEffect(() => {
+  if (product && productQty > maxStock) {
+    setProductQty(maxStock);
+  }
+}, [product, maxStock]);
 
 
 if (loadingProduct) {
@@ -376,11 +398,19 @@ if (!product) {
             <span className="text-xl">{productQty}</span>
 
             <button
-              onClick={() => handleProductQtyChange(1)}
-              className="px-3 py-1 bg-[#8B5C42] text-white rounded"
-            >
-              +
-            </button>
+  onClick={() => handleProductQtyChange(1)}
+  disabled={productQty >= maxStock}
+  className={`px-3 py-1 rounded text-white
+    ${
+      productQty >= maxStock
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-[#8B5C42] hover:bg-[#704A36]"
+    }
+  `}
+>
+  +
+</button>
+
           </div>
 
         
