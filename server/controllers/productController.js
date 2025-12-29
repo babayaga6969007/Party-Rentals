@@ -52,12 +52,54 @@ exports.addProduct = async (req, res) => {
     }
 
     // 4️⃣ Create product
-   const product = await Product.create({
-  ...req.body,
+   const featuredFlag =
+  req.body.featured === "true" || req.body.featured === true;
+
+const {
+  title,
+  description,
+  category,
+  productType,
+  pricePerDay,
+  salePrice,
+  availabilityCount,
+  tags,
+} = req.body;
+
+const product = await Product.create({
+  title,
+  description,
+  category,
+  productType,
+  pricePerDay,
+  salePrice,
+  availabilityCount,
+  tags,
+  featured: featuredFlag,
+  featuredAt: featuredFlag ? new Date() : null,
   attributes,
   addons,
   images: uploadedImages,
 });
+
+
+// 🔒 ENFORCE MAX 8 FEATURED RENTAL PRODUCTS (FIFO)
+if (featuredFlag) {
+  const featuredProducts = await Product.find({
+    featured: true,
+    productType: "rental",
+  }).sort({ featuredAt: 1 }); // oldest first
+
+  if (featuredProducts.length > 8) {
+    const excess = featuredProducts.slice(0, featuredProducts.length - 8);
+
+    await Product.updateMany(
+      { _id: { $in: excess.map((p) => p._id) } },
+      { $set: { featured: false, featuredAt: null } }
+    );
+  }
+}
+
 
 
     res.json({
@@ -84,6 +126,20 @@ exports.editProduct = async (req, res) => {
     if (req.body.category !== undefined) updates.category = req.body.category;
     if (req.body.productType !== undefined)
       updates.productType = req.body.productType;
+    if (req.body.featured !== undefined) {
+  const featuredFlag =
+    req.body.featured === "true" || req.body.featured === true;
+
+  updates.featured = featuredFlag;
+  updates.featuredAt = featuredFlag ? new Date() : null;
+}
+// ❌ Sale products should NEVER be featured
+if (updates.productType === "sale") {
+  updates.featured = false;
+  updates.featuredAt = null;
+}
+
+
     if (req.body.availabilityCount !== undefined)
       updates.availabilityCount = Number(req.body.availabilityCount);
 
@@ -129,6 +185,23 @@ exports.editProduct = async (req, res) => {
       { $set: updates },   // 🔒 IMPORTANT
       { new: true, runValidators: true }
     );
+    // 🔒 ENFORCE MAX 8 FEATURED RENTAL PRODUCTS (FIFO)
+if (updates.featured === true) {
+  const featuredProducts = await Product.find({
+    featured: true,
+    productType: "rental",
+  }).sort({ featuredAt: 1 });
+
+  if (featuredProducts.length > 8) {
+    const excess = featuredProducts.slice(0, featuredProducts.length - 8);
+
+    await Product.updateMany(
+      { _id: { $in: excess.map((p) => p._id) } },
+      { $set: { featured: false, featuredAt: null } }
+    );
+  }
+}
+
 
     res.json({ message: "Product updated", product: updated });
   } catch (error) {

@@ -25,6 +25,9 @@ const AddProduct = () => {
 
   // Product core
   const [productType, setProductType] = useState("rental");
+  // Featured (only for rental)
+const [isFeatured, setIsFeatured] = useState(false);
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
@@ -129,6 +132,8 @@ const getImgSrc = (img) =>
         setProductType(data.productType);
         setPricePerDay(data.pricePerDay || "");
         setSalePrice(data.salePrice || "");
+setIsFeatured(!!data.featured);
+
 
         const attrSelections = {};
 data.attributes?.forEach((a) => {
@@ -216,6 +221,8 @@ Object.entries(selectedAddons).forEach(([groupId, options]) => {
     formData.append("description", description);
     formData.append("productType", productType);
     formData.append("availabilityCount", availabilityCount);
+formData.append("featured", productType === "rental" ? String(isFeatured) : "false");
+
     formData.append("attributes", JSON.stringify(attributesPayload));
     formData.append("addons", JSON.stringify(addonsPayload));
 
@@ -277,9 +284,20 @@ Object.entries(selectedAddons).forEach(([groupId, options]) => {
               disabled={isEditMode}
 onClick={() => {
   if (isEditMode) return;
+
   setProductType(type);
-  setCategory(""); // ✅ clear only on manual switch
+  setCategory(""); // clear category on switch
+
+  // ✅ Popup only when choosing RENTAL
+  if (type === "rental") {
+    const yes = window.confirm("Add this rental product to Featured section?");
+    setIsFeatured(yes); // Yes -> true, Cancel -> false
+  } else {
+    // Sale products should never be featured
+    setIsFeatured(false);
+  }
 }}
+
               
 
                 className={`px-6 py-2 rounded-full border border-gray-400 transition
@@ -365,6 +383,36 @@ onClick={() => {
               min="1"
             />
           </div>
+          {productType === "rental" && (
+  <div className="mt-2">
+    <label className="font-medium">Show on Homepage Featured?</label>
+    <div className="flex items-center gap-3 mt-2">
+      <button
+        type="button"
+        onClick={() => setIsFeatured(true)}
+        className={`px-4 py-2 rounded-lg border ${
+          isFeatured ? "bg-[#8B5C42] text-white border-[#8B5C42]" : "bg-white border-gray-300"
+        }`}
+      >
+        Yes
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setIsFeatured(false)}
+        className={`px-4 py-2 rounded-lg border ${
+          !isFeatured ? "bg-black text-white border-black" : "bg-white border-gray-300"
+        }`}
+      >
+        No
+      </button>
+    </div>
+    <p className="text-xs text-gray-500 mt-2">
+      Note: Only rental products can be featured. Max 8 items are shown on homepage.
+    </p>
+  </div>
+)}
+
         </div>
 
 {/* DYNAMIC ATTRIBUTES */}

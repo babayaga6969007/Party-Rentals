@@ -125,11 +125,20 @@ const productSchema = new mongoose.Schema(
       material: { type: String },
       weight: { type: String },
     },
+featured: {
+  type: Boolean,
+  default: false,
+},
+featuredAt: {
+  type: Date,
+  default: null,
+},
 
-    featured: {
-      type: Boolean,
-      default: false,
-    },
+    featuredAt: {
+  type: Date,
+  default: null,
+},
+
 
     /* RENTAL LOGIC */
     blockedDates: {
