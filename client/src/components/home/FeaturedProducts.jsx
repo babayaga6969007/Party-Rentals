@@ -82,7 +82,8 @@ useEffect(() => {
       <Link to={`/product/${item._id}`}>
         <button
           className="mt-4 w-full py-2 rounded-full bg-[#8B5C42] text-white text-sm font-medium
-                    opacity-0 group-hover:opacity-100 transition-opacity duration-300 
+                    opacity-100 lg:opacity-0 lg:group-hover:opacity-100
+ transition-opacity duration-300 
                     hover:bg-[#704A36]"
         >
           View Product

@@ -1,4 +1,3 @@
-
 import AdminLayout from "./AdminLayout";
 import { api } from "../utils/api";
 import { useState, useEffect, useMemo } from "react";
@@ -47,8 +46,10 @@ const [isFeatured, setIsFeatured] = useState(false);
 
   // Selections
   const [selectedAttrs, setSelectedAttrs] = useState({});
+  const [selectedAddons, setSelectedAddons] = useState({});
+
 // groupId → optionId → { selected, overridePrice }
-const [selectedAddons, setSelectedAddons] = useState({});
+const [loadedAddons, setLoadedAddons] = useState([]);
 
   /* =====================
      DERIVED DATA
@@ -87,6 +88,41 @@ const getImgSrc = (img) =>
 
     fetchAttributes();
   }, []);
+  useEffect(() => {
+  // Only needed when editing and when attribute groups are loaded
+  if (!isEditMode) return;
+  if (!loadedAddons || loadedAddons.length === 0) {
+    setSelectedAddons({});
+    return;
+  }
+  if (!attributeGroups || attributeGroups.length === 0) return;
+
+  const grouped = {};
+
+  loadedAddons.forEach((a) => {
+    const optionId = String(a.optionId?._id || a.optionId);
+
+    // Find the addon group that contains this optionId
+    const addonGroup = attributeGroups.find(
+      (g) =>
+        g.type === "addon" &&
+        (g.options || []).some((o) => String(o._id) === optionId)
+    );
+
+    if (!addonGroup) return;
+
+    const groupKey = String(addonGroup._id);
+    if (!grouped[groupKey]) grouped[groupKey] = {};
+
+    grouped[groupKey][optionId] = {
+      selected: true,
+      overridePrice: a.overridePrice ?? "",
+    };
+  });
+
+  setSelectedAddons(grouped);
+}, [isEditMode, loadedAddons, attributeGroups]);
+
 
   // Fetch categories
   useEffect(() => {
@@ -144,15 +180,8 @@ data.attributes?.forEach((a) => {
 setSelectedAttrs(attrSelections);
 
 
-      const addonSelections = {};
-(data.addons || []).forEach((a) => {
-  const optionKey = String(a.optionId); // ✅ since backend returns raw ObjectId
-  addonSelections[optionKey] = {
-    selected: true,
-    overridePrice: a.overridePrice ?? "",
-  };
-});
-setSelectedAddons(addonSelections);
+ setLoadedAddons(data.addons || []);
+
 
 
 
