@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 import {
   FiGrid,
   FiShoppingCart,
@@ -14,16 +14,52 @@ import {
 
 const Sidebar = () => {
   const [open, setOpen] = useState(null);
+  const location = useLocation();
 
   const toggle = (menu) => {
     setOpen(open === menu ? null : menu);
   };
 
-  const linkClass =
-    "block px-4 py-2 rounded-lg text-sm hover:bg-gray-100 transition";
+  /* ---------- Active route checks ---------- */
+  const isEcommerceActive =
+    location.pathname.startsWith("/admin/products") ||
+    location.pathname.startsWith("/admin/categories") ||
+    location.pathname.startsWith("/admin/attributes");
+
+  const isOrdersActive = location.pathname.startsWith("/admin/orders");
+  const isReportsActive = location.pathname.startsWith("/admin/reports");
+  const isSettingsActive = location.pathname.startsWith("/admin/settings");
+
+  /* ---------- Auto-open submenu ---------- */
+  useEffect(() => {
+    if (isEcommerceActive) setOpen("ecommerce");
+    else if (isOrdersActive) setOpen("orders");
+    else if (isReportsActive) setOpen("reports");
+    else if (isSettingsActive) setOpen("settings");
+  }, [isEcommerceActive, isOrdersActive, isReportsActive, isSettingsActive]);
+
+  /* ---------- Styles ---------- */
+  const linkClass = ({ isActive }) =>
+    `block px-4 py-2 rounded-lg text-sm transition
+     ${
+       isActive
+         ? "bg-blue-100 text-blue-600 font-semibold"
+         : "hover:bg-gray-100 text-gray-700"
+     }`;
+
+  const parentButtonClass = (active) =>
+    `block px-4 py-2 rounded-lg text-sm w-full text-left transition
+     ${
+       active
+         ? "bg-blue-50 text-blue-600 font-semibold"
+         : "hover:bg-gray-100 text-gray-700"
+     }`;
+
+  const placeholderClass =
+    "block px-4 py-2 rounded-lg text-sm text-gray-400 cursor-not-allowed";
 
   return (
-<aside className="w-64 min-h-screen bg-white border-r border-gray-200 p-4 py-10">
+    <aside className="w-64 min-h-screen bg-white border-r border-gray-200 p-4 py-10">
       <h2 className="text-xl font-semibold mb-6">Admin Panel</h2>
 
       {/* Dashboard */}
@@ -33,14 +69,17 @@ const Sidebar = () => {
       </NavLink>
 
       {/* Ecommerce */}
-      <button onClick={() => toggle("ecommerce")} className={linkClass + " w-full text-left"}>
+      <button
+        onClick={() => toggle("ecommerce")}
+        className={parentButtonClass(isEcommerceActive)}
+      >
         <FiShoppingCart className="inline mr-2" />
         Ecommerce
       </button>
 
       {open === "ecommerce" && (
         <div className="ml-6 space-y-1">
-          <NavLink to="/admin/products" className={linkClass}>
+          <NavLink to="/admin/products" end className={linkClass}>
             Products
           </NavLink>
           <NavLink to="/admin/products/new" className={linkClass}>
@@ -56,14 +95,17 @@ const Sidebar = () => {
       )}
 
       {/* Orders */}
-      <button onClick={() => toggle("orders")} className={linkClass + " w-full text-left"}>
+      <button
+        onClick={() => toggle("orders")}
+        className={parentButtonClass(isOrdersActive)}
+      >
         <FiBox className="inline mr-2" />
         Orders
       </button>
 
       {open === "orders" && (
         <div className="ml-6 space-y-1">
-          <NavLink to="/admin/orders" className={linkClass}>
+          <NavLink to="/admin/orders" end className={linkClass}>
             All Orders
           </NavLink>
           <NavLink to="/admin/orders/active" className={linkClass}>
@@ -76,65 +118,52 @@ const Sidebar = () => {
       )}
 
       {/* Gallery */}
-      <button onClick={() => toggle("gallery")} className={linkClass + " w-full text-left"}>
+      <button
+        onClick={() => toggle("gallery")}
+        className={parentButtonClass(false)}
+      >
         <FiImage className="inline mr-2" />
         Gallery
       </button>
 
-       {open === "gallery" && (
+      {open === "gallery" && (
         <div className="ml-6 space-y-1">
-          <NavLink to="" className={linkClass}>
-            Media Library
-          </NavLink>
-          <NavLink to="" className={linkClass}>
-            Upload Media
-          </NavLink>
-        </div>
-      )} 
-
-      {/* Reports */}
-      <button onClick={() => toggle("reports")} className={linkClass + " w-full text-left"}>
-        <FiBarChart2 className="inline mr-2" />
-        Reports
-      </button>
-
-      {open === "reports" && (
-        <div className="ml-6 space-y-1">
-          <NavLink to="/admin/reports/sales" className={linkClass}>
-            Sales
-          </NavLink>
-          <NavLink to="/admin/reports/sales" className={linkClass}>
-            Rentals
-          </NavLink>
+          <div className={placeholderClass}>Media Library</div>
+          <div className={placeholderClass}>Upload Media</div>
         </div>
       )}
 
-      {/* Customers */}
-      <NavLink to="" className={linkClass}>
+   {/* Reports */}
+<NavLink to="/admin/reports/sales" className={linkClass}>
+  <FiBarChart2 className="inline mr-2" />
+  Reports
+</NavLink>
+
+      {/* Customers (placeholder) */}
+      <div className={placeholderClass}>
         <FiUsers className="inline mr-2" />
         Customers
-      </NavLink>
+      </div>
 
-      {/* Calendar */}
-      <NavLink to="" className={linkClass}>
+      {/* Calendar (placeholder) */}
+      <div className={placeholderClass}>
         <FiCalendar className="inline mr-2" />
         Calendar
-      </NavLink>
+      </div>
 
       {/* Settings */}
-      <button onClick={() => toggle("settings")} className={linkClass + " w-full text-left"}>
+      <button
+        onClick={() => toggle("settings")}
+        className={parentButtonClass(isSettingsActive)}
+      >
         <FiSettings className="inline mr-2" />
         Settings
       </button>
 
       {open === "settings" && (
         <div className="ml-6 space-y-1">
-          <NavLink to="" className={linkClass}>
-            Store Settings
-          </NavLink>
-          <NavLink to="" className={linkClass}>
-            Admin Users
-          </NavLink>
+          <div className={placeholderClass}>Store Settings</div>
+          <div className={placeholderClass}>Admin Users</div>
         </div>
       )}
 
