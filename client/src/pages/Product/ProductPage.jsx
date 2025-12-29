@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { api } from "../../utils/api";
 import AddToCartModal from "../../components/cart/AddToCartModal";
 
 import {
@@ -12,13 +13,6 @@ import {
 import lightsImg from "../../assets/addons/lights.png";
 import flowersImg from "../../assets/addons/flowers.png";
 
-// Product Images
-import hero1 from "../../assets/home2/hero1.png";
-import hero2 from "../../assets/home2/hero2.png";
-import hero3 from "../../assets/home2/hero3.png";
-import hero4 from "../../assets/home2/hero4.png";
-
-const productImages = [hero1, hero2, hero3, hero4];
 
 // Trust Badges
 const trustBadges = [
@@ -30,6 +24,15 @@ const trustBadges = [
 
 
 const ProductPage = () => {
+    // ====================
+  //  PRODUCT DATA (BACKEND)
+  // ====================
+  const { id } = useParams();
+
+  const [product, setProduct] = useState(null);
+  const [loadingProduct, setLoadingProduct] = useState(true);
+  const [productError, setProductError] = useState("");
+
   // DATE RANGE SELECTION
 const today = new Date().toISOString().split("T")[0]; // disable past dates
 
@@ -62,6 +65,9 @@ const selectedDays =
 
 
   // ⭐ THIS IS WHERE THE HOOKS MUST GO
+    // Product images from backend
+  const productImages = product?.images?.map((img) => img.url) || [];
+
   const [activeImage, setActiveImage] = useState(0);
 
   const handleNext = () => {
@@ -74,14 +80,24 @@ const selectedDays =
     );
   };
 
-  // Base product price
-  const pricePerDay = 40;
+
 
   // Quantity of main product
   const [productQty, setProductQty] = useState(1);
-  const handleProductQtyChange = (inc) => {
-    setProductQty((prev) => Math.max(1, prev + inc));
-  };
+ const handleProductQtyChange = (inc) => {
+  setProductQty((prev) => {
+    const nextQty = prev + inc;
+
+    // Minimum = 1
+    if (nextQty < 1) return 1;
+
+    // Maximum = available stock
+    if (nextQty > maxStock) return maxStock;
+
+    return nextQty;
+  });
+};
+
 
 
   // Addon quantities
@@ -96,8 +112,10 @@ const selectedDays =
       [type]: Math.max(0, prev[type] + inc),
     }));
   };
-  const fullDescription =
-  "High-quality decorative arch backdrop perfect for events. Durable, elegant, and customizable with add-ons. This stunning backdrop enhances weddings, birthdays, parties, photoshoots, and corporate events. Built with premium material for stability and available in multiple colors and custom add-ons.";
+const fullDescription =
+  product?.description || "No description available.";
+
+
 
 const shortDescription = fullDescription.substring(0, 120) + "...";
 
@@ -113,9 +131,58 @@ const [showFullDesc, setShowFullDesc] = useState(false);
   // Final total price
 // priority: use date range if selected, else manual days input
 const totalRentalDays = selectedDays;
+const pricePerDay = Number(product?.pricePerDay || 0);
 
 const totalPrice =
   totalRentalDays * pricePerDay * productQty + addonsTotal;
+
+  const maxStock = product?.availabilityCount ?? 1;
+
+    // ====================
+  //  FETCH SINGLE RENTAL PRODUCT
+  // ====================
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setLoadingProduct(true);
+        setProductError("");
+
+        const res = await api(`/products/${id}`);
+        const data = res?.product || res;
+
+        setProduct(data);
+      } catch (err) {
+        console.error(err);
+        setProductError("Failed to load product");
+      } finally {
+        setLoadingProduct(false);
+      }
+    };
+
+    if (id) fetchProduct();
+  }, [id]);
+
+  // ====================
+//  SYNC QTY WITH STOCK
+// ====================
+useEffect(() => {
+  if (product && productQty > maxStock) {
+    setProductQty(maxStock);
+  }
+}, [product, maxStock]);
+
+
+if (loadingProduct) {
+  return <div className="max-w-7xl mx-auto px-6 py-20">Loading...</div>;
+}
+
+if (productError) {
+  return <div className="max-w-7xl mx-auto px-6 py-20">{productError}</div>;
+}
+
+if (!product) {
+  return <div className="max-w-7xl mx-auto px-6 py-20">Product not found</div>;
+}
 
   return (
     <>
@@ -129,45 +196,50 @@ const totalPrice =
 
   {/* Main Image */}
   <img
-    src={productImages[activeImage]}
-    className="w-full h-full object-cover"
-    alt="Product"
-  />
+  src={productImages[activeImage] || ""}
+  className="w-full h-full object-cover"
+  alt={product?.title || "Product"}
+/>
 
   {/* LEFT ARROW */}
+  {productImages.length > 1 && (
   <button
     onClick={handlePrev}
     className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white p-2 rounded-full shadow"
   >
     ❮
   </button>
+)}
 
-  {/* RIGHT ARROW */}
+{productImages.length > 1 && (
   <button
     onClick={handleNext}
     className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white p-2 rounded-full shadow"
   >
     ❯
   </button>
+)}
+
 
 </div>
 
 
           {/* THUMBNAILS */}
-<div className="grid grid-cols-4 gap-3 mt-4">
-  {productImages.map((img, i) => (
-    <img
-      key={i}
-      src={img}
-      onClick={() => setActiveImage(i)}
-      className={`
-        w-full h-20 object-cover rounded-xl shadow cursor-pointer 
-        transition border-2 
-        ${i === activeImage ? "border-[#8B5C42]" : "border-transparent"}
-      `}
-    />
-  ))}
-</div>
+{productImages.length > 1 && (
+  <div className="grid grid-cols-4 gap-3 mt-4">
+    {productImages.map((img, i) => (
+      <img
+        key={i}
+        src={img}
+        onClick={() => setActiveImage(i)}
+        className={`w-full h-20 object-cover rounded-xl shadow cursor-pointer transition border-2 ${
+          i === activeImage ? "border-[#8B5C42]" : "border-transparent"
+        }`}
+      />
+    ))}
+  </div>
+)}
+
 
 
           {/* ⭐ RECOMMENDED ADDONS UNDER IMAGE */}
@@ -237,7 +309,7 @@ const totalPrice =
         {/* RIGHT COLUMN */}
         <div>
           <h1 className="text-4xl font-semibold text-[#2D2926] mb-4">
-            Wedding Golden Arch Backdrop
+{product?.title || "—"}
           </h1>
 
           {/* PRICE + STOCK (Responsive layout) */}
@@ -245,13 +317,16 @@ const totalPrice =
 
   {/* Price */}
   <p className="text-3xl font-semibold text-[#8B5C42]">
-    ${pricePerDay}/Day
+$ {pricePerDay} / day
   </p>
 
   {/* Stock — beside price on desktop, below on mobile */}
   <div className="mt-2 md:mt-0 bg-[#FFF7F0] border border-[#E5DED6] rounded-lg px-4 py-2 inline-block">
     <p className="text-sm font-medium text-[#2D2926]">
-      Stock Availability: <span className="text-[#8B5C42] font-semibold">5</span>
+      Stock Availability: <span className="text-[#8B5C42] font-semibold">
+  {product?.availabilityCount ?? 0}
+</span>
+
     </p>
   </div>
 
@@ -270,12 +345,20 @@ const totalPrice =
 
             <span className="text-xl">{productQty}</span>
 
-            <button
-              onClick={() => handleProductQtyChange(1)}
-              className="px-3 py-1 bg-[#8B5C42] text-white rounded"
-            >
-              +
-            </button>
+           <button
+  onClick={() => handleProductQtyChange(1)}
+  disabled={productQty >= maxStock}
+  className={`px-3 py-1 rounded text-white
+    ${
+      productQty >= maxStock
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-[#8B5C42] hover:bg-[#704A36]"
+    }
+  `}
+>
+  +
+</button>
+
           </div>
 
 
@@ -380,15 +463,16 @@ const totalPrice =
       });
     }
 
-    setChosenProduct({
-      name: "Wedding Golden Arch Backdrop",
-      qty: productQty,
-      pricePerDay,
-      image: productImages[0],
-      startDate,
-      endDate,
-      totalPrice,
-    });
+  setChosenProduct({
+  name: product?.title || "Product",
+  qty: productQty,
+  pricePerDay,
+  image: productImages[0],
+  startDate,
+  endDate,
+  totalPrice,
+});
+
 
     setChosenAddons(selectedAddons);
     setOpenModal(true);
