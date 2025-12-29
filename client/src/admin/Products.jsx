@@ -4,7 +4,9 @@ import AdminLayout from "./AdminLayout";
 
 const Products = () => {
   const [items, setItems] = useState([]);
-  const [productFilter, setProductFilter] = useState("all"); 
+  const [productFilter, setProductFilter] = useState("all");
+  const [categories, setCategories] = useState([]);
+ 
 // "all" | "rental" | "sale"
 
 
@@ -17,9 +19,22 @@ const Products = () => {
     }
   };
 
-  useEffect(() => {
-    loadProducts();
-  }, []);
+ useEffect(() => {
+  loadProducts();
+  loadCategories();
+}, []);
+
+
+  const loadCategories = async () => {
+  try {
+    const res = await api("/categories");
+    const data = res?.data || res || [];
+    setCategories(data);
+  } catch (err) {
+    console.error("Error loading categories", err);
+  }
+};
+
 
   
   const handleDelete = async (id) => {
@@ -42,6 +57,7 @@ const Products = () => {
   }
 };
 
+
 // ====================
 //  FILTERED PRODUCTS (ADMIN)
 // ====================
@@ -49,6 +65,16 @@ const filteredItems =
   productFilter === "all"
     ? items
     : items.filter((p) => p.productType === productFilter);
+
+    const getCategoryName = (category) => {
+  const categoryId =
+    typeof category === "object" ? category?._id : category;
+
+  return (
+    categories.find((c) => String(c._id) === String(categoryId))?.name ||
+    "—"
+  );
+};
 
   return (
     <AdminLayout>
@@ -91,20 +117,30 @@ const filteredItems =
            <h3 className="font-semibold mt-3">{p.title}</h3>
 
 {/* PRODUCT TYPE BADGE */}
-<p className="mt-1 text-sm font-medium">
-  Type:{" "}
-  <span
-    className={`px-2 py-0.5 rounded-full text-xs font-semibold
-      ${
-        p.productType === "rental"
-          ? "bg-blue-100 text-blue-700"
-          : "bg-green-100 text-green-700"
-      }
-    `}
-  >
-    {p.productType === "rental" ? "Rental" : "Sale"}
+<p className="mt-1 text-sm font-medium flex items-center gap-2 flex-wrap">
+  <span>
+    Type:
+    <span
+      className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold
+        ${
+          p.productType === "rental"
+            ? "bg-blue-100 text-blue-700"
+            : "bg-green-100 text-green-700"
+        }
+      `}
+    >
+      {p.productType === "rental" ? "Rental" : "Sale"}
+    </span>
+  </span>
+
+  <span>
+    Category:
+    <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+      {getCategoryName(p.category)}
+    </span>
   </span>
 </p>
+
 
 {/* PRICE */}
 <p className="text-gray-600 mt-1">
