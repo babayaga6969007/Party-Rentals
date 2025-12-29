@@ -1,25 +1,76 @@
 import {  FiMail, FiMapPin } from "react-icons/fi";
-import { useState } from "react";
+
+import emailjs from "@emailjs/browser";
+import { useRef, useState } from "react";
 
 
 
 const Contact = () => {
+  const startTime = useRef(Date.now());
+const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [email, setEmail] = useState("");
   const [confirmEmail, setConfirmEmail] = useState("");
   const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+ const handleSubmit = (e) => {
+  e.preventDefault();
 
-    if (email !== confirmEmail) {
-      setError("Email addresses do not match");
-      return;
-    }
+  // 🛑 Honeypot check
+  if (e.target.company.value) return;
 
-    setError("");
-    // proceed with form submission
-    console.log("Form submitted");
+  // 🛑 Too-fast submission (bot)
+  if (Date.now() - startTime.current < 3000) return;
+
+  // 🛑 Email mismatch
+  if (email !== confirmEmail) {
+    setError("Email addresses do not match");
+    return;
+  }
+
+  if (isSubmitting) return;
+
+  setIsSubmitting(true);
+
+// failsafe unlock after 15s no matter what
+const safetyTimer = setTimeout(() => {
+  setIsSubmitting(false);
+  alert("Something went wrong. Please try again.");
+}, 15000);
+
+
+  const templateParams = {
+    name: e.target.name.value,
+    email: email,
+    title: e.target.title.value,
+    message: e.target.message.value,
   };
+  console.log("Sending email with:", templateParams);
+
+
+  emailjs
+  .send(
+    "service_49shbzl",
+    "template_jk51awd",
+    templateParams,
+    "2SHjaFkg8i-eOYRDq"
+  )
+  .then(() => {
+    alert("Message sent successfully!");
+    e.target.reset();
+    setEmail("");
+    setConfirmEmail("");
+    startTime.current = Date.now();
+    setIsSubmitting(false); // ✅ unlock immediately
+  })
+  .catch((err) => {
+    console.error(err);
+    alert("Failed to send message. Please try again.");
+    setIsSubmitting(false); // ✅ unlock immediately
+  });
+
+};
+
 
   const [openForm, setOpenForm] = useState(false);
   
@@ -135,12 +186,21 @@ Suite A                <br />
   
 
 <form className="space-y-6" onSubmit={handleSubmit}>
+  <input
+  type="text"
+  name="company"
+  tabIndex="-1"
+  autoComplete="off"
+  aria-hidden="true"
+  className="hidden"
+/>
+
 
     {/* Name */}
     <div>
       <label className="block mb-2 text-[#2D2926]">Your Name</label>
       <input
-        type="text"
+        name="name" type="text"
         className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
         focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
         placeholder="Enter your name"
@@ -151,7 +211,7 @@ Suite A                <br />
     <div>
       <label className="block mb-2 text-[#2D2926]">Your Email</label>
       <input
-  type="email"
+  name="email" type="email"
   required
   value={email}
   onChange={(e) => setEmail(e.target.value)}
@@ -189,28 +249,37 @@ Suite A                <br />
     <div>
       <label className="block mb-2 text-[#2D2926]">Title (or Order Number)</label>
       <input
-        type="text"
-        className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
-        focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
-        placeholder="Enter message title"
-      />
+  name="title"
+  type="text"
+  className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white"
+  placeholder="Enter message title"
+/>
+
     </div>
 
     {/* Message */}
     <div>
       <label className="block mb-2 text-[#2D2926]">Your Message</label>
       <textarea
-        rows="4"
-        className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
-        focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
-        placeholder="Write your message..."
-      ></textarea>
+  name="message"
+  rows="4"
+  className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white"
+  placeholder="Write your message..."
+></textarea>
+
     </div>
 
-    <button className="w-full py-3 rounded-lg bg-black text-white font-medium  transition-transform duration-200 ease-out
-  hover:scale-105">
-      Send Message
-    </button>
+    <button
+  type="submit"
+  disabled={isSubmitting}
+  className={`w-full py-3 rounded-lg font-medium transition
+  ${isSubmitting
+    ? "bg-gray-400 cursor-not-allowed"
+    : "bg-black text-white hover:scale-105"}`}
+>
+  {isSubmitting ? "Sending..." : "Send Message"}
+</button>
+
 
   </form>
 </div>
