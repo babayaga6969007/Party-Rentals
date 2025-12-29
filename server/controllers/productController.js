@@ -150,9 +150,19 @@ if (updates.productType === "sale") {
       updates.salePrice = Number(req.body.salePrice);
 
     // -------- ATTRIBUTES --------
-    if (req.body.attributes) {
-      updates.attributes = JSON.parse(req.body.attributes);
-    }
+   if (req.body.attributes) {
+  const parsedAttrs = JSON.parse(req.body.attributes);
+
+  updates.attributes = (parsedAttrs || []).filter(
+    (a) =>
+      a?.groupId &&
+      a.groupId !== "null" &&
+      a.groupId !== "undefined" &&
+      Array.isArray(a.optionIds) &&
+      a.optionIds.length > 0
+  );
+}
+
 
     // -------- ADDONS (CRITICAL FIX) --------
     if (req.body.addons) {

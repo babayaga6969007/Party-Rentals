@@ -173,10 +173,15 @@ setIsFeatured(!!data.featured);
 
         const attrSelections = {};
 data.attributes?.forEach((a) => {
-  const groupKey = String(a.groupId?._id || a.groupId);
+  if (!a.groupId) return; 
+
+  const groupKey = String(a.groupId._id || a.groupId);
+  if (!groupKey || groupKey === "null" || groupKey === "undefined") return;
+
   const optionIds = (a.optionIds || []).map((x) => String(x));
   attrSelections[groupKey] = optionIds;
 });
+
 setSelectedAttrs(attrSelections);
 
 
@@ -220,9 +225,15 @@ const sel = selectedAttrs[String(g._id)] || [];
       }
     }
 
-    const attributesPayload = Object.entries(selectedAttrs).map(
-      ([groupId, optionIds]) => ({ groupId, optionIds })
-    );
+   const attributesPayload = Object.entries(selectedAttrs)
+  .filter(([groupId, optionIds]) =>
+    groupId &&
+    groupId !== "null" &&
+    groupId !== "undefined" &&
+    optionIds.length > 0
+  )
+  .map(([groupId, optionIds]) => ({ groupId, optionIds }));
+
 
    const addonsPayload = [];
 
