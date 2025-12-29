@@ -4,7 +4,25 @@ import { useState } from "react";
 
 
 const Contact = () => {
+  const [email, setEmail] = useState("");
+  const [confirmEmail, setConfirmEmail] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (email !== confirmEmail) {
+      setError("Email addresses do not match");
+      return;
+    }
+
+    setError("");
+    // proceed with form submission
+    console.log("Form submitted");
+  };
+
   const [openForm, setOpenForm] = useState(false);
+  
   return (
     <section className="py-20 px-6 bg-white">
 
@@ -28,9 +46,33 @@ const Contact = () => {
 
       {/* Contact Info + Form */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-14">
+        
 
         {/* LEFT SIDE — Contact Info */}
         <div className="space-y-8">
+                    {/* CUSTOM ENQUIRY SECTION */}
+<div className="mt-8">
+  <h3
+    className="text-xl font-semibold text-[#2D2926] mb-1"
+    style={{ fontFamily: '"Cormorant Garamond", serif' }}
+  >
+    Custom Enquiry
+  </h3>
+
+  <p className="text-[#2D2926]/70 text-sm mb-4">
+    Need something unique? Our team can help you plan the perfect setup.
+  </p>
+
+  <button
+  onClick={() => setOpenForm(true)}
+  className="inline-block bg-black text-white font-medium 
+  px-5 py-2 rounded-lg shadow-sm transition-transform duration-200 ease-out
+  hover:scale-105"
+>
+  Fill the Form →
+</button>
+
+</div>
           <div>
             <h2
               className=" text-2xl font-semibold text-[#2D2926] mb-4"
@@ -84,29 +126,7 @@ Suite A                <br />
               <li>Sun: Closed</li>
             </ul>
           </div>
-          {/* CUSTOM ENQUIRY SECTION */}
-<div className="mt-8">
-  <h3
-    className="text-xl font-semibold text-[#2D2926] mb-1"
-    style={{ fontFamily: '"Cormorant Garamond", serif' }}
-  >
-    Custom Enquiry
-  </h3>
 
-  <p className="text-[#2D2926]/70 text-sm mb-4">
-    Need something unique? Our team can help you plan the perfect setup.
-  </p>
-
-  <button
-  onClick={() => setOpenForm(true)}
-  className="inline-block bg-black text-white font-medium 
-  px-5 py-2 rounded-lg shadow-sm transition-transform duration-200 ease-out
-  hover:scale-105"
->
-  Fill the Form →
-</button>
-
-</div>
 
         </div>
 
@@ -114,7 +134,7 @@ Suite A                <br />
 <div className="p-8 bg-[#FAF7F5] border border-[#D9C7BE] rounded-2xl shadow-sm">
   
 
-  <form className="space-y-6">
+<form className="space-y-6" onSubmit={handleSubmit}>
 
     {/* Name */}
     <div>
@@ -131,12 +151,37 @@ Suite A                <br />
     <div>
       <label className="block mb-2 text-[#2D2926]">Your Email</label>
       <input
-        type="email"
-        className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
-        focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
-        placeholder="Enter your email"
-      />
+  type="email"
+  required
+  value={email}
+  onChange={(e) => setEmail(e.target.value)}
+  className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
+  focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
+  placeholder="Enter your email"
+/>
+
     </div>
+      {/* Confirm Email */}
+      <div>
+        <label className="block mb-2 text-[#2D2926]">Confirm Email</label>
+        <input
+          type="email"
+          required
+          value={confirmEmail}
+          onChange={(e) => setConfirmEmail(e.target.value)}
+          className={`w-full p-3 rounded-lg border bg-white 
+          focus:outline-none focus:ring-1
+          ${email && confirmEmail && email !== confirmEmail
+            ? "border-red-400 focus:ring-red-400/50"
+            : "border-[#D9C7BE] focus:ring-[#8B5C42]/50"}`}
+          placeholder="Re-enter your email"
+        />
+        {email && confirmEmail && email !== confirmEmail && (
+          <p className="mt-1 text-sm text-red-500">
+            Emails do not match
+          </p>
+        )}
+      </div>
 
     
 
