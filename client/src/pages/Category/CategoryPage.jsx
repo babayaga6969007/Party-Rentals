@@ -49,6 +49,9 @@ const CategoryPage = () => {
 
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [attributes, setAttributes] = useState([]);
+const [tagAttribute, setTagAttribute] = useState(null);
+
     // ====================
   //  CATEGORY CHIPS (FROM BACKEND)
   // ====================
@@ -136,6 +139,35 @@ const rentalCategories = allCategories.filter(
 
   fetchCategories();
 }, []);
+
+useEffect(() => {
+  const fetchAttributes = async () => {
+    try {
+      const res = await api("/admin/attributes");
+
+      console.log("RAW ATTRIBUTES RESPONSE:", res);
+
+      const allAttributes = Array.isArray(res)
+        ? res
+        : Array.isArray(res?.data)
+        ? res.data
+        : [];
+
+      const tagsAttr = allAttributes.find(
+        (a) => a.slug === "tags"
+      );
+
+      setAttributes(allAttributes);
+      setTagAttribute(tagsAttr || null);
+    } catch (err) {
+      console.error("Failed to fetch attributes", err);
+    }
+  };
+
+  fetchAttributes();
+}, []);
+
+
 // ====================
 //  AUTO-SELECT ALL CATEGORIES ON LOAD
 // ====================
@@ -148,6 +180,24 @@ useEffect(() => {
 
 
 
+const tagOptionLabelById = useMemo(() => {
+  if (!tagAttribute) return {};
+
+  return tagAttribute.options.reduce((acc, opt) => {
+    acc[String(opt._id)] = opt.label.toLowerCase();
+    return acc;
+  }, {});
+}, [tagAttribute]);
+// turns anything into an id string safely
+const getId = (x) => {
+  if (!x) return "";
+  if (typeof x === "string") return x;
+  if (typeof x === "object") {
+    if (x._id) return String(x._id);
+    if (x.id) return String(x.id);
+  }
+  return String(x);
+};
 
   // ====================
   //  FILTERED PRODUCTS
@@ -169,12 +219,35 @@ const inCategory =
 
 const inPrice = price >= priceRange[0] && price <= priceRange[1];
 
+// Find the Tags attribute selection for this product
+// ✅ TAGS FILTER (FROM PRODUCT.attributes, using safe ID extraction)
+const tagsGroupId = getId(tagAttribute); // <-- handles tagAttribute._id
 
-    const tags = Array.isArray(p.tags) ? p.tags : [];
+const tagAttrSelection = Array.isArray(p.attributes)
+  ? p.attributes.find((a) => getId(a.groupId) === tagsGroupId)
+  : null;
+
+// build lookup from optionId -> label (from tagAttribute.options)
+const optionLabelById = (tagAttribute?.options || []).reduce((acc, opt) => {
+  acc[getId(opt)] = (opt.label || "").toLowerCase();
+  return acc;
+}, {});
+
+// product selected optionIds -> labels
+const productTagLabels = tagAttrSelection
+  ? (tagAttrSelection.optionIds || [])
+      .map((oid) => optionLabelById[getId(oid)])
+      .filter(Boolean)
+  : [];
+
+const selected = selectedTags.map((t) => t.toLowerCase());
 
 const inTags =
-  selectedTags.length === 0 ||
-  selectedTags.every((t) => tags.includes(t));
+  selected.length === 0 ||
+  selected.every((t) => productTagLabels.includes(t));
+
+
+
 
 
     // ✅ NEW COLOR FILTER
@@ -372,33 +445,39 @@ selectedColors.includes(p.color || "");
 </div>
 
 
-            {/* ===== TAGS & STYLE ===== */}
-            <div className="mb-6">
-              <p className="text-sm font-semibold text-[#2D2926] mb-2">
-                Tags & Style
-              </p>
+           {/* ===== TAGS (FROM ATTRIBUTES) ===== */}
+{tagAttribute && tagAttribute.options?.length > 0 && (
+  <div className="mb-6">
+    <p className="text-sm font-semibold text-[#2D2926] mb-2">
+      {tagAttribute.name}
+    </p>
 
-              <div className="flex flex-wrap gap-2">
-                {["Indoor", "Outdoor", "Pastel", "Bold", "Large", "Compact"].map(
-                  (tag) => (
-                    <button
-                      key={tag}
-                      onClick={() => toggleTag(tag)}
-                      className={`
-                        px-3 py-1 rounded-full border text-sm transition
-                        ${
-                          selectedTags.includes(tag)
-                            ? "bg-[#8B5C42] text-white border-[#8B5C42]"
-                            : "bg-white text-[#2D2926] border-gray-300"
-                        }
-                      `}
-                    >
-                      {tag}
-                    </button>
-                  )
-                )}
-              </div>
-            </div>
+    <div className="flex flex-wrap gap-2">
+      {tagAttribute.options.map((opt) => {
+        const tag = opt.label;
+
+        return (
+          <button
+            key={tag}
+            onClick={() => toggleTag(tag)}
+            className={`
+              px-3 py-1 rounded-full border text-sm transition
+              ${
+                selectedTags.includes(tag)
+                  ? "bg-[#8B5C42] text-white border-[#8B5C42]"
+                  : "bg-white text-[#2D2926] border-gray-300"
+              }
+            `}
+          >
+            {tag}
+          </button>
+        );
+      })}
+    </div>
+  </div>
+)}
+
+
             {/* ===== COLOR FILTER ===== */}
 <div className="mb-6">
   <p className="text-sm font-semibold text-[#2D2926] mb-2">Colors</p>
@@ -448,9 +527,8 @@ selectedColors.includes(p.color || "");
          <main>
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
 
-    {filteredProducts.map((product) => (
-      <a
-        href={`/product/${product._id}`}
+   {filteredProducts.map((product) => (
+  <a key={product._id} href={`/product/${product._id}`}
         className="
           block border border-gray-300 hover:border-gray-500
           rounded-xl shadow 
