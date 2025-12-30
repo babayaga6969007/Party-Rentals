@@ -264,7 +264,9 @@ Object.entries(selectedAddons).forEach(([groupId, options]) => {
 formData.append("featured", productType === "rental" ? String(isFeatured) : "false");
 
     formData.append("attributes", JSON.stringify(attributesPayload));
-    formData.append("addons", JSON.stringify(addonsPayload));
+if (addonsPayload.length > 0) {
+  formData.append("addons", JSON.stringify(addonsPayload));
+}
 
   if (productType === "rental") {
     formData.append("pricePerDay", pricePerDay);

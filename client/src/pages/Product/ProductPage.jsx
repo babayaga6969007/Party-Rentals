@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { api } from "../../utils/api";
 import AddToCartModal from "../../components/cart/AddToCartModal";
+
 
 import {
   FiLock,
@@ -32,6 +33,14 @@ const ProductPage = () => {
   const [productError, setProductError] = useState("");
     const maxStock = product?.availabilityCount ?? 1;
 
+const [selectedAddons, setSelectedAddons] = useState({}); 
+// shape: { [optionId]: { name, price } }
+const navigate = useNavigate();
+
+const handleGoToCart = () => {
+  setOpenModal(false);   // close modal
+  navigate("/cart");    // or "/checkout" if that’s your route
+};
 
   // DATE RANGE SELECTION
 const today = new Date().toISOString().split("T")[0]; // disable past dates
@@ -154,12 +163,19 @@ const relatedTotal = relatedProducts.reduce((sum, rp) => {
   return sum + qty * (rp.pricePerDay || 0);
 }, 0);
 
+
+const selectedAddonTotal = Object.values(selectedAddons).reduce(
+  (sum, a) => sum + (Number(a.price) || 0),
+  0
+);
+
 // ====================
 //  FINAL TOTAL PRICE
 // ====================
 const totalPrice =
   totalRentalDays *
-  (pricePerDay * productQty + relatedTotal);
+  (pricePerDay * productQty + relatedTotal + selectedAddonTotal);
+
 
 
 
@@ -186,6 +202,9 @@ const totalPrice =
 
     if (id) fetchProduct();
   }, [id]);
+
+console.log("PRODUCT ADDONS:", product?.addons);
+
 
   // ====================
 //  FETCH RELATED PRODUCTS (SAME CATEGORY, RENTAL, MAX 2)
@@ -250,6 +269,54 @@ if (productError) {
 if (!product) {
   return <div className="max-w-7xl mx-auto px-6 py-20">Product not found</div>;
 }
+const renderedAttributes = product?.attributes?.map((attr) => {
+  if (!attr.groupId) return null;
+
+  const selectedOptions =
+    attr.groupId.options?.filter((opt) =>
+      attr.optionIds?.some(
+        (oid) => String(oid) === String(opt._id)
+      )
+    ) || [];
+
+  if (selectedOptions.length === 0) return null;
+
+
+
+  return {
+    groupName: attr.groupId.name,
+    values: selectedOptions.map((o) => o.label),
+  };
+});
+
+const renderedAddons = product?.addons
+  ?.filter((a) => a.option)
+  .map((a) => ({
+    optionId: String(a.optionId),         // ✅ add this
+    name: a.option.label,
+    finalPrice:
+      a.overridePrice !== null && a.overridePrice !== undefined
+        ? a.overridePrice
+        : a.option.priceDelta || 0,
+  })) || [];
+
+const toggleAddon = (addon) => {
+  setSelectedAddons((prev) => {
+    const next = { ...prev };
+
+    if (next[addon.optionId]) {
+      delete next[addon.optionId]; // unselect
+    } else {
+      next[addon.optionId] = {
+        name: addon.name,
+        price: addon.finalPrice,
+      };
+    }
+
+    return next;
+  });
+};
+
 
   return (
     <>
@@ -447,6 +514,69 @@ $ {pricePerDay} / day
           </div>
 
 
+{/* PRODUCT ATTRIBUTES */}
+
+{/* ADD-ONS */}
+{/* ADD-ONS */}
+{renderedAddons?.length > 0 && (
+  <div className="mt-8 bg-white p-5 rounded-xl shadow">
+    <h3 className="font-semibold text-lg text-[#2D2926] mb-4">
+      Optional Add-ons (Click to select)
+    </h3>
+
+    <div className="space-y-3">
+      {renderedAddons.map((addon) => {
+        const selected = !!selectedAddons[addon.optionId];
+
+        return (
+          <button
+            key={addon.optionId}
+            type="button"
+            onClick={() => toggleAddon(addon)}
+            className={`w-full flex items-center justify-between border rounded-lg px-4 py-3 transition
+              ${selected ? "border-[#8B5C42] bg-[#FFF7F0]" : "hover:bg-gray-50"}
+            `}
+          >
+            <div className="text-left">
+              <div className="font-medium text-gray-700">{addon.name}</div>
+              <div className="text-sm text-gray-500">
+                + Rs {addon.finalPrice}
+              </div>
+            </div>
+
+            <div
+              className={`text-sm font-semibold px-3 py-1 rounded-full
+                ${selected ? "bg-[#8B5C42] text-white" : "bg-gray-200 text-gray-700"}
+              `}
+            >
+              {selected ? "Selected" : "Add"}
+            </div>
+          </button>
+        );
+      })}
+    </div>
+
+    {/* Selected summary */}
+    {Object.keys(selectedAddons).length > 0 && (
+      <div className="mt-5 text-sm text-gray-700">
+        <div className="font-semibold mb-2">Selected Add-ons:</div>
+        <ul className="list-disc ml-5 space-y-1">
+          {Object.entries(selectedAddons).map(([id, a]) => (
+            <li key={id}>
+              {a.name} (+ Rs {a.price})
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-3 font-semibold text-[#2D2926]">
+          Add-ons total per day: Rs {selectedAddonTotal}
+        </div>
+      </div>
+    )}
+  </div>
+)}
+
+
 
 
 {/* EVENT DATE SELECTION */}
@@ -554,7 +684,13 @@ $ {pricePerDay} / day
   startDate,
   endDate,
   totalPrice,
+  selectedAddons: Object.entries(selectedAddons).map(([optionId, a]) => ({
+    optionId,
+    name: a.name,
+    price: a.price,
+  })),
 });
+
 
 
     setOpenModal(true);
@@ -609,7 +745,7 @@ $ {pricePerDay} / day
         </div>
       </div>
 
-      {/* ⭐ TRUST BADGE STRIP — FULL WIDTH, ABOVE FOOTER */}
+      
       {/* ⭐ TRUST BADGE STRIP — FULL WIDTH, ABOVE FOOTER */}
 <div className="max-w-7xl mx-auto px-6 mt-16 mb-16">
   <div className="bg-[#FAF7F5] border border-[#E5DED6] rounded-2xl py-6 px-8 
@@ -636,15 +772,11 @@ $ {pricePerDay} / day
   open={openModal}
   onClose={() => setOpenModal(false)}
   product={chosenProduct}
-  addons={[]}
-  onGoToCart={() => {
-    setOpenModal(false);
-    window.location.href = "/cart";
-  }}
-  onAddRecommended={(item) => {
-    console.log("User added:", item);
-  }}
+  addons={chosenProduct?.selectedAddons || []}
+  onGoToCart={handleGoToCart}   // ✅ THIS WAS MISSING
 />
+
+
 
     </>
   );

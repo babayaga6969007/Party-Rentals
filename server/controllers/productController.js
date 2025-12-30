@@ -165,16 +165,18 @@ if (updates.productType === "sale") {
 
 
     // -------- ADDONS (CRITICAL FIX) --------
-    if (req.body.addons) {
-  const parsedAddons = JSON.parse(req.body.addons);
+  if ("addons" in req.body) {
+  const parsedAddons = JSON.parse(req.body.addons || "[]");
 
-  updates.addons = (parsedAddons || [])
-    .filter((a) => a?.optionId && a.optionId !== "null" && a.optionId !== "undefined")
-    .map((a) => ({
-      optionId: a.optionId,
-      overridePrice: a.overridePrice === "" || a.overridePrice === null ? null : Number(a.overridePrice),
-    }));
+  updates.addons = parsedAddons.map((a) => ({
+    optionId: a.optionId,
+    overridePrice:
+      a.overridePrice === "" || a.overridePrice === null
+        ? null
+        : Number(a.overridePrice),
+  }));
 }
+
 
 
     // -------- EXISTING IMAGES --------
@@ -250,19 +252,35 @@ exports.deleteProduct = async (req, res) => {
 
 // ----------------------------------------------
 // GET Single Product
-// ----------------------------------------------
 exports.getSingleProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
-      .populate("attributes.groupId"); // ✅ ONLY this is valid
+      .populate("attributes.groupId")
+      .lean();
 
-    // ❌ DO NOT populate optionIds or addons.optionId (they are subdoc ids)
-    // .populate("attributes.optionIds")
-    // .populate("addons.optionId")
+    if (!product) return res.status(404).json({ message: "Product not found" });
+
+    const addonGroups = await Attribute.find({ type: "addon" }).lean();
+
+    const optionMap = {};
+    addonGroups.forEach((g) => {
+      g.options.forEach((o) => {
+        optionMap[String(o._id)] = {
+          label: o.label,
+          priceDelta: o.priceDelta || 0,
+          groupName: g.name,
+        };
+      });
+    });
+
+    product.addons = (product.addons || []).map((a) => ({
+      ...a,
+      option: optionMap[String(a.optionId)] || null,
+    }));
 
     res.json(product);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
@@ -328,8 +346,7 @@ exports.getProducts = async (req, res) => {
     const products = await Product.find(query)
       .skip(skip)
       .limit(limit)
-      .populate("attributes.groupId")
-      .populate("addons.optionId");
+      .populate("attributes.groupId");
 
     res.json({
       total: await Product.countDocuments(query),

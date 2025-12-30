@@ -33,19 +33,23 @@ export default function AddToCartModal({ open, onClose, product, addons, onGoToC
             <p className="text-sm text-gray-700 mt-1">${product.totalPrice}</p>
           </div>
         </div>
+{/* Addons Section */}
+{product?.selectedAddons?.length > 0 && (
+  <div className="mb-4">
+    <p className="font-medium mb-2">Selected Add-Ons:</p>
 
-        {/* Addons Section */}
-        {addons.length > 0 && (
-          <div className="mb-4">
-            <p className="font-medium mb-2">Selected Add-Ons:</p>
-            {addons.map((a, i) => (
-              <div key={i} className="flex justify-between text-sm text-gray-700">
-                <span>{a.name} (x{a.qty})</span>
-                <span>${a.price * a.qty}</span>
-              </div>
-            ))}
-          </div>
-        )}
+    {product.selectedAddons.map((a, i) => (
+      <div
+        key={i}
+        className="flex justify-between text-sm text-gray-700"
+      >
+        <span>{a.name}</span>
+        <span>+ Rs {Number(a.price) || 0}</span>
+      </div>
+    ))}
+  </div>
+)}
+
 
         {/* Buttons */}
         <div className="flex justify-between mt-4">
