@@ -104,15 +104,14 @@ const safetyTimer = setTimeout(() => {
                     {/* CUSTOM ENQUIRY SECTION */}
 <div className="mt-8">
   <h3
-    className="text-xl font-semibold text-[#2D2926] mb-1"
+    className="text-2xl font-semibold text-[#2D2926] mb-1"
     style={{ fontFamily: '"Cormorant Garamond", serif' }}
   >
     Custom Enquiry
   </h3>
 
-  <p className="text-[#2D2926]/70 text-sm mb-4">
-    Need something unique? Our team can help you plan the perfect setup.
-  </p>
+  <p className="text-[#2D2926]/80 leading-relaxed mb-4">
+Need something unique? Our experienced team will help you plan the perfect setup, thoughtfully designed for your occasion.  </p>
 
   <button
   onClick={() => setOpenForm(true)}
