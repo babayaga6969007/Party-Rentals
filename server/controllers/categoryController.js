@@ -32,8 +32,13 @@ exports.getCategoryBySlug = async (req, res) => {
    CREATE CATEGORY (ADMIN)
 ========================= */
 exports.createCategory = async (req, res) => {
+
   try {
     const { name, type } = req.body;
+    if (!req.file) {
+  return res.status(400).json({ message: "Category image is required" });
+}
+
 
     if (!name || !type) {
       return res.status(400).json({
@@ -50,11 +55,15 @@ exports.createCategory = async (req, res) => {
       });
     }
 
-    const category = new Category({
-      name: name.trim(),
-      slug,
-      type,
-    });
+const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+
+const category = new Category({
+  name: name.trim(),
+  slug,
+  type,
+  image: imageUrl,
+});
+
 
     await category.save();
 

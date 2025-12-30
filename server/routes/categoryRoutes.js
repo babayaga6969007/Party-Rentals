@@ -6,7 +6,18 @@ const authAdmin = require("../middleware/authAdmin");
 const categoryController = require("../controllers/categoryController");
 
 // Multer (optional – keep if you plan images later)
-const upload = multer({ dest: "uploads/" });
+const path = require("path");
+
+
+const storage = multer.diskStorage({
+  destination: "uploads/",
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname); // .jpg, .png
+    cb(null, `${Date.now()}${ext}`);
+  },
+});
+
+const upload = multer({ storage });
 
 /* =========================
    PUBLIC ROUTES
@@ -26,17 +37,19 @@ router.get("/:slug", categoryController.getCategoryBySlug);
 router.post(
   "/",
   authAdmin,
-  upload.array("images", 1),
+  upload.single("image"),
   categoryController.createCategory
 );
+
 
 // Update category
 router.put(
   "/:id",
   authAdmin,
-  upload.array("images", 1),
+  upload.single("image"),
   categoryController.updateCategory
 );
+
 
 // Delete category
 router.delete(

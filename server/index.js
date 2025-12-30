@@ -1,6 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const path = require("path");
+
+
 
 const connectDB = require("./config/db");
 
@@ -14,7 +17,17 @@ const attributeRoutes = require("./routes/attributeRoutes"); // admin attributes
 const orderRoutes = require("./routes/orderRoutes");
 
 const app = express();
-
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"), {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith(".png")) res.set("Content-Type", "image/png");
+      if (filePath.endsWith(".jpg") || filePath.endsWith(".jpeg"))
+        res.set("Content-Type", "image/jpeg");
+      if (filePath.endsWith(".webp")) res.set("Content-Type", "image/webp");
+    },
+  })
+);
 /* =========================
    GLOBAL MIDDLEWARES
 ========================= */

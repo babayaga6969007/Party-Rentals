@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import hero1 from "../../assets/home2/hero1.png";
-import hero2 from "../../assets/home2/hero2.png";
-import hero3 from "../../assets/home2/hero3.png";
-import hero4 from "../../assets/home2/hero4.png";
+
 import { api } from "../../utils/api";
 
 
@@ -55,11 +52,12 @@ const CategoryPage = () => {
     // ====================
   //  CATEGORY CHIPS (FROM BACKEND)
   // ====================
-  const categoryChips = categories.map((c, idx) => ({
-    label: c.name,
-    value: String(c._id), // category ID
-    img: [hero1, hero2, hero3, hero4][idx % 4],
-  }));
+const categoryChips = categories.map((c) => ({
+  label: c.name,
+  value: String(c._id),
+  img: c.image, // ✅ backend image URL
+}));
+
 
 
 
@@ -241,10 +239,11 @@ selectedColors.includes(p.color || "");
                 `}
               >
                 <img
-                  src={cat.img}
-                  alt={cat.label}
-                  className="w-full h-full object-cover"
-                />
+  src={cat.img || "/placeholder-category.png"}
+  alt={cat.label}
+  className="w-full h-full object-cover"
+/>
+
               </div>
 
               <span className="mt-2 text-xs text-[#2D2926] group-hover:text-[#8B5C42]">

@@ -3,6 +3,7 @@ import { FiPlus, FiEdit2, FiTrash2 } from "react-icons/fi";
 import AdminLayout from "./AdminLayout";
 import { api } from "../utils/api";
 
+
 const Categories = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,6 +11,9 @@ const Categories = () => {
   // Add category
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState("rental");
+  const [newImage, setNewImage] = useState(null);
+const [preview, setPreview] = useState("");
+
 
   // Edit category
   const [editingId, setEditingId] = useState(null);
@@ -52,26 +56,34 @@ const Categories = () => {
       alert("Category name is required");
       return;
     }
+if (!newImage) {
+  alert("Category image is required");
+  return;
+}
 
     try {
       const token = localStorage.getItem("admin_token");
 
-      const res = await api("/categories", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: newName.trim(),
-          type: newType,
-        }),
-      });
+      const fd = new FormData();
+fd.append("name", newName.trim());
+fd.append("type", newType);
+fd.append("image", newImage); // field name MUST match upload.single("image")
+
+const res = await api("/categories", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+  body: fd,
+});
 
       const created = res?.data ?? res;
       setCategories((prev) => [created, ...prev]);
       setNewName("");
       setNewType("rental");
+      setNewImage(null);
+setPreview("");
+
     } catch (err) {
       console.error(err);
       alert("Failed to create category");
@@ -162,14 +174,27 @@ const Categories = () => {
           <option value="rental">Rental</option>
           <option value="sale">Purchase</option>
         </select>
+        <input
+  type="file"
+  accept="image/*"
+  onChange={(e) => {
+    const file = e.target.files?.[0] || null;
+    setNewImage(file);
+    setPreview(file ? URL.createObjectURL(file) : "");
+  }}
+  className="border border-gray-300 rounded-lg px-4 py-2"
+/>
+
 
         <button
           onClick={addCategory}
           className="flex items-center gap-2 bg-black text-white px-5 py-2 rounded-lg hover:bg-gray-800 transition"
         >
+          
           <FiPlus />
           Add Category
         </button>
+        
       </div>
 
       {/* TABLE */}
@@ -184,6 +209,7 @@ const Categories = () => {
               <tr>
                 <th className="p-4">Name</th>
                 <th className="p-4">Type</th>
+                <th className="p-4">Thumbnail</th>
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -203,6 +229,15 @@ const Categories = () => {
                   </td>
 
                   <td className="p-4 capitalize">{cat.type}</td>
+<td className="p-4">
+  
+
+  <img
+    src={cat.image}
+    alt={cat.name}
+    className="w-12 h-12 rounded-lg object-cover border"
+  />
+</td>
 
                   <td className="p-4 text-right flex justify-end gap-4">
                     <button

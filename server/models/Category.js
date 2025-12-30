@@ -20,6 +20,11 @@ const categorySchema = new mongoose.Schema(
       enum: ["rental", "sale"],
       required: true,
     },
+
+    image: {
+      type: String,
+      required: [true, "Category image is required"], // ✅ compulsory
+    },
   },
   {
     timestamps: true,
