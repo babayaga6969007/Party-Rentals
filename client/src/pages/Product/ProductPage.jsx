@@ -700,7 +700,7 @@ $ {pricePerDay} / day
     ${
       !startDate || !endDate
         ? "bg-gray-400 text-white cursor-not-allowed"
-        : "bg-[#8B5C42] text-white hover:bg-[#704A36]"
+        : "bg-black text-white hover:bg-[#222222]"
     }
   `}
 >

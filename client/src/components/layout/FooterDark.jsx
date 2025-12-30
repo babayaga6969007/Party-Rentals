@@ -43,7 +43,7 @@ const FooterDark = () => {
             <li className="hover:text-white cursor-pointer">Lighting</li>
             <li className="hover:text-white cursor-pointer">Table Décor</li>
             <li className="hover:text-white cursor-pointer">Seating & Props</li>
-            <li className="hover:text-white cursor-pointer">Event Packages</li>
+            
           </ul>
         </div>
 
@@ -60,7 +60,7 @@ const FooterDark = () => {
             <li className="hover:text-white cursor-pointer">About Us</li>
             <li className="hover:text-white cursor-pointer">FAQs</li>
             <li className="hover:text-white cursor-pointer">Contact Us</li>
-            <li className="hover:text-white cursor-pointer">How We Work</li>
+            
             <li className="hover:text-white cursor-pointer">Terms & Policies</li>
           </ul>
         </div>

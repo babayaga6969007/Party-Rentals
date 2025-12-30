@@ -48,7 +48,7 @@ const Footer = () => {
             <li className="hover:text-[#8B5C42] cursor-pointer">Lighting</li>
             <li className="hover:text-[#8B5C42] cursor-pointer">Table Décor</li>
             <li className="hover:text-[#8B5C42] cursor-pointer">Seating & Props</li>
-            <li className="hover:text-[#8B5C42] cursor-pointer">Event Packages</li>
+          
           </ul>
         </div>
 
@@ -65,7 +65,7 @@ const Footer = () => {
             <li className="hover:text-[#8B5C42] cursor-pointer">About Us</li>
             <li className="hover:text-[#8B5C42] cursor-pointer">FAQs</li>
             <li className="hover:text-[#8B5C42] cursor-pointer">Contact Us</li>
-            <li className="hover:text-[#8B5C42] cursor-pointer">How We Work</li>
+            
             <li className="hover:text-[#8B5C42] cursor-pointer">Terms & Policies</li>
           </ul>
         </div>

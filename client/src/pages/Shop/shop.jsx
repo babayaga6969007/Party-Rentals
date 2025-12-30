@@ -481,7 +481,7 @@ Category: {
      opacity-100 md:opacity-0 
      md:group-hover:opacity-100 
      transition-opacity duration-300">
-            <button className="w-full bg-[#8B5C42] text-white px-6 py-2 rounded-lg text-sm shadow-md hover:bg-[#704A36] transition">
+            <button className="w-full bg-black text-white px-6 py-2 rounded-lg text-sm shadow-md hover:bg-[#222222] transition">
               View Product
             </button>
           </div>

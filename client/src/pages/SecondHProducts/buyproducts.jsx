@@ -428,7 +428,7 @@ if (!product) {
   onClick={handleConfirmBooking}
   disabled={(product?.availabilityCount ?? 0) === 0}
   className={`mt-8 w-full py-3 rounded-lg text-white 
-    ${(product?.availabilityCount ?? 0) === 0 ? "bg-gray-400 cursor-not-allowed" : "bg-[#8B5C42] hover:bg-[#704A36]"}`}
+    ${(product?.availabilityCount ?? 0) === 0 ? "bg-gray-400 cursor-not-allowed" : "bg-black hover:bg-[#222222]"}`}
 >
   {(product?.availabilityCount ?? 0) === 0 ? "Out of Stock" : "Confirm Order"}
 </button>
