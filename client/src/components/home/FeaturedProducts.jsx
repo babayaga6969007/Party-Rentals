@@ -44,10 +44,10 @@ useEffect(() => {
 
       {/* Description */}
       <p
-        className="max-w-3xl mx-auto mt-4 text-center text-[#2D2926]/80 text-[18px] leading-relaxed"
-        style={{ fontFamily: '"Cormorant Garamond", serif' }}
+        className="max-w-2xl mx-auto mt-4 text-center text-[#2D2926]/80  leading-relaxed"
+        
       >
-        Explore our curated selection of premium décor and rental props. Each piece is 
+        Explore our curated selection of premium decor and rental props. Each piece is 
         chosen to elevate your celebrations with elegance, charm, and lasting impressions.
       </p>
 

@@ -65,7 +65,7 @@ const cardWidth = window.innerWidth < 768 ? 300 : 284;
           style={{ fontFamily: '"Cormorant Garamond", serif' }}>
           Event Stories – Real Moments. Real Celebrations.
         </h2>
-        <p className="text-[#2D2926]/70 mt-2 max-w-2xl mx-auto">
+        <p className="text-[#2D2926]/80 mt-2 max-w-2xl mx-auto">
           Explore real event setups, decoration ideas, and customer moments from
           our Party Rentals community.
         </p>
