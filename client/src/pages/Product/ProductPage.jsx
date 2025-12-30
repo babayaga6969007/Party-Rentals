@@ -34,6 +34,11 @@ const ProductPage = () => {
     const maxStock = product?.availabilityCount ?? 1;
 const [signageText, setSignageText] = useState("");
 const [signageError, setSignageError] = useState("");
+// ===== VINYL WRAP STATES =====
+const [vinylColor, setVinylColor] = useState(""); // e.g. "red" OR "custom"
+const [vinylHex, setVinylHex] = useState("");     // only when custom
+const [vinylError, setVinylError] = useState("");
+
 const [selectedAddons, setSelectedAddons] = useState({}); 
 // shape: { [optionId]: { name, price } }
 const navigate = useNavigate();
@@ -318,6 +323,37 @@ useEffect(() => {
   }
 }, [isSignageSelected]);
 
+// ===== VINYL WRAP ADDON DETECTION =====
+const vinylAddon = renderedAddons.find((a) => {
+  const n = normalize(a.name);
+  return n === "vinyl wrap" || n === "vinylwrap"; // support spacing variant
+});
+
+const vinylOptionId = vinylAddon?.optionId || null;
+
+const isVinylSelected = vinylOptionId
+  ? !!selectedAddons[vinylOptionId]
+  : false;
+
+// 7 basic vinyl colors
+const vinylColors = [
+  { id: "red", label: "Red" },
+  { id: "blue", label: "Blue" },
+  { id: "green", label: "Green" },
+  { id: "yellow", label: "Yellow" },
+  { id: "black", label: "Black" },
+  { id: "white", label: "White" },
+  { id: "orange", label: "Orange" },
+];
+
+// Clear vinyl selections when vinyl wrap gets deselected
+useEffect(() => {
+  if (!isVinylSelected) {
+    setVinylColor("");
+    setVinylHex("");
+    setVinylError("");
+  }
+}, [isVinylSelected]);
 
 
 if (loadingProduct) {
@@ -633,6 +669,97 @@ $ {pricePerDay} / day
     )}
   </div>
 )}
+{/* ===== VINYL WRAP COLOR PICKER (only if vinyl addon exists AND selected) ===== */}
+{vinylOptionId && isVinylSelected && (
+  <div className="mt-5">
+    <div className="flex items-center justify-between">
+      <label className="block text-sm font-medium text-gray-700">
+        Vinyl Wrap Color (select one)
+      </label>
+
+      {vinylError && (
+        <span className="text-sm text-red-600">{vinylError}</span>
+      )}
+    </div>
+
+    {/* Color row */}
+    <div className="mt-3 flex items-center gap-3 flex-wrap">
+      {/* 7 circles */}
+      {vinylColors.map((c) => {
+        const selected = vinylColor === c.id;
+
+        return (
+          <button
+            key={c.id}
+            type="button"
+            onClick={() => {
+              setVinylColor(c.id);
+              setVinylHex("");
+              setVinylError("");
+            }}
+            title={c.label}
+            className={`w-9 h-9 rounded-full transition border border-black
+  ${selected ? "ring-2 ring-black" : ""}
+`}
+            style={{
+              background:
+                c.id === "white"
+                  ? "#ffffff"
+                  : c.id === "black"
+                  ? "#000000"
+                  : c.id, // red/blue/green/yellow/orange work as css colors
+            }}
+          />
+        );
+      })}
+
+      {/* Custom box */}
+      <div className="relative group">
+        <button
+          type="button"
+          onClick={() => {
+            setVinylColor("custom");
+            setVinylError("");
+          }}
+          className={`h-9 px-3 rounded-lg border text-sm font-medium transition
+            ${vinylColor === "custom" ? "border-black ring-2 ring-black" : "border-gray-300"}
+          `}
+        >
+          Custom
+        </button>
+
+        {/* Tooltip on hover */}
+        <div
+          className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-11
+                     opacity-0 group-hover:opacity-100 transition
+                     bg-black text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap"
+        >
+          Choose color from https://htmlcolorcodes.com/
+        </div>
+      </div>
+    </div>
+
+    {/* HEX input only when custom is selected */}
+    {vinylColor === "custom" && (
+      <div className="mt-3">
+        <input
+          type="text"
+          value={vinylHex}
+          onChange={(e) => {
+            setVinylHex(e.target.value);
+            setVinylError("");
+          }}
+          placeholder="Put HEX code here"
+          className="w-full p-3 border rounded-lg"
+        />
+        <p className="mt-1 text-xs text-gray-500">
+          Example: #FF5733
+        </p>
+      </div>
+    )}
+  </div>
+)}
+
 
       </div>
       
@@ -744,6 +871,24 @@ if (isSignageSelected && !signageText.trim()) {
   setSignageError("Please enter the signage text.");
   return;
 }
+// ===== VINYL WRAP VALIDATION =====
+if (isVinylSelected) {
+  if (!vinylColor) {
+    setVinylError("Please select a vinyl color.");
+    return;
+  }
+
+  if (vinylColor === "custom") {
+    const hex = vinylHex.trim();
+    const isValidHex = /^#([0-9A-Fa-f]{6})$/.test(hex);
+
+    if (!isValidHex) {
+      setVinylError("Please enter a valid HEX code like #FF5733.");
+      return;
+    }
+  }
+}
+
 
   setChosenProduct({
   name: product?.title || "Product",
@@ -757,8 +902,19 @@ if (isSignageSelected && !signageText.trim()) {
   optionId,
   name: a.name,
   price: a.price,
-  ...(optionId === signageOptionId ? { signageText: signageText.trim() } : {}),
+
+  ...(optionId === signageOptionId
+    ? { signageText: signageText.trim() }
+    : {}),
+
+  ...(optionId === vinylOptionId
+    ? {
+        vinylColor,
+        vinylHex: vinylColor === "custom" ? vinylHex.trim() : "",
+      }
+    : {}),
 })),
+
 
 });
 
