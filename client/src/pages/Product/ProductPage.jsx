@@ -32,7 +32,8 @@ const ProductPage = () => {
   const [loadingProduct, setLoadingProduct] = useState(true);
   const [productError, setProductError] = useState("");
     const maxStock = product?.availabilityCount ?? 1;
-
+const [signageText, setSignageText] = useState("");
+const [signageError, setSignageError] = useState("");
 const [selectedAddons, setSelectedAddons] = useState({}); 
 // shape: { [optionId]: { name, price } }
 const navigate = useNavigate();
@@ -258,17 +259,6 @@ useEffect(() => {
 }, [product, maxStock]);
 
 
-if (loadingProduct) {
-  return <div className="max-w-7xl mx-auto px-6 py-20">Loading...</div>;
-}
-
-if (productError) {
-  return <div className="max-w-7xl mx-auto px-6 py-20">{productError}</div>;
-}
-
-if (!product) {
-  return <div className="max-w-7xl mx-auto px-6 py-20">Product not found</div>;
-}
 const renderedAttributes = product?.attributes?.map((attr) => {
   if (!attr.groupId) return null;
 
@@ -289,24 +279,73 @@ const renderedAttributes = product?.attributes?.map((attr) => {
   };
 });
 
-const renderedAddons = product?.addons
-  ?.filter((a) => a.option)
-  .map((a) => ({
-    optionId: String(a.optionId),         // ✅ add this
-    name: a.option.label,
-    finalPrice:
-      a.overridePrice !== null && a.overridePrice !== undefined
-        ? a.overridePrice
-        : a.option.priceDelta || 0,
-  })) || [];
+// ====================
+// ADD-ONS (safe even when product is null during loading)
+// ====================
+const renderedAddons =
+  product?.addons
+    ?.filter((a) => a.option)
+    .map((a) => ({
+      optionId: String(a.optionId),
+      name: a.option.label,
+      finalPrice:
+        a.overridePrice !== null && a.overridePrice !== undefined
+          ? a.overridePrice
+          : a.option.priceDelta || 0,
+    })) || [];
 
+// helper: normalize strings for matching
+const normalize = (s = "") => s.toLowerCase().trim();
+
+// find signage addon from renderedAddons (if exists for this product)
+const signageAddon = renderedAddons.find((a) => {
+  const n = normalize(a.name);
+  return n === "signage" || n === "sinage";
+});
+
+const signageOptionId = signageAddon?.optionId || null;
+
+// true only when signage addon exists AND user selected it
+const isSignageSelected = signageOptionId
+  ? !!selectedAddons[signageOptionId]
+  : false;
+
+// clear signage text when deselected
+useEffect(() => {
+  if (!isSignageSelected) {
+    setSignageText("");
+    setSignageError("");
+  }
+}, [isSignageSelected]);
+
+
+
+if (loadingProduct) {
+  return <div className="max-w-7xl mx-auto px-6 py-20">Loading...</div>;
+}
+
+if (productError) {
+  return <div className="max-w-7xl mx-auto px-6 py-20">{productError}</div>;
+}
+
+if (!product) {
+  return <div className="max-w-7xl mx-auto px-6 py-20">Product not found</div>;
+}
 const toggleAddon = (addon) => {
   setSelectedAddons((prev) => {
     const next = { ...prev };
 
     if (next[addon.optionId]) {
-      delete next[addon.optionId]; // unselect
+      // unselect
+      delete next[addon.optionId];
+
+      // if this addon is signage, clear text too
+      if (addon.optionId === signageOptionId) {
+        setSignageText("");
+        setSignageError("");
+      }
     } else {
+      // select
       next[addon.optionId] = {
         name: addon.name,
         price: addon.finalPrice,
@@ -571,7 +610,32 @@ $ {pricePerDay} / day
         <div className="mt-3 font-semibold text-[#2D2926]">
           Add-ons total per day: Rs {selectedAddonTotal}
         </div>
+        {/* Signage custom text field (only if this product has signage addon AND it's selected) */}
+{signageOptionId && isSignageSelected && (
+  <div className="mt-4">
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      Signage Text
+    </label>
+
+    <input
+      type="text"
+      value={signageText}
+      onChange={(e) => {
+        setSignageText(e.target.value);
+        setSignageError("");
+      }}
+      placeholder="Enter what should be printed on the signage..."
+      className="w-full p-3 border rounded-lg"
+    />
+
+    {signageError && (
+      <p className="mt-1 text-sm text-red-600">{signageError}</p>
+    )}
+  </div>
+)}
+
       </div>
+      
     )}
   </div>
 )}
@@ -675,6 +739,11 @@ $ {pricePerDay} / day
   disabled={!startDate || !endDate}
   onClick={() => {
     if (!startDate || !endDate) return;
+// validate signage text if signage is selected
+if (isSignageSelected && !signageText.trim()) {
+  setSignageError("Please enter the signage text.");
+  return;
+}
 
   setChosenProduct({
   name: product?.title || "Product",
@@ -684,11 +753,13 @@ $ {pricePerDay} / day
   startDate,
   endDate,
   totalPrice,
-  selectedAddons: Object.entries(selectedAddons).map(([optionId, a]) => ({
-    optionId,
-    name: a.name,
-    price: a.price,
-  })),
+ selectedAddons: Object.entries(selectedAddons).map(([optionId, a]) => ({
+  optionId,
+  name: a.name,
+  price: a.price,
+  ...(optionId === signageOptionId ? { signageText: signageText.trim() } : {}),
+})),
+
 });
 
 
