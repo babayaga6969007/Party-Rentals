@@ -77,8 +77,16 @@ const res = await api("/categories", {
   body: fd,
 });
 
-      const created = res?.data ?? res;
-      setCategories((prev) => [created, ...prev]);
+const created = res?.data ?? res;
+
+if (!created || !created._id) {
+  console.error("Invalid category response:", res);
+  return;
+}
+
+setCategories((prev) => [created, ...prev]);
+
+
       setNewName("");
       setNewType("rental");
       setNewImage(null);
@@ -214,7 +222,9 @@ setPreview("");
               </tr>
             </thead>
             <tbody>
-              {categories.map((cat) => (
+{categories
+  .filter((cat) => cat && cat._id)
+  .map((cat) => (
                 <tr key={cat._id} className="border-b last:border-none">
                   <td className="p-4">
                     {editingId === cat._id ? (
@@ -233,10 +243,11 @@ setPreview("");
   
 
   <img
-    src={cat.image}
-    alt={cat.name}
-    className="w-12 h-12 rounded-lg object-cover border"
-  />
+  src={cat.image || "https://via.placeholder.com/48"}
+  alt={cat.name}
+  className="w-12 h-12 rounded-lg object-cover border"
+/>
+
 </td>
 
                   <td className="p-4 text-right flex justify-end gap-4">

@@ -32,70 +32,46 @@ exports.getCategoryBySlug = async (req, res) => {
    CREATE CATEGORY (ADMIN)
 ========================= */
 exports.createCategory = async (req, res) => {
-
   try {
     const { name, type } = req.body;
-    if (!req.file) {
-  return res.status(400).json({ message: "Category image is required" });
-}
-
 
     if (!name || !type) {
-      return res.status(400).json({
-        message: "Category name and type are required",
-      });
+      return res.status(400).json({ message: "Name and type are required" });
     }
 
-    const slug = slugify(name, { lower: true, strict: true });
-
-    const exists = await Category.findOne({ slug });
-    if (exists) {
-      return res.status(409).json({
-        message: "Category already exists",
-      });
+    if (!req.file || !req.file.path) {
+      return res.status(400).json({ message: "Image upload failed" });
     }
 
-const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    const category = await Category.create({
+      name: name.trim(),
+      type,
+      slug: name.toLowerCase().replace(/\s+/g, "-"),
+      image: req.file.path, // ✅ THIS IS THE KEY FIX
+    });
 
-const category = new Category({
-  name: name.trim(),
-  slug,
-  type,
-  image: imageUrl,
-});
-
-
-    await category.save();
-
-    // 🔴 THIS WAS MISSING EARLIER
-    res.status(201).json(category);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: error.message });
+    res.status(201).json(category); // ✅ return ONLY category
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
   }
 };
+
 
 /* =========================
    UPDATE CATEGORY (ADMIN)
 ========================= */
 exports.updateCategory = async (req, res) => {
   try {
-    const { name, type } = req.body;
+    const updateData = { ...req.body };
 
-    const updates = {};
-    if (name) updates.name = name.trim();
-    if (type) updates.type = type;
-
-    if (updates.name) {
-      updates.slug = slugify(updates.name, {
-        lower: true,
-        strict: true,
-      });
+    if (req.file?.path) {
+      updateData.image = req.file.path; // ✅ Cloudinary URL
     }
 
     const updated = await Category.findByIdAndUpdate(
       req.params.id,
-      updates,
+      updateData,
       { new: true }
     );
 
@@ -103,9 +79,9 @@ exports.updateCategory = async (req, res) => {
       return res.status(404).json({ message: "Category not found" });
     }
 
-    res.json(updated);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.json(updated); // ✅ return plain category
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
