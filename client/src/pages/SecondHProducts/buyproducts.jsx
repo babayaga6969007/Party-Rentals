@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { api } from "../../utils/api";
+import { useCart } from "../../context/CartContext";
 
 
 import {
@@ -46,6 +47,11 @@ const ProductPage = () => {
   // DATE RANGE SELECTION
 const today = new Date().toISOString().split("T")[0]; // disable past dates
 
+const { addToCart, cartItems } = useCart();
+
+const isAlreadyInCart = cartItems.some(
+  (item) => item.id === product?._id
+);
 
 const [startDate, setStartDate] = useState("");
 const [endDate, setEndDate] = useState("");
@@ -167,9 +173,27 @@ const addedItem = {
 };
 
 // When user confirms booking
-const handleConfirmBooking = () => {
+
+
+
+
+const handleAddToCart = () => {
+  addToCart({
+id: product._id,
+    name: product.title,
+    price: isSalePage ? salePrice : pricePerDay,
+    qty: productQty,
+    image: productImages[activeImage],
+    addons,
+    rentalDays: totalRentalDays,
+    totalPrice,
+    maxStock: product?.availabilityCount ?? 1,
+
+  });
+
   setShowPopup(true);
 };
+
   // ====================
   //  FETCH SINGLE PRODUCT
   // ====================
@@ -424,14 +448,29 @@ if (!product) {
 
 
           {/* BUTTON */}
-          <button
-  onClick={handleConfirmBooking}
-  disabled={(product?.availabilityCount ?? 0) === 0}
-  className={`mt-8 w-full py-3 rounded-lg text-white 
-    ${(product?.availabilityCount ?? 0) === 0 ? "bg-gray-400 cursor-not-allowed" : "bg-black hover:bg-[#222222]"}`}
+   <button
+  onClick={handleAddToCart}
+  disabled={
+    (product?.availabilityCount ?? 0) === 0 || isAlreadyInCart
+  }
+  className={`mt-8 w-full py-3 rounded-lg text-white
+    ${
+      isAlreadyInCart
+        ? "bg-gray-400 cursor-not-allowed"
+        : (product?.availabilityCount ?? 0) === 0
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-black hover:bg-[#222222]"
+    }`}
 >
-  {(product?.availabilityCount ?? 0) === 0 ? "Out of Stock" : "Confirm Order"}
+  {isAlreadyInCart
+    ? "Already in Cart"
+    : (product?.availabilityCount ?? 0) === 0
+    ? "Out of Stock"
+    : "Add to Cart"}
 </button>
+
+
+
 
 
 
@@ -539,16 +578,8 @@ if (!product) {
         >
           Continue Shopping
         </button>
+<Link to="/cart" className="flex-1">
 
-<Link
-  to="/cart"
-  state={{
-    product: addedItem,
-    addons: addons,
-    total: totalPrice,
-  }}
-  className="flex-1"
->
           <button className="w-full py-3 rounded-full bg-[#8B5C42] text-white hover:bg-[#704A36]">
             Bag & Checkout →
           </button>

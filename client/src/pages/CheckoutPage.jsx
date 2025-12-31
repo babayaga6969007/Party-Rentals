@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import CheckoutSteps from "../components/cart/CheckoutSteps";
 import { useMemo, useState } from "react";
+ import { useCart } from "../context/CartContext";
 
 const STAIRS_COST = 250;
 const SETUP_COST = 300; // 150 × 2 hours
@@ -20,11 +21,10 @@ export default function CheckoutPage() {
   const [setupFee, setSetupFee] = useState(false);
 
   // Fallback demo data if user opens this page directly
-  const items =
-    location.state?.items || [
-      { id: 1, name: "Party Balloon Pump", price: 45, qty: 2 },
-      { id: 2, name: "LED Fairy Lights", price: 25, qty: 3 },
-    ];
+ 
+
+const { cartItems, clearCart } = useCart();
+const items = cartItems;
 
   // ✅ Base pricing (memo to avoid recalculating every render)
   const pricing = useMemo(() => {

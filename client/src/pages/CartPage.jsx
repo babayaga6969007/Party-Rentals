@@ -1,57 +1,20 @@
-
+import { useCart } from "../context/CartContext";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CheckoutSteps from "../components/cart/CheckoutSteps";
-import hero1 from "../assets/home2/hero1.png";
-import hero2 from "../assets/home2/hero2.png";
-import hero3 from "../assets/home2/hero3.png";
 
 
-const DEMO_ITEMS = [
-  {
-    id: 1,
-    name: "Party Balloon Pump",
-    description: "Medium size, electric pump",
-    price: 45,
-    qty: 2,
-    image: hero1
-  },
-  {
-    id: 2,
-    name: "LED Fairy Lights",
-    description: "5m, warm white",
-    price: 25,
-    qty: 3,
-    image: hero2
-  },
-  {
-    id: 3,
-    name: "Birthday Banner Set",
-    description: "Multicolor banner pack",
-    price: 18,
-    qty: 1,
-    image: hero3
-  },
-];
-const RECOMMENDED_ITEMS = [
-  {
-    id: 101,
-    name: "Pastel Balloon Garland",
-    price: 55,
-    image: hero1,
-  },
-  {
-    id: 102,
-    name: "Event Fairy Light Stand",
-    price: 75,
-    image: hero2,
-  },
-];
+
+
+
 
 
 
 export default function CartPage() {
-  const [items, setItems] = useState(DEMO_ITEMS);
+
+
+const { cartItems, updateQty, removeItem, clearCart } = useCart();
+const items = cartItems;
   const navigate = useNavigate();
 
   const { subtotal, discount, deliveryFee, total } = useMemo(() => {
@@ -66,34 +29,17 @@ export default function CartPage() {
     };
   }, [items]);
 
-  const handleQtyChange = (id, delta) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? { ...item, qty: Math.max(1, item.qty + delta) }
-          : item
-      )
-    );
-  };
+  
+const [stockWarning, setStockWarning] = useState("");
+const handleIncreaseQty = (item) => {
+  if (item.qty >= item.maxStock) {
+    setStockWarning(`No more stock available for "${item.name}".`);
+setTimeout(() => setStockWarning(""), 5000);
 
-  const handleDelete = (id) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
-  };
+    return;
+  }
 
-  const handleAddRecommended = (item) => {
-  setItems((prev) => {
-    const exists = prev.find((p) => p.id === item.id);
-
-    if (exists) {
-      // Increase quantity if item already exists
-      return prev.map((p) =>
-        p.id === item.id ? { ...p, qty: p.qty + 1 } : p
-      );
-    }
-
-    // Otherwise add as new item
-    return [...prev, { ...item, qty: 1 }];
-  });
+  updateQty(item.id, 1);
 };
 
 
@@ -110,6 +56,17 @@ export default function CartPage() {
   return (
     <div className="page-wrapper-checkoutt min-h-screen bg-[#FFFFFF]">
       <CheckoutSteps currentStep={1} />
+{stockWarning && (
+  <div className="mb-4 p-3 rounded-lg bg-yellow-100 text-yellow-800 text-sm flex justify-between items-center">
+    <span>{stockWarning}</span>
+    <button
+      onClick={() => setStockWarning("")}
+      className="ml-4 font-semibold"
+    >
+      ✕
+    </button>
+  </div>
+)}
 
       <div className="max-w-5xl mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6">
         {/* Cart items */}
@@ -119,8 +76,7 @@ export default function CartPage() {
             <button
               type="button"
               className="text-xs sm:text-sm text-red-500 hover:text-red-600"
-              onClick={() => setItems([])}
-            >
+              onClick={clearCart}>
               Delete all
             </button>
           </div>
@@ -160,24 +116,24 @@ className="w-20 h-20 rounded-lg object-cover border border-gray-300"
                       <button
                         type="button"
                         className="px-2 text-lg leading-none"
-                        onClick={() => handleQtyChange(item.id, -1)}
+                        onClick={() => updateQty(item.id, -1)}
                       >
                         −
                       </button>
                       <span className="px-2 text-sm">{item.qty}</span>
                       <button
-                        type="button"
-                        className="px-2 text-lg leading-none"
-                        onClick={() => handleQtyChange(item.id, 1)}
-                      >
-                        +
-                      </button>
+  type="button"
+  onClick={() => handleIncreaseQty(item)}
+>
+  +
+</button>
+
                     </div>
 
                     <button
                       type="button"
                       className="text-xs text-red-500 hover:text-red-600"
-                      onClick={() => handleDelete(item.id)}
+                      onClick={() => removeItem(item.id)}
                     >
                       Remove
                     </button>
