@@ -7,45 +7,35 @@ import demoImg2 from "../assets/home2/hero2.png";
 export default function OrderCompletePage() {
   const location = useLocation();
 
-  // ✅ Backend-ready (safe fallbacks)
-  const order = location.state?.order || {
-    id: "RSN-20482",
-    date: "02 May 2023",
-    paymentMethod: "Mastercard",
-    customer: {
-      name: "Jane Smith",
-      address: "456 Oak St #3b, San Francisco, CA 94102, United States",
-      phone: "+1 (415) 555-1234",
-      email: "jane.smith@email.com",
-    },
-    items: [
-  {
-    id: 1,
-    name: "Backdrop Arch Rental",
-    pack: "Standard",
-    qty: 1,
-    price: 500,
-    image: demoImg1,
-  },
-  {
-    id: 2,
-    name: "LED Fairy Lights",
-    pack: "Premium",
-    qty: 2,
-    price: 250,
-    image: demoImg2,
-  },
-],
+  const order = location.state?.order;
 
-  };
-
-  const subtotal = order.items.reduce(
-    (sum, i) => sum + i.price * i.qty,
-    0
+if (!order) {
+  return (
+    <div className="page-wrapper-checkoutt min-h-screen bg-white flex items-center justify-center px-4">
+      <div className="max-w-md w-full text-center">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          No order found
+        </h1>
+        <p className="text-gray-600 mb-6">
+          This page needs order data from checkout. Please place an order again.
+        </p>
+        <Link
+          to="/cart"
+          className="inline-block px-6 py-3 rounded-full bg-black text-white font-semibold"
+        >
+          Go to Cart
+        </Link>
+      </div>
+    </div>
   );
-  const shipping = 2;
-  const tax = 5;
-  const total = subtotal + shipping + tax;
+}
+
+
+  const subtotal = order.pricing?.subtotal ?? 0;
+const discount = order.pricing?.discount ?? 0;
+const deliveryFee = order.pricing?.deliveryFee ?? 0;
+const extraFees = order.pricing?.extraFees ?? 0;
+const total = order.pricing?.finalTotal ?? 0;
 
   return (
     <div className="page-wrapper-checkoutt min-h-screen bg-[#FFFFFF]">
@@ -104,55 +94,74 @@ export default function OrderCompletePage() {
             </div>
 
             {/* ITEMS */}
-            <div className="space-y-4 mb-6">
-              {order.items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between gap-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-14 h-14 rounded-lg object-cover"
-                    />
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">
-                        {item.name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Pack: {item.pack} · Qty: {item.qty}
-                      </p>
-                    </div>
-                  </div>
+            {/* ITEMS */}
+<div className="space-y-4 mb-6">
+  {order.items.map((item) => (
+    <div
+      key={item.id}
+      className="flex items-center justify-between gap-3"
+    >
+      <div className="flex items-center gap-3">
+        {/* Image or placeholder */}
+        {item.image ? (
+          <img
+            src={item.image}
+            alt={item.name}
+            className="w-14 h-14 rounded-lg object-cover"
+          />
+        ) : (
+          <div className="w-14 h-14 rounded-lg bg-gray-200 flex items-center justify-center text-xs text-gray-500">
+            No image
+          </div>
+        )}
 
-                  <p className="text-sm font-medium">
-                    ${item.price.toFixed(2)}
-                  </p>
-                </div>
-              ))}
-            </div>
+        <div>
+          <p className="text-sm font-medium text-gray-800">
+            {item.name}
+          </p>
+          <p className="text-xs text-gray-500">
+            Qty: {item.qty}
+          </p>
+        </div>
+      </div>
+
+      {/* Price × Qty */}
+      <p className="text-sm font-medium">
+        ${(item.price * item.qty).toFixed(2)}
+      </p>
+    </div>
+  ))}
+</div>
+
 
             {/* TOTALS */}
-            <div className="border-t pt-4 text-sm space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Sub Total</span>
-                <span>${subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Shipping</span>
-                <span>${shipping.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Tax</span>
-                <span>${tax.toFixed(2)}</span>
-              </div>
+            <div className="flex justify-between">
+  <span className="text-gray-600">Sub Total</span>
+  <span>${subtotal.toFixed(2)}</span>
+</div>
 
-              <div className="flex justify-between pt-3 font-semibold text-base">
-                <span>Order Total</span>
-                <span>${total.toFixed(2)}</span>
-              </div>
-            </div>
+<div className="flex justify-between">
+  <span className="text-gray-600">Discount</span>
+  <span className="text-red-500">-${discount.toFixed(2)}</span>
+</div>
+
+<div className="flex justify-between">
+  <span className="text-gray-600">Delivery Fee</span>
+  <span>${deliveryFee.toFixed(2)}</span>
+</div>
+
+{extraFees > 0 && (
+  <div className="flex justify-between">
+    <span className="text-gray-600">Extra Fees</span>
+    <span>${extraFees.toFixed(2)}</span>
+  </div>
+)}
+
+<div className="flex justify-between pt-3 font-semibold text-base">
+  <span>Order Total</span>
+  <span>${total.toFixed(2)}</span>
+</div>
+
           </div>
 
         </div>

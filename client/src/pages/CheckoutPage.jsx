@@ -89,29 +89,43 @@ const items = cartItems;
       // OPTIONAL: clearCart() here if you want after payment success:
       // clearCart();
 
-      navigate("/order-complete", {
-        state: {
-          items,
-          pricing: {
-            ...pricing,
-            extraFees,
-            finalTotal,
-            deliveryDate,
-            pickupDate,
-            deliveryTime,
-            pickupTime,
-            services: {
-              stairs: stairsFee,
-              setup: setupFee,
-            },
-          },
-          orderId: "RSN-20482",
-          stripePayment: {
-            paymentIntentId: result.paymentIntent?.id,
-            status: result.paymentIntent?.status,
-          },
-        },
-      });
+      const order = {
+  id: "RSN-" + Date.now(), // simple unique id (later you can use backend id)
+  date: new Date().toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }),
+  paymentMethod: "Stripe (Test)",
+  customer: {
+    name: "John Doe",      // later connect these to your input fields
+    address: "124 Crescent Avenue, San Diego, CA 92101",
+    phone: "+1-202-555-0147",
+    email: "john.doe@email.com",
+  },
+  items, // ✅ cart items (real)
+  pricing: {
+    ...pricing,
+    extraFees,
+    finalTotal,
+  },
+  delivery: {
+    deliveryDate,
+    pickupDate,
+    deliveryTime,
+    pickupTime,
+    services: {
+      stairs: stairsFee,
+      setup: setupFee,
+    },
+  },
+  stripePayment: {
+    paymentIntentId: result.paymentIntent?.id,
+    status: result.paymentIntent?.status,
+  },
+};
+
+navigate("/order-complete", { state: { order } });
 
       setIsPaying(false);
     } catch (err) {
