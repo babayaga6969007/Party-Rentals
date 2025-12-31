@@ -3,23 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../utils/api";
 
 
-
-const COLORS = [
-  { name: "White", value: "#ffffff", border: "#ccc" },
-  { name: "Black", value: "#000000", border: "#000" },
-  { name: "Gold", value: "#d4af37", border: "#b8972b" },
-  { name: "Silver", value: "#c0c0c0", border: "#999" },
-  { name: "Pink", value: "#f4a7c4", border: "#c2889e" },
-  { name: "Red", value: "#e63946", border: "#a62834" },
-  { name: "Blue", value: "#4a90e2", border: "#326fb8" },
-  { name: "Green", value: "#6ab547", border: "#4c8a32" },
-  { name: "Purple", value: "#9b59b6", border: "#7d3c98" },
-  { name: "Yellow", value: "#f1c40f", border: "#d4a307" },
-];
-
-
-
-
 // ====================
 //  HELPER
 // ====================
@@ -34,8 +17,6 @@ const CategoryPage = () => {
   // ====================
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
-  const [selectedColors, setSelectedColors] = useState([]);
-
 
   const [priceRange, setPriceRange] = useState([0, 500]);
   const [hoverPrice, setHoverPrice] = useState(null);
@@ -87,7 +68,6 @@ const categoryChips = categories.map((c) => ({
   const resetFilters = () => {
   setSelectedCategories([]);
   setSelectedTags([]);
-  setSelectedColors([]);   // <-- ADD THIS
   setPriceRange([0, 500]);
 };
   // ====================
@@ -250,15 +230,11 @@ const inTags =
 
 
 
-    // ✅ NEW COLOR FILTER
-    const inColor =
-      selectedColors.length === 0 ||
-selectedColors.includes(p.color || "");
 
     // ⬅️ Make sure to include AND inColor here
-    return inCategory && inPrice && inTags && inColor;
+return inCategory && inPrice && inTags;
   });
-}, [products, selectedCategories, selectedTags, selectedColors, priceRange]);
+}, [products, selectedCategories, selectedTags, priceRange]);
 
 
   // ====================
@@ -478,36 +454,7 @@ selectedColors.includes(p.color || "");
 )}
 
 
-            {/* ===== COLOR FILTER ===== */}
-<div className="mb-6">
-  <p className="text-sm font-semibold text-[#2D2926] mb-2">Colors</p>
-
-  <div className="flex flex-wrap gap-3">
-    {COLORS.map((c) => (
-      <button
-        key={c.name}
-        onClick={() =>
-          setSelectedColors((prev) =>
-            prev.includes(c.name)
-              ? prev.filter((x) => x !== c.name)
-              : [...prev, c.name]
-          )
-        }
-        className={`
-          w-6 h-6 rounded-full border-2 transition
-          ${selectedColors.includes(c.name)
-            ? "ring-2 ring-[#8B5C42]"
-            : ""}
-        `}
-        style={{
-          backgroundColor: c.value,
-          borderColor: c.border,
-        }}
-        title={c.name}
-      ></button>
-    ))}
-  </div>
-</div>
+          
 
 
             {/* ===== CLEAR ALL ===== */}
