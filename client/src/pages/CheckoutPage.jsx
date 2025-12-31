@@ -1,7 +1,13 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import CheckoutSteps from "../components/cart/CheckoutSteps";
-import { useMemo, useState } from "react";
- import { useCart } from "../context/CartContext";
+import { useEffect, useMemo, useState } from "react";
+import { useCart } from "../context/CartContext";
+
+import {
+  PaymentElement,
+  useElements,
+  useStripe,
+} from "@stripe/react-stripe-js";
 
 const STAIRS_COST = 250;
 const SETUP_COST = 300; // 150 × 2 hours
@@ -9,6 +15,11 @@ const SETUP_COST = 300; // 150 × 2 hours
 export default function CheckoutPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const stripe = useStripe();
+  const elements = useElements();
+
+  const [isPaying, setIsPaying] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
 
   // ✅ Delivery & Pickup state (MUST be declared before using stairsFee/setupFee)
   const [deliveryDate, setDeliveryDate] = useState("");
@@ -41,27 +52,75 @@ const items = cartItems;
   const extraFees = (stairsFee ? STAIRS_COST : 0) + (setupFee ? SETUP_COST : 0);
   const finalTotal = pricing.total + extraFees;
 
-  const handlePlaceOrder = () => {
-    navigate("/order-complete", {
-      state: {
-        items,
-        pricing: {
-          ...pricing,
-          extraFees,
-          finalTotal,
-          deliveryDate,
-          pickupDate,
-          deliveryTime,
-          pickupTime,
-          services: {
-            stairs: stairsFee,
-            setup: setupFee,
+   const handlePlaceOrder = async () => {
+    setPaymentError("");
+
+    // Basic validation
+    if (!deliveryDate || !pickupDate) {
+      setPaymentError("Please select delivery and pickup dates.");
+      return;
+    }
+
+    if (!stripe || !elements) {
+      setPaymentError("Stripe is still loading. Please try again in a moment.");
+      return;
+    }
+
+
+    try {
+      setIsPaying(true);
+
+      const result = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          // Stripe will redirect here if needed
+          return_url: window.location.origin + "/order-complete",
+        },
+        redirect: "if_required",
+      });
+
+      if (result.error) {
+        setPaymentError(result.error.message || "Payment failed.");
+        setIsPaying(false);
+        return;
+      }
+
+      // ✅ Payment success (or no redirect required)
+      // OPTIONAL: clearCart() here if you want after payment success:
+      // clearCart();
+
+      navigate("/order-complete", {
+        state: {
+          items,
+          pricing: {
+            ...pricing,
+            extraFees,
+            finalTotal,
+            deliveryDate,
+            pickupDate,
+            deliveryTime,
+            pickupTime,
+            services: {
+              stairs: stairsFee,
+              setup: setupFee,
+            },
+          },
+          orderId: "RSN-20482",
+          stripePayment: {
+            paymentIntentId: result.paymentIntent?.id,
+            status: result.paymentIntent?.status,
           },
         },
-        orderId: "RSN-20482",
-      },
-    });
+      });
+
+      setIsPaying(false);
+    } catch (err) {
+      setPaymentError("Something went wrong during payment.");
+      setIsPaying(false);
+    }
   };
+
+  
 
   return (
     <div className="page-wrapper-checkoutt min-h-screen bg-[#FFFFFF]">
@@ -234,68 +293,23 @@ const items = cartItems;
             </div>
           </section>
 
+                    {/* Payment */}
           {/* Payment */}
-          <section>
-            <h3 className="text-sm font-semibold mb-2 text-gray-800">
-              Payment method
-            </h3>
+<section>
+  <h3 className="text-sm font-semibold mb-2 text-gray-800">
+    Payment method
+  </h3>
 
-            <div className="flex flex-col gap-3 text-sm">
-              <label className="flex items-center gap-3 border rounded-xl px-3 py-2 cursor-pointer hover:border-black transition">
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  defaultChecked
-                  className="accent-black"
-                />
-                <div>
-                  <p className="font-semibold">Apple Pay</p>
-                  <p className="text-xs text-gray-500">
-                    Fast, secure checkout using your saved cards.
-                  </p>
-                </div>
-              </label>
+  <div className="border rounded-xl p-3">
+    <PaymentElement />
+  </div>
 
-              <label className="flex items-center gap-3 border rounded-xl px-3 py-2 cursor-pointer hover:border-black transition">
-                <input type="radio" name="paymentMethod" className="accent-black" />
-                <div>
-                  <p className="font-semibold">Google Pay</p>
-                  <p className="text-xs text-gray-500">
-                    Pay quickly with your Google account.
-                  </p>
-                </div>
-              </label>
+  {paymentError && (
+    <p className="mt-2 text-sm text-red-600">{paymentError}</p>
+  )}
+</section>
 
-              <label className="flex flex-col gap-2 border rounded-xl px-3 py-2 cursor-pointer hover:border-black transition">
-                <div className="flex items-center gap-3">
-                  <input type="radio" name="paymentMethod" className="accent-black" />
-                  <div>
-                    <p className="font-semibold">Credit / Debit Card</p>
-                    <p className="text-xs text-gray-500">
-                      Visa, Mastercard, RuPay and more.
-                    </p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2 ml-7">
-                  <input
-                    type="text"
-                    placeholder="Card number"
-                    className="border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-black sm:col-span-3"
-                  />
-                  <input
-                    type="text"
-                    placeholder="MM/YY"
-                    className="border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-black"
-                  />
-                  <input
-                    type="text"
-                    placeholder="CVV"
-                    className="border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-black"
-                  />
-                </div>
-              </label>
-            </div>
-          </section>
+
         </div>
 
         {/* Order summary */}
@@ -379,13 +393,21 @@ const items = cartItems;
           </div>
 
           <div className="mt-5 flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={handlePlaceOrder}
-              className="w-full py-3 rounded-full bg-black text-white text-sm font-semibold hover:bg-gray-900"
-            >
-              Place Order
-            </button>
+                      
+<button
+  type="button"
+  onClick={handlePlaceOrder}
+  disabled={!stripe || !elements || isPaying}
+  className={`w-full py-3 rounded-full text-sm font-semibold ${
+    !stripe || !elements || isPaying
+      ? "bg-gray-400 text-white cursor-not-allowed"
+      : "bg-black text-white hover:bg-gray-900"
+  }`}
+>
+  {isPaying ? "Processing..." : "Place Order"}
+</button>
+
+          
 
             <button
               type="button"

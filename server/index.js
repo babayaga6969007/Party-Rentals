@@ -1,3 +1,4 @@
+
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
@@ -15,8 +16,13 @@ const productRoutes = require("./routes/productRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const attributeRoutes = require("./routes/attributeRoutes"); // admin attributes
 const orderRoutes = require("./routes/orderRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
+
 
 const app = express();
+app.use(cors());
+app.use(express.json());
+
 app.use(
   "/uploads",
   express.static(path.join(__dirname, "uploads"), {
@@ -99,6 +105,8 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/admin/attributes", attributeRoutes);
 
 app.use("/api/orders", orderRoutes);
+app.use("/api/payments", paymentRoutes);
+
 
 /* =========================
    404 HANDLER

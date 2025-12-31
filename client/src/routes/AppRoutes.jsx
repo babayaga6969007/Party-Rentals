@@ -32,7 +32,8 @@ import SecondHProducts from "../pages/SecondHProducts/buyproducts";
 
 // 🛒 NEW Checkout Flow Pages
 import CartPage from "../pages/CartPage";
-import CheckoutPage from "../pages/CheckoutPage";
+import CheckoutWrapper from "../pages/CheckoutWrapper";
+
 import OrderCompletePage from "../pages/OrderCompletePage";
 
 // Admin Pages
@@ -63,7 +64,7 @@ const AppRoutes = () => {
 
           {/* 🛒 Checkout Flow */}
           <Route path="/cart" element={<CartPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
+<Route path="/checkout" element={<CheckoutWrapper />} />
           <Route path="/order-complete" element={<OrderCompletePage />} />
 
           {/* Admin Login */}
