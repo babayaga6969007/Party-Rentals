@@ -5,38 +5,6 @@ import hero3 from "../../assets/home2/hero3.png";
 import hero4 from "../../assets/home2/hero4.png";
 import { api } from "../../utils/api";
 
-
-// ====================
-//  CATEGORY DATA
-// ====================
-const ALL_CATEGORIES = [
-  "Backdrop",
-  "Furniture",
-  "Lights",
-  "Props",
-  "Florals",
-  "Tables",
-];
-const COLORS = [
-  { name: "White", value: "#ffffff", border: "#ccc" },
-  { name: "Black", value: "#000000", border: "#000" },
-  { name: "Gold", value: "#d4af37", border: "#b8972b" },
-  { name: "Silver", value: "#c0c0c0", border: "#999" },
-  { name: "Pink", value: "#f4a7c4", border: "#c2889e" },
-  { name: "Red", value: "#e63946", border: "#a62834" },
-  { name: "Blue", value: "#4a90e2", border: "#326fb8" },
-  { name: "Green", value: "#6ab547", border: "#4c8a32" },
-  { name: "Purple", value: "#9b59b6", border: "#7d3c98" },
-  { name: "Yellow", value: "#f1c40f", border: "#d4a307" },
-];
-
-
-// ====================
-//  MOCK PRODUCT DATA (Your existing dummy data)
-// ====================
-
-
-
 // ====================
 //  HELPER
 // ====================
@@ -48,7 +16,39 @@ const CategoryPage = () => {
   // ====================
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
-  const [selectedColors, setSelectedColors] = useState([]);
+const [attributes, setAttributes] = useState([]);
+const [tagAttribute, setTagAttribute] = useState(null);
+useEffect(() => {
+  const fetchAttributes = async () => {
+    try {
+      const res = await api("/admin/attributes");
+
+      const allAttributes = Array.isArray(res)
+        ? res
+        : Array.isArray(res?.data)
+        ? res.data
+        : [];
+
+      const tagsAttr = allAttributes.find((a) => a.slug === "tags");
+
+      setAttributes(allAttributes);
+      setTagAttribute(tagsAttr || null);
+    } catch (err) {
+      console.error("Failed to fetch attributes", err);
+    }
+  };
+
+  fetchAttributes();
+}, []);
+const getCategoryNameById = (categoryId) => {
+  if (!categoryId) return "--";
+
+  const found = allCategories.find(
+    (c) => String(c._id) === String(categoryId)
+  );
+
+  return found ? found.name : "--";
+};
 
 
   const [priceRange, setPriceRange] = useState([0, 500]);
@@ -57,7 +57,8 @@ const CategoryPage = () => {
 //  BACKEND DATA STATE
 // ====================
 const [products, setProducts] = useState([]);
-const [categories, setCategories] = useState([]);
+const [allCategories, setAllCategories] = useState([]);
+const [saleCategories, setSaleCategories] = useState([]);
 const [loadingProducts, setLoadingProducts] = useState(true);
 
 
@@ -86,7 +87,6 @@ const [loadingProducts, setLoadingProducts] = useState(true);
   const resetFilters = () => {
   setSelectedCategories([]);
   setSelectedTags([]);
-  setSelectedColors([]);   // <-- ADD THIS
   setPriceRange([0, 500]);
 };
 // ====================
@@ -122,14 +122,12 @@ useEffect(() => {
   const fetchCategories = async () => {
     try {
       const res = await api("/categories");
-      const allCategories = res?.data || res || [];
+      const data = res?.data || res || [];
 
-      // ✅ ONLY SALE CATEGORIES
-      const saleCategories = allCategories.filter(
-        (c) => c.type === "sale"
-      );
+      setAllCategories(data);
 
-      setCategories(saleCategories);
+      const saleOnly = data.filter((c) => c.type === "sale");
+      setSaleCategories(saleOnly);
     } catch (err) {
       console.error(err);
     }
@@ -137,14 +135,15 @@ useEffect(() => {
 
   fetchCategories();
 }, []);
+
 // ====================
 //  AUTO SELECT ALL CATEGORIES
 // ====================
 useEffect(() => {
-  if (categories.length > 0) {
-    setSelectedCategories(categories.map((c) => String(c._id)));
+  if (saleCategories.length > 0) {
+    setSelectedCategories(saleCategories.map((c) => String(c._id)));
   }
-}, [categories]);
+}, [saleCategories]);
 
 
 
@@ -164,19 +163,44 @@ return products.filter((p) => {
 const inPrice = price >= priceRange[0] && price <= priceRange[1];
 
 
-    const inTags =
-      selectedTags.length === 0 ||
-      selectedTags.every((t) => p.tags.includes(t));
+    const getId = (x) => {
+  if (!x) return "";
+  if (typeof x === "string") return x;
+  if (typeof x === "object") {
+    if (x._id) return String(x._id);
+    if (x.id) return String(x.id);
+  }
+  return String(x);
+};
 
-    // ✅ NEW COLOR FILTER
-    const inColor =
-      selectedColors.length === 0 ||
-      selectedColors.includes(p.color);
+const tagsGroupId = getId(tagAttribute);
 
-    // ⬅️ Make sure to include AND inColor here
-    return inCategory && inPrice && inTags && inColor;
+const tagAttrSelection = Array.isArray(p.attributes)
+  ? p.attributes.find((a) => getId(a.groupId) === tagsGroupId)
+  : null;
+
+const optionLabelById = (tagAttribute?.options || []).reduce((acc, opt) => {
+  acc[getId(opt)] = (opt.label || "").toLowerCase();
+  return acc;
+}, {});
+
+const productTagLabels = tagAttrSelection
+  ? (tagAttrSelection.optionIds || [])
+      .map((oid) => optionLabelById[getId(oid)])
+      .filter(Boolean)
+  : [];
+
+const selected = selectedTags.map((t) => t.toLowerCase());
+
+const inTags =
+  selected.length === 0 ||
+  selected.every((t) => productTagLabels.includes(t));
+
+   
+
+    return inCategory && inPrice && inTags;
   });
-}, [products, selectedCategories, selectedTags, selectedColors, priceRange]);
+}, [products, selectedCategories, selectedTags, priceRange, tagAttribute]);
 
 
   // ====================
@@ -238,28 +262,28 @@ const inPrice = price >= priceRange[0] && price <= priceRange[1];
               </p>
 
               <div className="flex flex-wrap gap-2">
-                {ALL_CATEGORIES.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() =>
-                      setSelectedCategories((prev) =>
-                        prev.includes(cat)
-                          ? prev.filter((c) => c !== cat)
-                          : [...prev, cat]
-                      )
-                    }
-                    className={`
-                      px-3 py-1 rounded-full border text-sm transition
-                      ${
-                        selectedCategories.includes(cat)
-                          ? "bg-[#8B5C42] text-white border-[#8B5C42]"
-                          : "bg-white text-[#2D2926] border-gray-300"
-                      }
-                    `}
-                  >
-                    {cat}
-                  </button>
-                ))}
+               {saleCategories.map((cat) => (
+  <button
+    key={cat._id}
+    onClick={() =>
+      setSelectedCategories((prev) =>
+        prev.includes(String(cat._id))
+          ? prev.filter((id) => id !== String(cat._id))
+          : [...prev, String(cat._id)]
+      )
+    }
+    className={`
+      px-3 py-1 rounded-full border text-sm transition
+      ${
+        selectedCategories.includes(String(cat._id))
+          ? "bg-[#8B5C42] text-white border-[#8B5C42]"
+          : "bg-white text-[#2D2926] border-gray-300"
+      }
+    `}
+  >
+    {cat.name}
+  </button>
+))}
               </div>
             </div>
 
@@ -356,57 +380,39 @@ const inPrice = price >= priceRange[0] && price <= priceRange[1];
               </p>
 
               <div className="flex flex-wrap gap-2">
-                {["Indoor", "Outdoor", "Pastel", "Bold", "Large", "Compact"].map(
-                  (tag) => (
-                    <button
-                      key={tag}
-                      onClick={() => toggleTag(tag)}
-                      className={`
-                        px-3 py-1 rounded-full border text-sm transition
-                        ${
-                          selectedTags.includes(tag)
-                            ? "bg-[#8B5C42] text-white border-[#8B5C42]"
-                            : "bg-white text-[#2D2926] border-gray-300"
-                        }
-                      `}
-                    >
-                      {tag}
-                    </button>
-                  )
-                )}
+                {tagAttribute && tagAttribute.options?.length > 0 && (
+  <div className="mb-6">
+    <p className="text-sm font-semibold text-[#2D2926] mb-2">
+      {tagAttribute.name}
+    </p>
+
+    <div className="flex flex-wrap gap-2">
+      {tagAttribute.options.map((opt) => {
+        const tag = opt.label;
+
+        return (
+          <button
+            key={opt._id}
+            onClick={() => toggleTag(tag)}
+            className={`
+              px-3 py-1 rounded-full border text-sm transition
+              ${
+                selectedTags.includes(tag)
+                  ? "bg-[#8B5C42] text-white border-[#8B5C42]"
+                  : "bg-white text-[#2D2926] border-gray-300"
+              }
+            `}
+          >
+            {tag}
+          </button>
+        );
+      })}
+    </div>
+  </div>
+)}
               </div>
             </div>
-            {/* ===== COLOR FILTER ===== */}
-<div className="mb-6">
-  <p className="text-sm font-semibold text-[#2D2926] mb-2">Colors</p>
-
-  <div className="flex flex-wrap gap-3">
-    {COLORS.map((c) => (
-      <button
-        key={c.name}
-        onClick={() =>
-          setSelectedColors((prev) =>
-            prev.includes(c.name)
-              ? prev.filter((x) => x !== c.name)
-              : [...prev, c.name]
-          )
-        }
-        className={`
-          w-6 h-6 rounded-full border-2 transition
-          ${selectedColors.includes(c.name)
-            ? "ring-2 ring-[#8B5C42]"
-            : ""}
-        `}
-        style={{
-          backgroundColor: c.value,
-          borderColor: c.border,
-        }}
-        title={c.name}
-      ></button>
-    ))}
-  </div>
-</div>
-
+           
 
             {/* ===== CLEAR ALL ===== */}
             <button
@@ -469,12 +475,10 @@ src={product.images?.[0]?.url || hero1}
 
           {/* CATEGORY */}
           <p className="text-sm text-gray-600 mt-1">
-Category: {
-  categories.find(
-    (c) => String(c._id) === String(product.category)
-  )?.name || "—"
-}
-          </p>
+  Category: {getCategoryNameById(product.category)}
+</p>
+
+
 
           {/* BUTTON */}
 <div className="mt-4 
