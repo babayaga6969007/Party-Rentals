@@ -125,7 +125,12 @@ const items = cartItems;
   },
 };
 
-navigate("/order-complete", { state: { order } });
+// ✅ Payment success — NOW it is safe to clear cart
+clearCart();
+
+navigate("/order-complete", {
+  state: { order },
+});
 
       setIsPaying(false);
     } catch (err) {
