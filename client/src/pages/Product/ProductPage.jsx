@@ -27,6 +27,7 @@ const ProductPage = () => {
   //  PRODUCT DATA (BACKEND)
   // ====================
   const { id } = useParams();
+const [openPricingChart, setOpenPricingChart] = useState(false);
 
   const [product, setProduct] = useState(null);
   const [loadingProduct, setLoadingProduct] = useState(true);
@@ -211,6 +212,35 @@ const totalPrice =
 
 console.log("PRODUCT ADDONS:", product?.addons);
 
+// ====================
+// PRICING CHART LOGIC
+// ====================
+
+// discount based on days
+const getDiscountRate = (days) => {
+  if (days <= 3) return 0;
+  if (days <= 7) return 0.05;
+  if (days <= 15) return 0.1;
+  if (days <= 30) return 0.15;
+  if (days <= 60) return 0.2;
+  return 0.25;
+};
+
+// days to show in table (10 rows)
+const pricingDays = [1, 3, 5, 7, 10, 15, 30, 45, 60, 90];
+
+const pricingTableData = pricingDays.map((days) => {
+  const basePrice = pricePerDay * days;
+  const discount = getDiscountRate(days);
+  const finalPrice = Math.round(basePrice * (1 - discount));
+  const approxPerDay = Math.round(finalPrice / days);
+
+  return {
+    days,
+    finalPrice,
+    approxPerDay,
+  };
+});
 
   // ====================
 //  FETCH RELATED PRODUCTS (SAME CATEGORY, RENTAL, MAX 2)
@@ -479,7 +509,7 @@ const toggleAddon = (addon) => {
           </Link>
 
           <p className="text-[#8B5C42] font-semibold mt-1">
-            Rs {rp.pricePerDay} / day
+            $ {rp.pricePerDay} / day
           </p>
 
           {/* QUANTITY CONTROLS */}
@@ -615,7 +645,7 @@ $ {pricePerDay} / day
             <div className="text-left">
               <div className="font-medium text-gray-700">{addon.name}</div>
               <div className="text-sm text-gray-500">
-                + Rs {addon.finalPrice}
+                + $ {addon.finalPrice}
               </div>
             </div>
 
@@ -638,13 +668,13 @@ $ {pricePerDay} / day
         <ul className="list-disc ml-5 space-y-1">
           {Object.entries(selectedAddons).map(([id, a]) => (
             <li key={id}>
-              {a.name} (+ Rs {a.price})
+              {a.name} (+ $ {a.price})
             </li>
           ))}
         </ul>
 
         <div className="mt-3 font-semibold text-[#2D2926]">
-          Add-ons total per day: Rs {selectedAddonTotal}
+          Add-ons total per day: $ {selectedAddonTotal}
         </div>
         {/* Signage custom text field (only if this product has signage addon AND it's selected) */}
 {signageOptionId && isSignageSelected && (
@@ -937,6 +967,46 @@ if (isVinylSelected) {
 </button>
 
 
+{/* PRICING & SHIPPING BOXES */}
+<div className="mt-4 flex flex-col md:flex-row gap-3">
+
+  {/* PRICING CHART */}
+  <button
+    onClick={() => setOpenPricingChart(true)}
+    className="
+      flex items-center justify-center gap-2
+      border border-black
+      rounded-lg px-5 py-3
+      text-sm font-medium text-[#2D2926]
+      bg-white
+      transition-all duration-200
+      hover:bg-[#FFF7F0]
+      hover:border-[#8B5C42]
+      hover:text-[#8B5C42]
+      hover:-translate-y-[1px]
+      hover:shadow-md
+    "
+  >
+    Pricing Chart
+  </button>
+
+  {/* SHIPPING RATES (DISABLED FOR NOW) */}
+  <div
+    className="
+      flex items-center justify-center gap-2
+      border border-black border-gray-300
+      rounded-lg px-5 py-3
+      text-sm font-medium text-gray-400
+      bg-gray-50
+      cursor-not-allowed
+    "
+  >
+    Shipping Rates
+  </div>
+
+</div>
+
+
 
 
           <div className="mt-10 space-y-4">
@@ -1004,6 +1074,62 @@ if (isVinylSelected) {
 />
 
 
+{/* PRICING CHART MODAL */}
+{openPricingChart && (
+  <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4">
+    
+    <div className="bg-white max-w-3xl w-full rounded-xl shadow-lg p-6 relative">
+      
+      {/* CLOSE */}
+      <button
+        onClick={() => setOpenPricingChart(false)}
+        className="absolute top-4 right-4 text-gray-500 hover:text-black"
+      >
+        ✕
+      </button>
+
+      {/* HEADER */}
+      <h2 className="text-2xl font-semibold text-[#2D2926]">
+        Pricing Chart
+      </h2>
+
+      <p className="mt-2 text-sm text-gray-600">
+        We provide flexible rental options ranging from <strong>1 day to 90 days</strong>.
+        Longer rentals cost you less per day.
+      </p>
+
+      {/* TABLE */}
+      <div className="mt-6 overflow-x-auto">
+        <table className="w-full border border-gray-200 rounded-lg text-sm">
+          <thead className="bg-[#FAF7F5]">
+            <tr>
+              <th className="px-4 py-3 text-left">Rental Period</th>
+              <th className="px-4 py-3 text-left">Rental Price</th>
+              <th className="px-4 py-3 text-left">Price / Day (approx)</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {pricingTableData.map((row) => (
+              <tr key={row.days} className="border-t">
+                <td className="px-4 py-3">
+                  {row.days} day{row.days > 1 ? "s" : ""}
+                </td>
+                <td className="px-4 py-3 font-medium">
+                  $ {row.finalPrice}
+                </td>
+                <td className="px-4 py-3 text-gray-600">
+                  $ {row.approxPerDay} / day
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+)}
 
     </>
   );
