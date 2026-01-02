@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "./AdminLayout";
 import { FiEye } from "react-icons/fi";
 
-// ✅ adjust this import path to wherever your api util is
+// ✅ adjust this import path to wherever your api util iss
 // Example possibilities:
 // import { api } from "../utils/api";
 // import { api } from "./utils/api";
