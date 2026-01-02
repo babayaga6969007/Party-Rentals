@@ -1,36 +1,63 @@
 import AdminLayout from "./AdminLayout";
+import { useEffect, useState } from "react";
+import { api } from "../utils/api";
 
-/* ---------------- DEMO DATA ---------------- */
 
-import hero1 from "../assets/home2/hero1.png";
-import hero2 from "../assets/home2/hero2.png";
 
-const activeRentals = [
-  {
-    id: "AR-2001",
-    product: "Backdrop Arch",
-    image: hero1,
-    customer: "Emily Watson",
-    startDate: "Dec 20, 2025",
-    endDate: "Dec 22, 2025",
-    qty: 1,
-    status: "Out for Rental",
-  },
-  {
-    id: "AR-2002",
-    product: "LED Fairy Lights",
-    image: hero2,
-    customer: "John Smith",
-    startDate: "Dec 21, 2025",
-    endDate: "Dec 24, 2025",
-    qty: 3,
-    status: "Out for Rental",
-  },
-];
 
 /* ---------------- PAGE ---------------- */
 
 const ActiveRentals = () => {
+  const [rentals, setRentals] = useState([]);
+const [loading, setLoading] = useState(true);
+const fetchActiveRentals = async () => {
+  try {
+    const token = localStorage.getItem("admin_token");
+
+    const res = await api("/orders/admin/all", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const orders = res.orders || [];
+
+    // ✅ FILTER LOGIC
+    const active = [];
+
+    orders.forEach((order) => {
+      // only allowed statuses
+      if (!["pending", "confirmed", "dispatched"].includes(order.orderStatus)) {
+        return;
+      }
+
+      order.items.forEach((item) => {
+        if (item.productType === "rental") {
+          active.push({
+            orderId: order._id,
+            product: item.name,
+            image: item.image,
+            customer: order.customer.name,
+            startDate: item.startDate,
+            endDate: item.endDate,
+            qty: item.qty,
+            status: order.orderStatus,
+          });
+        }
+      });
+    });
+
+    setRentals(active);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+};
+useEffect(() => {
+  fetchActiveRentals();
+}, []);
+
   return (
     <AdminLayout>
 
@@ -58,9 +85,9 @@ const ActiveRentals = () => {
           </thead>
 
           <tbody>
-            {activeRentals.map((rental) => (
+{rentals.map((rental, index) => (
               <tr
-                key={rental.id}
+key={index}
                 className="border-b last:border-0 hover:bg-gray-50 transition"
               >
                 {/* PRODUCT */}
@@ -104,9 +131,10 @@ const ActiveRentals = () => {
 
                 {/* STATUS */}
                 <td className="px-6 py-4">
-                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                    {rental.status}
-                  </span>
+                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 capitalize">
+  {rental.status}
+</span>
+
                 </td>
               </tr>
             ))}

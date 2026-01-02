@@ -9,7 +9,7 @@ import ActiveRentals from "../admin/ActiveRentals";
 import CompletedOrders from "../admin/CompletedOrders";
 import AvailabilityCalendar from "../admin/AvailabilityCalendar";
 import SalesReports from "../admin/SalesReports";
-import Inventory from "../admin/Inventory";
+
 
 
 
@@ -41,6 +41,7 @@ import AdminLogin from "../admin/Login";
 import Products from "../admin/Products";
 import AddProduct from "../admin/AddProduct";
 import Orders from "../admin/Orders";  
+import Inventory from "../admin/Inventory";
 
 
 const AppRoutes = () => {
@@ -104,6 +105,7 @@ const AppRoutes = () => {
           <Route path="/admin/attributes" element={<Attributes />} />
           <Route path="/admin/orders/active" element={<ActiveRentals />} />
           <Route path="/admin/orders/completed" element={<CompletedOrders />} />
+           <Route path="/admin/inventoy" element={<Inventory />} />
          
 <Route
   path="/admin/products/edit/:id"

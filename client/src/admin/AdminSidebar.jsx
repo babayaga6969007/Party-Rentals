@@ -139,12 +139,12 @@ const Sidebar = () => {
   Reports
 </NavLink>
 
-      {/* Customers (placeholder) */}
-      <div className={placeholderClass}>
-        <FiUsers className="inline mr-2" />
-        Customers
-      </div>
-
+   {/* Inventory */}
+<NavLink to="/admin/inventory" className={linkClass}>
+  <FiBarChart2 className="inline mr-2" />
+  Inventory
+</NavLink>
+ 
       {/* Calendar (placeholder) */}
       <div className={placeholderClass}>
         <FiCalendar className="inline mr-2" />
