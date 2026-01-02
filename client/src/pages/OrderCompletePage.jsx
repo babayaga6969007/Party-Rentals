@@ -119,6 +119,12 @@ const total = order.pricing?.finalTotal ?? 0;
           <p className="text-sm font-medium text-gray-800">
             {item.name}
           </p>
+           {/* ✅ RENTAL METADATA GOES HERE */}
+  {item.productType === "rental" && (
+    <p className="text-xs text-gray-500">
+      {item.startDate} → {item.endDate} ({item.days} days)
+    </p>
+  )}
           <p className="text-xs text-gray-500">
             Qty: {item.qty}
           </p>
@@ -126,9 +132,10 @@ const total = order.pricing?.finalTotal ?? 0;
       </div>
 
       {/* Price × Qty */}
-      <p className="text-sm font-medium">
-        ${(item.price * item.qty).toFixed(2)}
-      </p>
+     <p className="text-sm font-medium">
+  ${Number(item.lineTotal || 0).toFixed(2)}
+</p>
+
     </div>
   ))}
 </div>

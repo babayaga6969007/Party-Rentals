@@ -8,43 +8,47 @@ const { getDateStringsBetween } = require("../utils/dateRange");
 // -------------------------------
 exports.createOrder = async (req, res) => {
   try {
-    const body = req.body || {};
-    const { customer, items, pricing, paymentStatus, notes } = body;
-
-    if (!customer || !items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ message: "Invalid order payload." });
-    }
-
-    if (!pricing || typeof pricing.total !== "number") {
-      return res.status(400).json({ message: "Pricing is required." });
-    }
-
-    // Minimum order amount: 1000
-    if (pricing.total < 1000) {
-      return res
-        .status(400)
-        .json({ message: "Minimum order amount is $1000. Add more items to proceed." });
-    }
-
-    // (Optional later) validate rental dates here
-    // For now we store whatever frontend sends.
-
-    const order = await Order.create({
+    const {
       customer,
       items,
       pricing,
-      paymentStatus: paymentStatus || "unpaid",
-      orderStatus: "pending",
-      notes: notes || "",
-      statusHistory: [{ status: "pending", note: "Order created" }],
+      delivery,
+      paymentMethod,
+      stripePayment,
+      orderStatus,
+    } = req.body;
+    // 🔒 Safety: ensure required customer fields exist
+if (!customer?.addressLine) {
+  return res.status(400).json({
+    message: "Customer addressLine is required",
+  });
+}
+
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ message: "Order items required" });
+    }
+
+    const order = new Order({
+      customer,
+      items,
+      pricing,
+      delivery,
+      paymentMethod,
+      stripePayment,
+
+      orderStatus: orderStatus || "pending",
     });
 
-    res.status(201).json({ message: "Order created", order });
+    await order.save();
+
+    return res.status(201).json({ order });
   } catch (err) {
-    console.error("Create order error:", err);
-    res.status(500).json({ message: err.message || "Server error" });
+    console.error("CREATE ORDER ERROR:", err);
+    return res.status(500).json({ message: "Failed to create order" });
   }
 };
+
 
 // -------------------------------
 // ADMIN: GET ALL ORDERS

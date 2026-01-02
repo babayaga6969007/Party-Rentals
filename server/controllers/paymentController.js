@@ -7,18 +7,19 @@ const stripe = require("../config/stripe");
  */
 const calculateOrderAmount = ({ items = [], extraFees = 0 }) => {
   const subtotal = items.reduce((sum, item) => {
-    return sum + Number(item.price) * Number(item.qty);
+    return sum + Number(item.lineTotal || 0);
   }, 0);
 
-  const discount = subtotal * 0.1; // same 10% logic you already use
+  const discount = subtotal * 0.1;
   const deliveryFee = 10;
 
   const total =
     subtotal - discount + deliveryFee + Number(extraFees || 0);
 
-  // Stripe expects amount in smallest currency unit
+  // Stripe expects smallest currency unit
   return Math.round(total * 100);
 };
+
 
 exports.createPaymentIntent = async (req, res) => {
   try {

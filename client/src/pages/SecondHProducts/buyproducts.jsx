@@ -48,10 +48,13 @@ const ProductPage = () => {
 const today = new Date().toISOString().split("T")[0]; // disable past dates
 
 const { addToCart, cartItems } = useCart();
-
 const isAlreadyInCart = cartItems.some(
-  (item) => item.id === product?._id
+  (item) =>
+    item.productType === "purchase" &&
+    item.productId === product?._id
 );
+
+
 
 const [startDate, setStartDate] = useState("");
 const [endDate, setEndDate] = useState("");
@@ -178,17 +181,20 @@ const addedItem = {
 
 
 const handleAddToCart = () => {
-  addToCart({
-id: product._id,
-    name: product.title,
-    price: isSalePage ? salePrice : pricePerDay,
-    qty: productQty,
-    image: productImages[activeImage],
-    addons,
-    rentalDays: totalRentalDays,
-    totalPrice,
-    maxStock: product?.availabilityCount ?? 1,
+  const unitPrice = salePrice;
+  const lineTotal = unitPrice * productQty;
 
+  addToCart({
+    productId: product._id,
+    name: product.title,
+    productType: "purchase",
+
+    qty: productQty,
+    unitPrice,
+    lineTotal,
+
+    image: productImages[activeImage],
+    maxStock: product?.availabilityCount ?? 1,
   });
 
   setShowPopup(true);
@@ -448,22 +454,20 @@ if (!product) {
 
 
           {/* BUTTON */}
-   <button
+ <button
   onClick={handleAddToCart}
   disabled={
     (product?.availabilityCount ?? 0) === 0 || isAlreadyInCart
   }
   className={`mt-8 w-full py-3 rounded-lg text-white
     ${
-      isAlreadyInCart
-        ? "bg-gray-400 cursor-not-allowed"
-        : (product?.availabilityCount ?? 0) === 0
+      isAlreadyInCart || (product?.availabilityCount ?? 0) === 0
         ? "bg-gray-400 cursor-not-allowed"
         : "bg-black hover:bg-[#222222]"
     }`}
 >
   {isAlreadyInCart
-    ? "Already in Cart"
+    ? "Product already in cart"
     : (product?.availabilityCount ?? 0) === 0
     ? "Out of Stock"
     : "Add to Cart"}

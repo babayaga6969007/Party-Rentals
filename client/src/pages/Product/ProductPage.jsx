@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { api } from "../../utils/api";
 import AddToCartModal from "../../components/cart/AddToCartModal";
+import { useCart } from "../../context/CartContext";
 
 
 import {
@@ -30,6 +31,7 @@ const ProductPage = () => {
 
 const [openPricingChart, setOpenPricingChart] = useState(false);
 const [openShippingModal, setOpenShippingModal] = useState(false); // ✅ ADD THIS
+const { addToCart } = useCart();
 
   const [product, setProduct] = useState(null);
   const [loadingProduct, setLoadingProduct] = useState(true);
@@ -975,38 +977,46 @@ if (isVinylSelected) {
   }
 }
 
+const rentalCartItem = {
+  // 🔑 cart-compatible payload
+  productId: product._id,
+  name: product.title,
+  productType: "rental",
 
-  setChosenProduct({
-  name: product?.title || "Product",
   qty: productQty,
-  pricePerDay,
-  image: productImages[0],
+  unitPrice: pricePerDay,
+  days: totalRentalDays,
   startDate,
   endDate,
-  totalPrice,
- selectedAddons: Object.entries(selectedAddons).map(([optionId, a]) => ({
-  optionId,
-  name: a.name,
-  price: a.price,
 
-  ...(optionId === signageOptionId
-    ? { signageText: signageText.trim() }
-    : {}),
+  addons: Object.entries(selectedAddons).map(([optionId, a]) => ({
+    optionId,
+    name: a.name,
+    price: a.price,
 
-  ...(optionId === vinylOptionId
-    ? {
-        vinylColor,
-        vinylHex: vinylColor === "custom" ? vinylHex.trim() : "",
-      }
-    : {}),
-})),
+    signageText:
+      optionId === signageOptionId ? signageText : "",
+    vinylColor:
+      optionId === vinylOptionId ? vinylColor : "",
+    vinylHex:
+      optionId === vinylOptionId ? vinylHex : "",
+  })),
 
+  // 🔒 FINAL SNAPSHOT PRICE
+  lineTotal: totalPrice,
 
-});
+  image: productImages[activeImage],
+  maxStock: product.availabilityCount ?? 1,
+};
 
+// ✅ ADD TO CART IMMEDIATELY (THIS IS THE FIX)
+addToCart(rentalCartItem);
 
+// still needed for modal UI
+setChosenProduct(rentalCartItem);
 
-    setOpenModal(true);
+setOpenModal(true);
+
   }}
   className={`
     mt-8 w-full py-3 rounded-lg text-sm font-semibold transition-all
@@ -1132,9 +1142,9 @@ if (isVinylSelected) {
   open={openModal}
   onClose={() => setOpenModal(false)}
   product={chosenProduct}
-  addons={chosenProduct?.selectedAddons || []}
-  onGoToCart={handleGoToCart}   // ✅ THIS WAS MISSING
+  onGoToCart={handleGoToCart}
 />
+
 
 
 {/* PRICING CHART MODAL */}

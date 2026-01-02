@@ -1,60 +1,135 @@
-import { createContext, useContext, useState } from "react";
-import { useEffect } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-const CartContext = createContext();
+const CartContext = createContext(null);
+
+// 🔑 rental items must be uniquely identified by dates + addons
+const buildCartKey = (item) => {
+  if (item.productType === "rental") {
+    const addonKey = Array.isArray(item.addons)
+      ? item.addons.map((a) => a.optionId || a.name).join("|")
+      : "";
+    return `${item.productId}__${item.startDate}__${item.endDate}__${addonKey}`;
+  }
+  return `${item.productId}__purchase`;
+};
 
 export const CartProvider = ({ children }) => {
-const [cartItems, setCartItems] = useState(() => {
-  try {
-    const stored = localStorage.getItem("cart");
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const stored = localStorage.getItem("cart");
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem("cart", JSON.stringify(cartItems));
+  }, [cartItems]);
+
+  // ✅ ADD TO CART (SALE + RENTAL)
+  const addToCart = (payload) => {
+    const normalized = {
+      cartKey: "",
+
+      productId: payload.productId || payload.id,
+      name: payload.name,
+      productType: payload.productType || "purchase",
+
+      qty: Number(payload.qty || 1),
+      unitPrice: Number(payload.unitPrice ?? payload.price ?? 0),
+
+      // rental-only
+      days: Number(payload.days || 0),
+      startDate: payload.startDate || "",
+      endDate: payload.endDate || "",
+      addons: payload.addons || [],
+
+      image: payload.image || "",
+      maxStock: Number(payload.maxStock || 1),
+
+      // 🔒 FINAL PRICE SNAPSHOT
+      lineTotal: Number(payload.lineTotal || payload.totalPrice),
+    };
+
+    normalized.cartKey = buildCartKey(normalized);
+
+    setCartItems((prev) => {
+      const index = prev.findIndex((i) => {
+  // 🔒 SALE: same productId always merges
+  if (normalized.productType === "purchase") {
+    return (
+      i.productType === "purchase" &&
+      i.productId === normalized.productId
+    );
   }
+
+  // 🔓 RENTAL: must match cartKey (dates + addons)
+  return i.cartKey === normalized.cartKey;
 });
 
-  const addToCart = (item) => {
-  setCartItems((prev) => {
-    const exists = prev.find((p) => p.id === item.id);
-
-    // ❌ Do NOT add again if already in cart
-    if (exists) {
-      return prev;
-    }
-
-    return [...prev, item];
-  });
-};
+if (index === -1) return [...prev, normalized];
 
 
- const updateQty = (id, delta) => {
-  setCartItems((prev) =>
-    prev.map((item) => {
-      if (item.id !== id) return item;
+      // already exists → increase qty (respect stock)
+      const existing = prev[index];
+      const newQty = Math.min(
+        existing.qty + normalized.qty,
+        existing.maxStock
+      );
 
-      const nextQty = item.qty + delta;
+      const updated = [...prev];
+      updated[index] = {
+        ...existing,
+        qty: newQty,
+        lineTotal:
+          existing.productType === "rental"
+            ? (existing.lineTotal / existing.qty) * newQty
+            : existing.unitPrice * newQty,
+      };
 
-      // Enforce limits
-      if (nextQty < 1) return { ...item, qty: 1 };
-      if (nextQty > item.maxStock) return item;
-
-      return { ...item, qty: nextQty };
-    })
-  );
-};
-
-useEffect(() => {
-  localStorage.setItem("cart", JSON.stringify(cartItems));
-}, [cartItems]);
-
-  const removeItem = (id) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
+      return updated;
+    });
   };
 
-const clearCart = () => {
-  setCartItems([]);
-  localStorage.removeItem("cart");
-};
+  // ✅ UPDATE QTY
+  const updateQty = (cartKey, delta) => {
+    setCartItems((prev) =>
+      prev.map((item) => {
+        if (item.cartKey !== cartKey) return item;
+
+        const nextQty = Math.max(
+          1,
+          Math.min(item.qty + delta, item.maxStock)
+        );
+
+        return {
+          ...item,
+          qty: nextQty,
+          lineTotal:
+            item.productType === "rental"
+              ? (item.lineTotal / item.qty) * nextQty
+              : item.unitPrice * nextQty,
+        };
+      })
+    );
+  };
+
+  const removeItem = (cartKey) => {
+    setCartItems((prev) =>
+      prev.filter((item) => item.cartKey !== cartKey)
+    );
+  };
+
+  const clearCart = () => {
+    setCartItems([]);
+    localStorage.removeItem("cart");
+  };
+
+  const cartSubtotal = useMemo(
+    () => cartItems.reduce((sum, i) => sum + i.lineTotal, 0),
+    [cartItems]
+  );
 
   return (
     <CartContext.Provider
@@ -64,6 +139,7 @@ const clearCart = () => {
         updateQty,
         removeItem,
         clearCart,
+        cartSubtotal,
       }}
     >
       {children}
@@ -71,4 +147,8 @@ const clearCart = () => {
   );
 };
 
-export const useCart = () => useContext(CartContext);
+export const useCart = () => {
+  const ctx = useContext(CartContext);
+  if (!ctx) throw new Error("useCart must be used inside CartProvider");
+  return ctx;
+};

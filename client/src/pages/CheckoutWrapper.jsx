@@ -16,10 +16,15 @@ export default function CheckoutWrapper() {
     fetch("http://localhost:5000/api/payments/create-payment-intent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        items: cartItems,
-        extraFees: 0, // initial (will be updated later)
-      }),
+     body: JSON.stringify({
+  items: cartItems.map((i) => ({
+    productId: i.productId,
+    qty: i.qty,
+    lineTotal: i.lineTotal,
+  })),
+  extraFees: 0,
+}),
+
     })
       .then((res) => res.json())
       .then((data) => setClientSecret(data.clientSecret))

@@ -13,21 +13,14 @@ import CheckoutSteps from "../components/cart/CheckoutSteps";
 export default function CartPage() {
 
 
-const { cartItems, updateQty, removeItem, clearCart } = useCart();
+const { cartItems, updateQty, removeItem, clearCart, cartSubtotal } = useCart();
 const items = cartItems;
   const navigate = useNavigate();
 
-  const { subtotal, discount, deliveryFee, total } = useMemo(() => {
-    const sub = items.reduce((sum, item) => sum + item.price * item.qty, 0);
-    const disc = sub * 0.1; // demo: 10% off
-    const delivery = 10;
-    return {
-      subtotal: sub,
-      discount: disc,
-      deliveryFee: delivery,
-      total: sub - disc + delivery,
-    };
-  }, [items]);
+const discount = cartSubtotal * 0.1;
+const deliveryFee = 10;
+const total = cartSubtotal - discount + deliveryFee;
+
 
   
 const [stockWarning, setStockWarning] = useState("");
@@ -39,7 +32,7 @@ setTimeout(() => setStockWarning(""), 5000);
     return;
   }
 
-  updateQty(item.id, 1);
+updateQty(item.cartKey, 1);
 };
 
 
@@ -103,10 +96,27 @@ className="w-20 h-20 rounded-lg object-cover border border-gray-300"
 
   {/* Product Details */}
   <div>
-    <p className="text-sm font-semibold text-gray-900">{item.name}</p>
-    <p className="text-xs text-gray-500">{item.description}</p>
-    <p className="mt-1 text-sm font-medium text-gray-900">${item.price}</p>
-  </div>
+  <p className="text-sm font-semibold text-gray-900">
+    {item.name}
+  </p>
+
+  {/* ✅ RENTAL METADATA — PUTS HERE */}
+  {item.productType === "rental" && (
+    <div className="mt-1 text-xs text-gray-500 space-y-0.5">
+      <p>
+        Dates: {item.startDate} → {item.endDate}
+      </p>
+      <p>
+        Days: {item.days}
+      </p>
+    </div>
+  )}
+
+  <p className="mt-1 text-sm font-medium text-gray-900">
+    ${item.lineTotal.toFixed(2)}
+  </p>
+</div>
+
 
 </div>
 
@@ -116,7 +126,7 @@ className="w-20 h-20 rounded-lg object-cover border border-gray-300"
                       <button
                         type="button"
                         className="px-2 text-lg leading-none"
-                        onClick={() => updateQty(item.id, -1)}
+                        onClick={() => updateQty(item.cartKey, -1)}
                       >
                         −
                       </button>
@@ -133,7 +143,7 @@ className="w-20 h-20 rounded-lg object-cover border border-gray-300"
                     <button
                       type="button"
                       className="text-xs text-red-500 hover:text-red-600"
-                      onClick={() => removeItem(item.id)}
+onClick={() => removeItem(item.cartKey)}
                     >
                       Remove
                     </button>
@@ -151,7 +161,7 @@ className="w-20 h-20 rounded-lg object-cover border border-gray-300"
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-500">Subtotal</span>
-              <span className="font-medium">${subtotal.toFixed(2)}</span>
+<span className="font-medium">${cartSubtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Discount (10%)</span>

@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import CheckoutSteps from "../components/cart/CheckoutSteps";
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "../context/CartContext";
+import { api } from "../utils/api";
 
 import {
   PaymentElement,
@@ -39,14 +40,21 @@ const items = cartItems;
 
   // ✅ Base pricing (memo to avoid recalculating every render)
   const pricing = useMemo(() => {
-    if (location.state?.pricing) return location.state.pricing;
+  if (location.state?.pricing) return location.state.pricing;
 
-    const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
-    const discount = subtotal * 0.1;
-    const deliveryFee = 10;
-    const total = subtotal - discount + deliveryFee;
-    return { subtotal, discount, deliveryFee, total };
-  }, [location.state?.pricing, items]);
+  const subtotal = items.reduce(
+    (sum, item) => sum + Number(item.lineTotal || 0),
+    0
+  );
+
+  const discount = subtotal * 0.1;
+  const deliveryFee = 10;
+
+  const total = subtotal - discount + deliveryFee;
+
+  return { subtotal, discount, deliveryFee, total };
+}, [location.state?.pricing, items]);
+
 
   // ✅ Extra fees (now stairsFee/setupFee exist)
   const extraFees = (stairsFee ? STAIRS_COST : 0) + (setupFee ? SETUP_COST : 0);
@@ -97,12 +105,20 @@ const items = cartItems;
     year: "numeric",
   }),
   paymentMethod: "Stripe (Test)",
-  customer: {
-    name: "John Doe",      // later connect these to your input fields
-    address: "124 Crescent Avenue, San Diego, CA 92101",
-    phone: "+1-202-555-0147",
-    email: "john.doe@email.com",
-  },
+customer: {
+  name: "John Doe",
+
+  // ✅ REQUIRED BY SCHEMA
+  addressLine: "124 Crescent Avenue",
+
+  city: "San Diego",
+  state: "California",
+  postalCode: "92101",
+
+  phone: "+1-202-555-0147",
+  email: "john.doe@email.com",
+},
+
   items, // ✅ cart items (real)
   pricing: {
     ...pricing,
@@ -124,6 +140,25 @@ const items = cartItems;
     status: result.paymentIntent?.status,
   },
 };
+try {
+  await api("/orders", {
+    method: "POST",
+    body: JSON.stringify({
+      customer: order.customer,
+      items: order.items,
+      pricing: order.pricing,
+      delivery: order.delivery,
+      paymentMethod: order.paymentMethod,
+      stripePayment: order.stripePayment,
+
+      // ✅ IMPORTANT
+      orderStatus: "completed", // payment already successful
+    }),
+  });
+} catch (err) {
+  console.error("Failed to save order:", err);
+  // optional: show toast / alert
+}
 
 // ✅ Payment success — NOW it is safe to clear cart
 clearCart();

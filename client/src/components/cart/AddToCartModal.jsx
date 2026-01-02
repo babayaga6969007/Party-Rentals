@@ -1,8 +1,11 @@
 import { FiX } from "react-icons/fi";
 import hero1 from "../../assets/home2/hero1.png";
 import hero2 from "../../assets/home2/hero2.png";
+import { useCart } from "../../context/CartContext";
 
 export default function AddToCartModal({ open, onClose, product, addons, onGoToCart, onAddRecommended }) {
+  const { addToCart } = useCart();
+
   if (!open) return null;
 
   const recommended = [
@@ -30,7 +33,9 @@ export default function AddToCartModal({ open, onClose, product, addons, onGoToC
           <div className="flex-1">
             <p className="font-semibold">{product.name}</p>
             <p className="text-sm text-gray-500">Qty: {product.qty}</p>
-            <p className="text-sm text-gray-700 mt-1">${product.totalPrice}</p>
+<p className="text-sm text-gray-700 mt-1">
+  ${product.lineTotal}
+</p>
           </div>
         </div>
 {/* Addons Section */}
@@ -61,11 +66,13 @@ export default function AddToCartModal({ open, onClose, product, addons, onGoToC
           </button>
 
           <button
-            onClick={onGoToCart}
-            className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-900"
-          >
-            Bag & Checkout
-          </button>
+  onClick={onGoToCart}
+
+  className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-900"
+>
+  Bag & Checkout
+</button>
+
         </div>
 
         {/* Recommended products */}
