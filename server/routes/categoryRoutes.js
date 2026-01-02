@@ -3,7 +3,7 @@ const router = express.Router();
 
 const authAdmin = require("../middleware/authAdmin");
 const categoryController = require("../controllers/categoryController");
-const upload = require("../middleware/uploadProductImages");
+const upload = require("../middleware/uploadCategoryImage");
 
 // PUBLIC
 router.get("/", categoryController.getCategories);
@@ -12,15 +12,15 @@ router.get("/:slug", categoryController.getCategoryBySlug);
 // ADMIN
 router.post(
   "/",
+  upload.single("image"),
   authAdmin,
-  upload.single("image"),   // ✅ Cloudinary
   categoryController.createCategory
 );
 
 router.put(
   "/:id",
+  upload.single("image"),
   authAdmin,
-  upload.single("image"),   // ✅ Cloudinary
   categoryController.updateCategory
 );
 

@@ -1,16 +1,16 @@
 const multer = require("multer");
-const CloudinaryStorage = require("multer-storage-cloudinary");
 const cloudinary = require("../config/cloudinary");
+console.log("DEBUG cloudinary.v2.uploader exists:", !!cloudinary.v2?.uploader);
 
-const storage = new CloudinaryStorage({
-  cloudinary,
+const CloudinaryStorage = require("multer-storage-cloudinary");
+
+const storage = CloudinaryStorage({
+  cloudinary, // ✅ ROOT object
   params: {
     folder: "party-rentals/products",
     allowed_formats: ["jpg", "jpeg", "png", "webp"],
-    transformation: [{ quality: "auto", fetch_format: "auto" }],
   },
 });
 
 const upload = multer({ storage });
-
 module.exports = upload;

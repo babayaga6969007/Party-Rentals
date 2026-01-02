@@ -1,5 +1,7 @@
 const Category = require("../models/Category");
 const slugify = require("../utils/slugify");
+const fs = require("fs");
+const cloudinary = require("../config/cloudinary");
 
 /* =========================
    GET ALL CATEGORIES
@@ -39,24 +41,38 @@ exports.createCategory = async (req, res) => {
       return res.status(400).json({ message: "Name and type are required" });
     }
 
+    // Multer should attach file here
     if (!req.file || !req.file.path) {
       return res.status(400).json({ message: "Image upload failed" });
     }
 
+    // 1) Upload local temp file to Cloudinary
+    const result = await cloudinary.v2.uploader.upload(req.file.path, {
+      folder: "party-rentals/categories",
+      resource_type: "image",
+    });
+
+    // 2) Delete temp file from local disk
+    try {
+      fs.unlinkSync(req.file.path);
+    } catch (e) {
+      console.log("Temp file cleanup skipped:", e.message);
+    }
+
+    // 3) Save category in DB with Cloudinary URL
     const category = await Category.create({
       name: name.trim(),
       type,
       slug: name.toLowerCase().replace(/\s+/g, "-"),
-      image: req.file.path, // ✅ THIS IS THE KEY FIX
+      image: result.secure_url,
     });
 
-    res.status(201).json(category); // ✅ return ONLY category
+    return res.status(201).json(category);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: err.message });
+    console.error("CREATE CATEGORY ERROR:", err);
+    return res.status(500).json({ message: err.message });
   }
 };
-
 
 /* =========================
    UPDATE CATEGORY (ADMIN)
@@ -65,25 +81,38 @@ exports.updateCategory = async (req, res) => {
   try {
     const updateData = { ...req.body };
 
+    // If a new image is uploaded, upload to Cloudinary
     if (req.file?.path) {
-      updateData.image = req.file.path; // ✅ Cloudinary URL
+      const result = await cloudinary.v2.uploader.upload(req.file.path, {
+        folder: "party-rentals/categories",
+        resource_type: "image",
+      });
+
+      // delete temp file
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (e) {
+        console.log("Temp file cleanup skipped:", e.message);
+      }
+
+      updateData.image = result.secure_url;
     }
 
-    const updated = await Category.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true }
-    );
+    const updated = await Category.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+    });
 
     if (!updated) {
       return res.status(404).json({ message: "Category not found" });
     }
 
-    res.json(updated); // ✅ return plain category
+    return res.json(updated);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("UPDATE CATEGORY ERROR:", err);
+    return res.status(500).json({ message: err.message });
   }
 };
+
 
 /* =========================
    DELETE CATEGORY (ADMIN)
