@@ -18,6 +18,15 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const stripe = useStripe();
   const elements = useElements();
+const [customer, setCustomer] = useState({
+  name: "",
+  email: "",
+  phone: "",
+  addressLine: "",
+  city: "",
+  state: "",
+  postalCode: "",
+});
 
   const [isPaying, setIsPaying] = useState(false);
   const [paymentError, setPaymentError] = useState("");
@@ -61,6 +70,15 @@ const items = cartItems;
   const finalTotal = pricing.total + extraFees;
 
    const handlePlaceOrder = async () => {
+    if (
+  !customer.name ||
+  !customer.email ||
+  !customer.phone ||
+  !customer.addressLine
+) {
+  setPaymentError("Please fill all required contact details.");
+  return;
+}
     setPaymentError("");
 
     // Basic validation
@@ -93,78 +111,66 @@ const items = cartItems;
         return;
       }
 
-      // ✅ Payment success (or no redirect required)
-      // OPTIONAL: clearCart() here if you want after payment success:
-      // clearCart();
 
-      const order = {
-  id: "RSN-" + Date.now(), // simple unique id (later you can use backend id)
-  date: new Date().toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }),
-  paymentMethod: "Stripe (Test)",
-customer: {
-  name: "John Doe",
 
-  // ✅ REQUIRED BY SCHEMA
-  addressLine: "124 Crescent Avenue",
-
-  city: "San Diego",
-  state: "California",
-  postalCode: "92101",
-
-  phone: "+1-202-555-0147",
-  email: "john.doe@email.com",
-},
-
-  items, // ✅ cart items (real)
-  pricing: {
-    ...pricing,
-    extraFees,
-    finalTotal,
-  },
-  delivery: {
-    deliveryDate,
-    pickupDate,
-    deliveryTime,
-    pickupTime,
-    services: {
-      stairs: stairsFee,
-      setup: setupFee,
-    },
-  },
-  stripePayment: {
-    paymentIntentId: result.paymentIntent?.id,
-    status: result.paymentIntent?.status,
-  },
-};
 try {
-  await api("/orders", {
-    method: "POST",
-    body: JSON.stringify({
-      customer: order.customer,
-      items: order.items,
-      pricing: order.pricing,
-      delivery: order.delivery,
-      paymentMethod: order.paymentMethod,
-      stripePayment: order.stripePayment,
+await api("/orders", {
+  method: "POST",
+  body: JSON.stringify({
+    customer,
+    items,
+    pricing: {
+      ...pricing,
+      extraFees,
+      finalTotal,
+    },
+    delivery: {
+      deliveryDate,
+      pickupDate,
+      deliveryTime,
+      pickupTime,
+      services: {
+        stairs: stairsFee,
+        setup: setupFee,
+      },
+    },
+    paymentMethod: "Stripe",
+    stripePayment: {
+      paymentIntentId: result.paymentIntent?.id,
+      status: result.paymentIntent?.status,
+    },
+  }),
+});
 
-      // ✅ IMPORTANT
-      orderStatus: "completed", // payment already successful
-    }),
-  });
 } catch (err) {
   console.error("Failed to save order:", err);
   // optional: show toast / alert
 }
 
+
 // ✅ Payment success — NOW it is safe to clear cart
 clearCart();
 
 navigate("/order-complete", {
-  state: { order },
+  state: {
+    customer,
+    items,
+    pricing: {
+      ...pricing,
+      extraFees,
+      finalTotal,
+    },
+    delivery: {
+      deliveryDate,
+      pickupDate,
+      deliveryTime,
+      pickupTime,
+      services: {
+        stairs: stairsFee,
+        setup: setupFee,
+      },
+    },
+  },
 });
 
       setIsPaying(false);
@@ -196,75 +202,99 @@ navigate("/order-complete", {
               <div>
                 <label className="block text-gray-500 mb-1">Full name</label>
                 <input
-                  type="text"
-                  defaultValue="John Doe"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-black"
-                />
+  type="text"
+  value={customer.name}
+  onChange={(e) =>
+    setCustomer({ ...customer, name: e.target.value })
+  }
+  placeholder="John Doe"
+  className="w-full border rounded-lg px-3 py-2 text-sm"
+/>
+
               </div>
               <div>
                 <label className="block text-gray-500 mb-1">Email</label>
-                <input
-                  type="email"
-                  defaultValue="john.doe@email.com"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-black"
-                />
+<input
+  type="email"
+  value={customer.email}
+  onChange={(e) =>
+    setCustomer({ ...customer, email: e.target.value })
+  }
+  placeholder="john@example.com"
+  className="w-full border rounded-lg px-3 py-2 text-sm"
+ />
+
+
               </div>
               <div>
                 <label className="block text-gray-500 mb-1">Phone</label>
                 <input
-                  type="tel"
-                  defaultValue="+1-202-555-0147"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-black"
-                />
+  type="tel"
+  value={customer.phone}
+  onChange={(e) =>
+    setCustomer({ ...customer, phone: e.target.value })
+  }
+  placeholder="+1 234 567 890"
+/>
+
               </div>
             </div>
           </section>
 
           {/* Shipping */}
           <section className="mb-6">
-            <h3 className="text-sm font-semibold mb-2 text-gray-800">
-              Shipping address
-            </h3>
+           
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div className="sm:col-span-2">
-                <label className="block text-gray-500 mb-1">
-                  Street address
-                </label>
-                <input
-                  type="text"
-                  defaultValue="124 Crescent Avenue"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-black"
-                />
-              </div>
+  <label className="block text-gray-500 mb-1">Street address</label>
+  <input
+    type="text"
+    value={customer.addressLine}
+    onChange={(e) =>
+      setCustomer({ ...customer, addressLine: e.target.value })
+    }
+    placeholder="Street address"
+    className="w-full border rounded-lg px-3 py-2 text-sm"
+  />
+</div>
 
-              <div>
-                <label className="block text-gray-500 mb-1">City</label>
-                <input
-                  type="text"
-                  defaultValue="San Diego"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-black"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-500 mb-1">
-                  State / Province / Region
-                </label>
-                <input
-                  type="text"
-                  defaultValue="California"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-black"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-500 mb-1">
-                  Postal / ZIP Code
-                </label>
-                <input
-                  type="text"
-                  defaultValue="92101"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-black"
-                />
-              </div>
+<div>
+  <label className="block text-gray-500 mb-1">City</label>
+  <input
+    type="text"
+    value={customer.city}
+    onChange={(e) =>
+      setCustomer({ ...customer, city: e.target.value })
+    }
+    className="w-full border rounded-lg px-3 py-2 text-sm"
+  />
+</div>
+
+<div>
+  <label className="block text-gray-500 mb-1">State</label>
+  <input
+    type="text"
+    value={customer.state}
+    onChange={(e) =>
+      setCustomer({ ...customer, state: e.target.value })
+    }
+    className="w-full border rounded-lg px-3 py-2 text-sm"
+  />
+</div>
+
+<div>
+  <label className="block text-gray-500 mb-1">Postal Code</label>
+  <input
+    type="text"
+    value={customer.postalCode}
+    onChange={(e) =>
+      setCustomer({ ...customer, postalCode: e.target.value })
+    }
+    className="w-full border rounded-lg px-3 py-2 text-sm"
+  />
+</div>
+
             </div>
           </section>
 

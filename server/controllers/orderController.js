@@ -30,17 +30,17 @@ if (!customer?.addressLine) {
     }
 
     const order = new Order({
-      customer,
-      items,
-      pricing,
-      delivery,
-      paymentMethod,
-      stripePayment,
+  customer,
+  items,
+  pricing,
+  delivery,
+  paymentMethod,
+  stripePayment,
+orderStatus: "pending",
+});
 
-      orderStatus: orderStatus || "pending",
-    });
+await order.save();
 
-    await order.save();
 
     return res.status(201).json({ order });
   } catch (err) {
@@ -130,6 +130,45 @@ exports.updateOrderStatusAdmin = async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
+    // ✅ CAPTURE PREVIOUS STATUS FIRST
+    const previousStatus = order.orderStatus;
+
+    // ---------------- INVENTORY ADJUSTMENT ----------------
+
+    // pending → confirmed (reduce stock)
+    if (previousStatus !== "confirmed" && status === "confirmed") {
+      for (const item of order.items) {
+        const product = await Product.findById(item.productId);
+        if (!product) continue;
+
+        if (product.availabilityCount < item.qty) {
+  return res.status(400).json({
+    message: `Insufficient stock for ${product.title}`,
+  });
+}
+
+product.availabilityCount -= item.qty;
+
+
+        await product.save();
+      }
+    }
+
+    // confirmed → completed OR cancelled (revert stock)
+    if (
+      previousStatus === "confirmed" &&
+      (status === "completed" || status === "cancelled")
+    ) {
+      for (const item of order.items) {
+        const product = await Product.findById(item.productId);
+        if (!product) continue;
+
+        product.availabilityCount += item.qty;
+        await product.save();
+      }
+    }
+
+    // ✅ NOW update order status
     order.orderStatus = status;
 
     // optional: status history

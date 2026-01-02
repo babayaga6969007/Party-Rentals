@@ -7,9 +7,10 @@ import demoImg2 from "../assets/home2/hero2.png";
 export default function OrderCompletePage() {
   const location = useLocation();
 
-  const order = location.state?.order;
 
-if (!order) {
+const state = location.state;
+
+if (!state) {
   return (
     <div className="page-wrapper-checkoutt min-h-screen bg-white flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
@@ -30,12 +31,15 @@ if (!order) {
   );
 }
 
+const { customer, items, pricing, delivery } = state;
 
-  const subtotal = order.pricing?.subtotal ?? 0;
-const discount = order.pricing?.discount ?? 0;
-const deliveryFee = order.pricing?.deliveryFee ?? 0;
-const extraFees = order.pricing?.extraFees ?? 0;
-const total = order.pricing?.finalTotal ?? 0;
+
+const subtotal = pricing?.subtotal ?? 0;
+const discount = pricing?.discount ?? 0;
+const deliveryFee = pricing?.deliveryFee ?? 0;
+const extraFees = pricing?.extraFees ?? 0;
+const total = pricing?.finalTotal ?? 0;
+
 
   return (
     <div className="page-wrapper-checkoutt min-h-screen bg-[#FFFFFF]">
@@ -60,10 +64,10 @@ const total = order.pricing?.finalTotal ?? 0;
             </h3>
 
             <div className="text-sm text-gray-700 space-y-1 mb-8">
-              <p><span className="font-medium">Name:</span> {order.customer.name}</p>
-              <p><span className="font-medium">Address:</span> {order.customer.address}</p>
-              <p><span className="font-medium">Phone:</span> {order.customer.phone}</p>
-              <p><span className="font-medium">Email:</span> {order.customer.email}</p>
+              <p><span className="font-medium">Name:</span> {customer.name}</p>
+              <p><span className="font-medium">Address:</span> {customer.addressline}</p>
+              <p><span className="font-medium">Phone:</span> {customer.phone}</p>
+              <p><span className="font-medium">Email:</span> {customer.email}</p>
             </div>
 
           
@@ -77,28 +81,14 @@ const total = order.pricing?.finalTotal ?? 0;
               Order Summary
             </h3>
 
-            {/* META */}
-            <div className="grid grid-cols-3 gap-4 text-xs text-gray-600 mb-6">
-              <div>
-                <p className="font-medium text-gray-800">Date</p>
-                <p>{order.date}</p>
-              </div>
-              <div>
-                <p className="font-medium text-gray-800">Order Number</p>
-                <p>{order.id}</p>
-              </div>
-              <div>
-                <p className="font-medium text-gray-800">Payment</p>
-                <p>{order.paymentMethod}</p>
-              </div>
-            </div>
+           
 
             {/* ITEMS */}
             {/* ITEMS */}
 <div className="space-y-4 mb-6">
-  {order.items.map((item) => (
+{items.map((item, index) => (
     <div
-      key={item.id}
+key={index}
       className="flex items-center justify-between gap-3"
     >
       <div className="flex items-center gap-3">

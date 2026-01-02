@@ -39,6 +39,14 @@ const Inventory = () => {
   const purchaseCount = products.filter(
     (p) => p.productType === "sale"
   ).length;
+const lowStockCount = products.filter((p) => {
+  const stock = p.availabilityCount ?? 0;
+
+  if (p.productType === "rental") {
+    return stock <= 1;
+  }
+  return stock <= 5; // sale
+}).length;
 
   return (
     <AdminLayout>
@@ -57,7 +65,7 @@ const Inventory = () => {
         <SummaryCard title="Total SKUs" value={totalSKUs} />
         <SummaryCard title="Rental Items" value={rentalCount} />
         <SummaryCard title="Purchase Items" value={purchaseCount} />
-        <SummaryCard title="Low Stock Alerts" value="—" />
+<SummaryCard title="Low Stock Alerts" value={lowStockCount} />
       </div>
 
       {/* SEARCH */}
