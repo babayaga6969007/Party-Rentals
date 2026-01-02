@@ -10,8 +10,78 @@ import { api } from "../utils/api";
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
+  const [statusDraft, setStatusDraft] = useState({});
+
+  const [selectedOrder, setSelectedOrder] = useState(null);
+
+const updateStatus = async (orderId, newStatus) => {
+  try {
+    const token = localStorage.getItem("admin_token");
+
+    const res = await api(`/orders/admin/${orderId}/status`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ status: newStatus }),
+    });
+
+    // 🔑 IMPORTANT: backend returns { order }
+    const updatedOrder = res.order;
+
+    setOrders((prev) =>
+      prev.map((o) => (o._id === updatedOrder._id ? updatedOrder : o))
+    );
+  } catch (err) {
+    console.error(err);
+    alert("Failed to update status");
+  }
+};
+
+
+const deleteOrder = async (orderId) => {
+  const ok = window.confirm("Delete this order?");
+  if (!ok) return;
+
+  try {
+    const token = localStorage.getItem("admin_token");
+
+    await api(`/orders/admin/${orderId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",   // ✅ CONSISTENCY
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    setOrders((prev) => prev.filter((o) => o._id !== orderId));
+  } catch (err) {
+    console.error(err);
+    alert("Failed to delete order");
+  }
+};
+
+const openOrderDetails = async (orderId) => {
+  try {
+    const token = localStorage.getItem("admin_token");
+
+    const res = await api(`/orders/admin/${orderId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    setSelectedOrder(res.order);
+  } catch {
+    alert("Failed to load order details");
+  }
+};
+
+
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+
+
+
 
   // Filters (basic)
   const [typeFilter, setTypeFilter] = useState("all"); // all | rental | purchase
@@ -40,7 +110,13 @@ const Orders = () => {
       });
 
       const serverOrders = res?.orders || [];
-      setOrders(serverOrders);
+setOrders(serverOrders);
+
+const initialStatus = {};
+serverOrders.forEach((o) => {
+  initialStatus[o._id] = o.orderStatus || "pending";
+});
+setStatusDraft(initialStatus);
     } catch (e) {
       console.error(e);
       setErr(e?.message || "Failed to fetch orders");
@@ -55,19 +131,19 @@ const Orders = () => {
   }, []);
 
   // Helpers for row rendering
-  const getOrderType = (order) => {
-    const hasRental = (order?.items || []).some(
-      (it) => String(it?.productType || "").toLowerCase() === "rental"
-    );
-    const hasSale = (order?.items || []).some(
-      (it) => String(it?.productType || "").toLowerCase() === "sale"
-    );
+ const getOrderType = (order) => {
+  const hasRental = (order?.items || []).some(
+    (it) => String(it?.productType || "").toLowerCase() === "rental"
+  );
+  const hasPurchase = (order?.items || []).some(
+    (it) => String(it?.productType || "").toLowerCase() === "purchase"
+  );
 
-    if (hasRental && hasSale) return "Mixed";
-    if (hasRental) return "Rental";
-    if (hasSale) return "Purchase";
-    return "—";
-  };
+  if (hasRental && hasPurchase) return "Mixed";
+  if (hasRental) return "Rental";
+  if (hasPurchase) return "Purchase";
+  return "—";
+};
 
   const getRentalPeriod = (order) => {
     const rentalItem = (order?.items || []).find(
@@ -202,7 +278,6 @@ const Orders = () => {
                 const itemsCount = getItemsCount(order);
                 const rentalPeriod = getRentalPeriod(order);
                 const total = getTotal(order);
-                const status = String(order?.orderStatus || "pending");
 
                 return (
                   <tr
@@ -234,36 +309,50 @@ const Orders = () => {
                     <td className="px-6 py-4 font-semibold">
                       ${Number(total).toFixed(2)}
                     </td>
+<td className="px-6 py-4">
+ <select
+  className="border rounded-lg px-3 py-1 text-xs"
+  value={statusDraft[order._id] || "pending"}
+  onChange={(e) => {
+    const newStatus = e.target.value;
 
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          status === "confirmed" || status === "dispatched"
-                            ? "bg-blue-100 text-blue-700"
-                            : status === "completed"
-                            ? "bg-green-100 text-green-700"
-                            : status === "cancelled"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-yellow-100 text-yellow-700"
-                        }`}
-                      >
-                        {status.charAt(0).toUpperCase() + status.slice(1)}
-                      </span>
-                    </td>
+    setStatusDraft((prev) => ({
+      ...prev,
+      [order._id]: newStatus,
+    }));
 
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        className="text-[#8B5C42] hover:opacity-70"
-                        title="View Order"
-                        onClick={() => {
-                          // TODO: if you have a details page, route here:
-                          // navigate(`/admin/orders/${id}`)
-                          console.log("View order:", id);
-                        }}
-                      >
-                        <FiEye />
-                      </button>
-                    </td>
+    updateStatus(order._id, newStatus);
+  }}
+>
+
+  
+    <option value="pending">Pending</option>
+    <option value="confirmed">Confirmed</option>
+    <option value="dispatched">Dispatched</option>
+    <option value="completed">Completed</option>
+    <option value="cancelled">Cancelled</option>
+  </select>
+</td>
+
+
+                   <td className="px-6 py-4 text-right">
+  <div className="flex justify-end gap-3">
+    <button
+      onClick={() => openOrderDetails(id)}
+      className="text-[#8B5C42]"
+    >
+      <FiEye />
+    </button>
+
+    <button
+      onClick={() => deleteOrder(id)}
+      className="text-red-600 text-xs"
+    >
+      Delete
+    </button>
+  </div>
+</td>
+
                   </tr>
                 );
               })}
@@ -284,6 +373,35 @@ const Orders = () => {
       <p className="text-sm text-gray-500 mt-6">
         Rental orders include date ranges to manage product availability and scheduling.
       </p>
+      {selectedOrder && (
+  <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
+    <div className="bg-white w-full max-w-2xl p-6 rounded-xl">
+      <div className="flex justify-between mb-4">
+        <h2 className="font-semibold text-lg">Order Details</h2>
+        <button onClick={() => setSelectedOrder(null)}>✕</button>
+      </div>
+
+      <p><b>Name:</b> {selectedOrder.customer?.name}</p>
+      <p><b>Email:</b> {selectedOrder.customer?.email}</p>
+      <p><b>Phone:</b> {selectedOrder.customer?.phone}</p>
+      <p><b>Address:</b> {selectedOrder.customer?.addressLine}</p>
+
+      <hr className="my-3" />
+
+      {selectedOrder.items.map((item, i) => (
+        <div key={i} className="mb-2">
+          <p>{item.name} — ${item.lineTotal}</p>
+          {item.productType === "rental" && (
+            <p className="text-xs text-gray-500">
+              {item.startDate} → {item.endDate}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
     </AdminLayout>
   );
 };

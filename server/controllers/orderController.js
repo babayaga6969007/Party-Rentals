@@ -101,99 +101,54 @@ exports.getSingleOrderAdmin = async (req, res) => {
 // PATCH /api/orders/admin/:id/status
 // body: { status: "confirmed" | "dispatched" | "completed" | "cancelled", note?: "" }
 // -------------------------------
+// -------------------------------
+// ADMIN: UPDATE ORDER STATUS
+// PATCH /api/orders/admin/:id/status
+// -------------------------------
 exports.updateOrderStatusAdmin = async (req, res) => {
   try {
-    const { status, note } = req.body || {};
+    const { status } = req.body;
 
-    const allowed = ["pending", "confirmed", "dispatched", "completed", "cancelled"];
-    if (!allowed.includes(status)) {
-      return res.status(400).json({
-        message: `Invalid status. Allowed: ${allowed.join(", ")}`,
-      });
+    if (!status) {
+      return res.status(400).json({ message: "Status is required" });
     }
 
-    const flow = {
-      pending: ["confirmed", "cancelled"],
-      confirmed: ["dispatched", "cancelled"],
-      dispatched: ["completed"],
-      completed: [],
-      cancelled: [],
-    };
+    const validStatuses = [
+      "pending",
+      "confirmed",
+      "dispatched",
+      "completed",
+      "cancelled",
+    ];
+
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
 
     const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ message: "Order not found." });
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
 
-    const current = order.orderStatus;
-    if (!flow[current].includes(status) && current !== status) {
-      return res.status(400).json({
-        message: `Invalid transition: ${current} → ${status}`,
+    order.orderStatus = status;
+
+    // optional: status history
+    if (Array.isArray(order.statusHistory)) {
+      order.statusHistory.push({
+        status,
+        at: new Date(),
       });
     }
-
-    // ✅ If confirming, block rental dates
-    if (current !== "confirmed" && status === "confirmed") {
-      // Only rental items should block dates
-      const rentalItems = (order.items || []).filter(
-        (it) => (it.productType || "").toLowerCase() === "rental"
-      );
-
-      // Validate rental items contain dates
-      for (const it of rentalItems) {
-        if (!it.productId) {
-          return res.status(400).json({ message: "Rental item missing productId." });
-        }
-        if (!it.startDate || !it.endDate) {
-          return res.status(400).json({
-            message: `Rental item "${it.name}" is missing startDate/endDate.`,
-          });
-        }
-      }
-
-      // Check conflicts + apply blocks
-      for (const it of rentalItems) {
-        const product = await Product.findById(it.productId);
-        if (!product) {
-          return res.status(404).json({
-            message: `Product not found for rental item: ${it.name}`,
-          });
-        }
-
-        const datesToBlock = getDateStringsBetween(it.startDate, it.endDate);
-
-        // Conflict check
-        const blockedSet = new Set(product.blockedDates || []);
-        const conflict = datesToBlock.find((d) => blockedSet.has(d));
-        if (conflict) {
-          return res.status(400).json({
-            message: `Product "${product.name}" is not available on ${conflict}.`,
-          });
-        }
-
-        // Apply blocks
-        product.blockedDates = [...(product.blockedDates || []), ...datesToBlock];
-        // remove duplicates
-        product.blockedDates = Array.from(new Set(product.blockedDates));
-        await product.save();
-      }
-    }
-
-    // Save status + history
-    order.orderStatus = status;
-    order.statusHistory = order.statusHistory || [];
-    order.statusHistory.push({
-      status,
-      note: note || `Status updated to ${status}`,
-      at: new Date(),
-    });
 
     await order.save();
 
-    res.json({ message: "Order status updated", order });
+    return res.json({ order });
   } catch (err) {
     console.error("Update order status admin error:", err);
-    res.status(500).json({ message: err.message || "Server error" });
+    return res.status(500).json({ message: "Failed to update order status" });
   }
 };
+
 // PUBLIC: GET ALL ORDERS (limited, safe)
 exports.getAllOrdersPublic = async (req, res) => {
   try {
@@ -206,5 +161,24 @@ exports.getAllOrdersPublic = async (req, res) => {
   } catch (err) {
     console.error("Get orders public error:", err);
     res.status(500).json({ message: err.message || "Server error" });
+  }
+};
+// -------------------------------
+// ADMIN: DELETE ORDER
+// DELETE /api/orders/admin/:id
+// -------------------------------
+exports.deleteOrderAdmin = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    await Order.deleteOne({ _id: req.params.id });
+
+    return res.json({ message: "Order deleted successfully" });
+  } catch (err) {
+    console.error("Delete order admin error:", err);
+    return res.status(500).json({ message: "Failed to delete order" });
   }
 };

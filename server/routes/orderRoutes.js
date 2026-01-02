@@ -14,5 +14,7 @@ router.post("/", orderController.createOrder);
 router.get("/admin/all", authAdmin, orderController.getAllOrdersAdmin);
 router.get("/admin/:id", authAdmin, orderController.getSingleOrderAdmin);
 router.patch("/admin/:id/status", authAdmin, orderController.updateOrderStatusAdmin);
+router.delete("/admin/:id", authAdmin, orderController.deleteOrderAdmin);
+
 
 module.exports = router;
