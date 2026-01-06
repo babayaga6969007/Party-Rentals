@@ -17,8 +17,12 @@ const CategoryPage = () => {
   // ====================
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
+  const PRICE_MIN = 0;
 
-  const [priceRange, setPriceRange] = useState([0, 500]);
+const PRICE_MAX = 5000;
+const [showPriceTooltip, setShowPriceTooltip] = useState(false);
+
+  const [priceRange, setPriceRange] = useState([0, PRICE_MAX]);
   const [hoverPrice, setHoverPrice] = useState(null);
     // ====================
   //  BACKEND PRODUCTS STATE
@@ -26,6 +30,7 @@ const CategoryPage = () => {
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [productsError, setProductsError] = useState("");
+
 
 
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -68,7 +73,7 @@ const categoryChips = categories.map((c) => ({
   const resetFilters = () => {
   setSelectedCategories([]);
   setSelectedTags([]);
-  setPriceRange([0, 500]);
+  setPriceRange([0, PRICE_MAX]);
 };
   // ====================
   //  FETCH PRODUCTS FROM BACKEND
@@ -146,6 +151,31 @@ useEffect(() => {
 
   fetchAttributes();
 }, []);
+const handlePriceInput = (value, index) => {
+  let v = Number(value);
+
+  if (isNaN(v)) return;
+
+  if (v > PRICE_MAX) {
+    v = PRICE_MAX;
+    setShowPriceTooltip(true);
+    setTimeout(() => setShowPriceTooltip(false), 2000);
+  }
+
+  if (v < PRICE_MIN) v = PRICE_MIN;
+
+  setPriceRange((prev) => {
+    const next = [...prev];
+    next[index] = v;
+
+    // prevent crossover
+    if (next[0] > next[1]) {
+      next[index === 0 ? 1 : 0] = v;
+    }
+    return next;
+  });
+};
+
 
 
 // ====================
@@ -347,11 +377,10 @@ return inCategory && inPrice && inTags;
       type="number"
       value={priceRange[0]}
       min={0}
-      max={500}
+      max={5000}
       step="1"
-      onChange={(e) =>
-        setPriceRange([Number(e.target.value), priceRange[1]])
-      }
+      onChange={(e) => handlePriceInput(e.target.value, 0)}
+
       className="w-full p-2 border border-gray-300 rounded-md text-center"
     />
 
@@ -361,11 +390,10 @@ return inCategory && inPrice && inTags;
       type="number"
       value={priceRange[1]}
       min={0}
-      max={500}
+      max={5000}
       step="1"
-      onChange={(e) =>
-        setPriceRange([priceRange[0], Number(e.target.value)])
-      }
+      onChange={(e) => handlePriceInput(e.target.value, 1)}
+
       className="w-full p-2 border border-gray-300 rounded-md text-center"
     />
   </div>
@@ -375,10 +403,11 @@ return inCategory && inPrice && inTags;
     {/* selected range */}
     <div
       className="absolute h-2 bg-black rounded-md"
-      style={{
-        left: `${(priceRange[0] / 500) * 100}%`,
-        width: `${((priceRange[1] - priceRange[0]) / 500) * 100}%`,
-      }}
+     style={{
+  left: `${(priceRange[0] / PRICE_MAX) * 100}%`,
+  width: `${((priceRange[1] - priceRange[0]) / PRICE_MAX) * 100}%`,
+}}
+
     ></div>
   </div>
 
@@ -386,8 +415,8 @@ return inCategory && inPrice && inTags;
 <div className="relative range-input" style={{ marginTop: "-10px" }}>
     <input
   type="range"
-  min="0"
-  max="500"
+  min={PRICE_MIN}
+  max={PRICE_MAX}
   value={priceRange[0]}
   onChange={(e) => handleRangeChange(e, 0)}
   className="absolute w-full cursor-pointer pointer-events-auto"
@@ -396,8 +425,8 @@ return inCategory && inPrice && inTags;
 
 <input
   type="range"
-  min="0"
-  max="500"
+  min={PRICE_MIN}
+  max={PRICE_MAX}
   value={priceRange[1]}
   onChange={(e) => handleRangeChange(e, 1)}
   className="absolute w-full cursor-pointer pointer-events-auto"
@@ -412,11 +441,16 @@ return inCategory && inPrice && inTags;
   style={{ marginTop: "-4px" }}   // ★ lift labels up
 >
   <span>0</span>
-  <span>125</span>
-  <span>250</span>
-  <span>375</span>
-  <span>500</span>
+  <span>1250</span>
+  <span>2500</span>
+  <span>3750</span>
+  <span>5000</span>
 </div>
+{showPriceTooltip && (
+  <div className="mt-2 text-xs text-red-600">
+    Maximum allowed price is ${PRICE_MAX}
+  </div>
+)}
 
 </div>
 
