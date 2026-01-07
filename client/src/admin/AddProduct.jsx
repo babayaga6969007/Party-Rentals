@@ -52,6 +52,20 @@ const [isFeatured, setIsFeatured] = useState(false);
 
 // groupId → optionId → { selected, overridePrice }
 const [loadedAddons, setLoadedAddons] = useState([]);
+const MAX_IMAGES = 8;
+
+const totalImageCount = existingImages.length + previews.length;
+
+// Remove newly added image
+const removePreviewImage = (index) => {
+  setImages((prev) => prev.filter((_, i) => i !== index));
+  setPreviews((prev) => prev.filter((_, i) => i !== index));
+};
+
+// Remove existing image (edit mode)
+const removeExistingImage = (index) => {
+  setExistingImages((prev) => prev.filter((_, i) => i !== index));
+};
 
   /* =====================
      DERIVED DATA
@@ -206,11 +220,23 @@ setSelectedAttrs(attrSelections);
      HANDLERS
   ===================== */
 
-  const handleImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    setImages(files);
-    setPreviews(files.map((file) => URL.createObjectURL(file)));
-  };
+ const handleImageChange = (e) => {
+  const files = Array.from(e.target.files);
+
+  const remainingSlots = MAX_IMAGES - totalImageCount;
+  if (remainingSlots <= 0) {
+    alert(`You can upload a maximum of ${MAX_IMAGES} images.`);
+    return;
+  }
+
+  const acceptedFiles = files.slice(0, remainingSlots);
+
+  setImages((prev) => [...prev, ...acceptedFiles]);
+  setPreviews((prev) => [
+    ...prev,
+    ...acceptedFiles.map((file) => URL.createObjectURL(file)),
+  ]);
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -270,11 +296,18 @@ if (addonsPayload.length > 0) {
   formData.append("addons", JSON.stringify(addonsPayload));
 }
 
-  if (productType === "rental") {
-    formData.append("pricePerDay", pricePerDay);
-  } else {
-    formData.append("salePrice", salePrice);
-  }
+// Regular price
+if (productType === "rental") {
+  formData.append("pricePerDay", pricePerDay);
+} else {
+  formData.append("pricePerDay", pricePerDay); // selling price stored here
+}
+
+// Optional sale price (for BOTH)
+if (salePrice !== "" && salePrice !== null) {
+  formData.append("salePrice", salePrice);
+}
+
 
   if (isEditMode) {
     formData.append("existingImages", JSON.stringify(existingImages));
@@ -388,29 +421,46 @@ onClick={() => {
 
         {/* PRICING */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {productType === "rental" ? (
-            <div>
-              <label>Price Per Day</label>
-              <input
-                type="number"
-                className="w-full p-3 border border-gray-400 rounded-lg"
-                value={pricePerDay}
-                onChange={(e) => setPricePerDay(e.target.value)}
-                required
-              />
-            </div>
-          ) : (
-            <div>
-              <label>Selling Price</label>
-              <input
-                type="number"
-                className="w-full p-3 border border-gray-400 rounded-lg"
-                value={salePrice}
-                onChange={(e) => setSalePrice(e.target.value)}
-                required
-              />
-            </div>
-          )}
+          {/* REGULAR PRICE */}
+{productType === "rental" ? (
+  <div>
+    <label>Price Per Day</label>
+    <input
+      type="number"
+      className="w-full p-3 border border-gray-400 rounded-lg"
+      value={pricePerDay}
+      onChange={(e) => setPricePerDay(e.target.value)}
+      required
+    />
+  </div>
+) : (
+  <div>
+    <label>Selling Price</label>
+    <input
+      type="number"
+      className="w-full p-3 border border-gray-400 rounded-lg"
+      value={pricePerDay}
+      onChange={(e) => setPricePerDay(e.target.value)}
+      required
+    />
+  </div>
+)}
+
+{/* SALE PRICE — COMMON FOR BOTH */}
+<div>
+  <label className="flex items-center gap-2">
+    Sale Price
+    <span className="text-xs text-gray-500">(optional)</span>
+  </label>
+  <input
+    type="number"
+    className="w-full p-3 border border-gray-300 rounded-lg"
+    value={salePrice}
+    onChange={(e) => setSalePrice(e.target.value)}
+    placeholder="Leave empty if no discount"
+  />
+</div>
+
 
           <div>
             <label>Stock / Availability</label>
@@ -664,14 +714,21 @@ const overridePrice = selectedAddons[groupKey]?.[oid]?.overridePrice ?? "";
 
   {/* Upload Box */}
   <div
-    onClick={() => fileInputRef.current?.click()}
-    className="
-      border-2 border-dashed border-gray-300
-      rounded-xl p-8 text-center cursor-pointer
-      hover:border-[#8B5C42] hover:bg-[#8B5C42]/5
-      transition
-    "
-  >
+  onClick={() => {
+    if (totalImageCount < MAX_IMAGES) {
+      fileInputRef.current?.click();
+    }
+  }}
+  className={`
+    border-2 border-dashed rounded-xl p-8 text-center transition
+    ${
+      totalImageCount >= MAX_IMAGES
+        ? "border-gray-200 bg-gray-100 cursor-not-allowed text-gray-400"
+        : "border-gray-300 cursor-pointer hover:border-[#8B5C42] hover:bg-[#8B5C42]/5"
+    }
+  `}
+>
+
     <div className="flex flex-col items-center gap-2">
       <div className="text-3xl">📸</div>
       <p className="font-medium text-gray-700">
@@ -698,13 +755,28 @@ const overridePrice = selectedAddons[groupKey]?.[oid]?.overridePrice ?? "";
     <>
       <p className="text-sm font-medium mt-4">Existing Images</p>
       <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mt-2">
-        {existingImages.map((img, i) => (
-          <img
-            key={i}
-            src={img.url || img}
-            className="w-full h-24 object-cover rounded border"
-          />
-        ))}
+       {existingImages.map((img, i) => (
+  <div key={i} className="relative group">
+    <img
+      src={img.url || img}
+      className="w-full h-24 object-cover rounded border"
+    />
+
+    <button
+      type="button"
+      onClick={() => removeExistingImage(i)}
+      className="
+        absolute top-1 right-1
+        bg-black text-white rounded-full w-6 h-6
+        text-xs opacity-0 group-hover:opacity-100
+        transition
+      "
+    >
+      ×
+    </button>
+  </div>
+))}
+
       </div>
     </>
   )}
@@ -715,12 +787,27 @@ const overridePrice = selectedAddons[groupKey]?.[oid]?.overridePrice ?? "";
       <p className="text-sm font-medium mt-4">New Uploads</p>
       <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mt-2">
         {previews.map((src, i) => (
-          <img
-            key={i}
-            src={src}
-            className="w-full h-24 object-cover rounded"
-          />
-        ))}
+  <div key={i} className="relative group">
+    <img
+      src={src}
+      className="w-full h-24 object-cover rounded border"
+    />
+
+    <button
+      type="button"
+      onClick={() => removePreviewImage(i)}
+      className="
+        absolute top-1 right-1
+        bg-black text-white rounded-full w-6 h-6
+        text-xs opacity-0 group-hover:opacity-100
+        transition
+      "
+    >
+      ×
+    </button>
+  </div>
+))}
+
       </div>
     </>
   )}

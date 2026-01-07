@@ -139,8 +139,12 @@ const selectedDays =
 
   // Add-on total calculation
   const isSalePage = location.pathname.startsWith("/buyproducts");
-const pricePerDay = Number(product?.pricePerDay || 0);
+const regularPrice = Number(product?.pricePerDay || 0);
 const salePrice = Number(product?.salePrice || 0);
+
+// use salePrice if present, else fallback
+const effectivePrice = salePrice || regularPrice;
+
 
   const addonsTotal = addons.lights * 10 + addons.flowers * 15;
   const maxStock = product?.availabilityCount ?? 1;
@@ -150,9 +154,8 @@ const salePrice = Number(product?.salePrice || 0);
 // priority: use date range if selected, else manual days input
 const totalRentalDays = selectedDays > 0 ? selectedDays : days;
 
-const totalPrice = isSalePage
-  ? salePrice * productQty
-  : totalRentalDays * pricePerDay * productQty + addonsTotal;
+const totalPrice = effectivePrice * productQty;
+
 
 
 const fullDescription = product?.description || "No description available.";
@@ -170,7 +173,7 @@ const [showPopup, setShowPopup] = useState(false);
 // Fake “added to cart” product info
 const addedItem = {
   name: product?.title || "Product",
-  price: isSalePage ? salePrice : pricePerDay,
+  price: effectivePrice,
   qty: productQty,
   image: productImages[activeImage] || hero1,
 };
@@ -181,7 +184,7 @@ const addedItem = {
 
 
 const handleAddToCart = () => {
-  const unitPrice = salePrice;
+const unitPrice = effectivePrice;
   const lineTotal = unitPrice * productQty;
 
   addToCart({
@@ -392,10 +395,23 @@ if (!product) {
 <div className="mt-2 flex flex-col md:flex-row md:items-center md:gap-6">
 
   {/* Price */}
- <p className="text-3xl font-semibold text-[#8B5C42]">
-  $ {isSalePage ? salePrice : pricePerDay}
-  {!isSalePage && " / day"}
-</p>
+<div className="flex items-baseline gap-3">
+  {salePrice ? (
+    <>
+      <span className="text-xl text-gray-500 line-through">
+        $ {regularPrice}
+      </span>
+      <span className="text-3xl font-semibold text-red-600">
+        $ {salePrice}
+      </span>
+    </>
+  ) : (
+    <span className="text-3xl font-semibold text-[#8B5C42]">
+      $ {regularPrice}
+    </span>
+  )}
+</div>
+
 
 
   {/* Stock — beside price on desktop, below on mobile */}

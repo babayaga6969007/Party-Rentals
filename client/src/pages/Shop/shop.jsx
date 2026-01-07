@@ -492,16 +492,25 @@ src={product.images?.[0]?.url || hero1}
           </h3>
 
           {/* PRICE SECTION */}
-          <div className="mt-1 flex items-center gap-2">
-  {/* ORIGINAL PRICE */}
-  <span className="text-black line-through text-sm">
-    $ {product.salePrice}
-  </span>
+          {/* PRICE SECTION */}
+<div className="mt-1 flex items-center gap-2">
+  {product.salePrice ? (
+    <>
+      {/* Original price */}
+      <span className="text-gray-500 line-through text-sm">
+        $ {product.pricePerDay}
+      </span>
 
-  {/* 3% DISCOUNTED PRICE */}
-  <span className="text-red-600 font-bold text-lg">
-    $ {Math.round((product.salePrice ?? 0) * 0.97)}
-  </span>
+      {/* Sale price */}
+      <span className="text-red-600 font-bold text-lg">
+        $ {product.salePrice}
+      </span>
+    </>
+  ) : (
+    <span className="text-black font-semibold text-lg">
+      $ {product.pricePerDay}
+    </span>
+  )}
 </div>
 
 

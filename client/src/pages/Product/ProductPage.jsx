@@ -218,7 +218,10 @@ const [showFullDesc, setShowFullDesc] = useState(false);
   // Final total price
 // priority: use date range if selected, else manual days input
 const totalRentalDays = selectedDays;
-const pricePerDay = Number(product?.pricePerDay || 0);
+// Use salePrice if available, else fallback to regular price
+const effectivePricePerDay = Number(
+  product?.salePrice ?? product?.pricePerDay ?? 0
+);
 
 // ====================
 //  RELATED PRODUCTS TOTAL
@@ -239,7 +242,8 @@ const selectedAddonTotal = Object.values(selectedAddons).reduce(
 // ====================
 const totalPrice =
   totalRentalDays *
-  (pricePerDay * productQty + relatedTotal + selectedAddonTotal);
+  (effectivePricePerDay * productQty + relatedTotal + selectedAddonTotal);
+
 
 
 
@@ -288,7 +292,7 @@ const getDiscountRate = (days) => {
 const pricingDays = [1, 3, 5, 7, 10, 15, 30, 45, 60, 90];
 
 const pricingTableData = pricingDays.map((days) => {
-  const basePrice = pricePerDay * days;
+const basePrice = effectivePricePerDay * days;
   const discount = getDiscountRate(days);
   const finalPrice = Math.round(basePrice * (1 - discount));
   const approxPerDay = Math.round(finalPrice / days);
@@ -631,9 +635,23 @@ const toggleAddon = (addon) => {
 <div className="mt-2 flex flex-col md:flex-row md:items-center md:gap-6">
 
   {/* Price */}
-  <p className="text-3xl font-semibold text-[#8B5C42]">
-$ {pricePerDay} / day
-  </p>
+  <div className="flex items-baseline gap-3">
+  {product.salePrice ? (
+    <>
+      <span className="text-xl text-gray-500 line-through">
+        $ {product.pricePerDay} / day
+      </span>
+      <span className="text-3xl font-semibold text-red-600">
+        $ {product.salePrice} / day
+      </span>
+    </>
+  ) : (
+    <span className="text-3xl font-semibold text-[#8B5C42]">
+      $ {product.pricePerDay} / day
+    </span>
+  )}
+</div>
+
 
   {/* Stock — beside price on desktop, below on mobile */}
   <div className="mt-2 md:mt-0 bg-[#FFF7F0] border border-[#E5DED6] rounded-lg px-4 py-2 inline-block">
@@ -984,7 +1002,7 @@ const rentalCartItem = {
   productType: "rental",
 
   qty: productQty,
-  unitPrice: pricePerDay,
+unitPrice: effectivePricePerDay,
   days: totalRentalDays,
   startDate,
   endDate,

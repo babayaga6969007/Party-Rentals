@@ -537,18 +537,29 @@ return inCategory && inPrice && inTags;
           </h3>
 
           {/* PRICE SECTION */}
-          <div className="mt-1 flex items-center gap-2">
-           <span className="text-black line-through text-sm">
-  $ {product.pricePerDay} / day
-</span>
+          {/* PRICE SECTION */}
+<div className="mt-1 flex items-center gap-2">
+  {product.salePrice && Number(product.salePrice) < Number(product.pricePerDay)
+ ? (
+    <>
+      {/* Regular price (striked) */}
+      <span className="text-gray-500 line-through text-sm">
+        $ {product.pricePerDay} / day
+      </span>
 
+      {/* Sale price (actual backend value) */}
+      <span className="text-red-600 font-bold text-lg">
+        $ {product.salePrice} / day
+      </span>
+    </>
+  ) : (
+    /* No sale price */
+    <span className="text-black font-semibold text-lg">
+      $ {product.pricePerDay} / day
+    </span>
+  )}
+</div>
 
-<span className="text-red-600 font-bold text-lg">
-  $ {Math.round((product.pricePerDay ?? 0) * 0.95)}/day
-</span>
-
-
-          </div>
 
           {/* CATEGORY */}
           <p className="text-sm text-gray-600 mt-1">
