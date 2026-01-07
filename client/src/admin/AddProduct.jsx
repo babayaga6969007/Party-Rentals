@@ -330,14 +330,9 @@ onClick={() => {
   setProductType(type);
   setCategory(""); // clear category on switch
 
-  // ✅ Popup only when choosing RENTAL
-  if (type === "rental") {
-    const yes = window.confirm("Add this rental product to Featured section?");
-    setIsFeatured(yes); // Yes -> true, Cancel -> false
-  } else {
-    // Sale products should never be featured
-    setIsFeatured(false);
-  }
+  // ❌ NO POPUP
+  // Default featured = false when switching
+  setIsFeatured(false);
 }}
 
               
