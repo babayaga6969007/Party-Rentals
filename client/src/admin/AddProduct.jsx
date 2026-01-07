@@ -1,7 +1,8 @@
 import AdminLayout from "./AdminLayout";
 import { api } from "../utils/api";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
+
 
 
 
@@ -12,6 +13,7 @@ const AddProduct = () => {
   ===================== */
   const { id } = useParams();
   const isEditMode = Boolean(id);
+const fileInputRef = useRef(null);
 
   /* =====================
      STATE — MUST COME FIRST
@@ -654,41 +656,76 @@ const overridePrice = selectedAddons[groupKey]?.[oid]?.overridePrice ?? "";
 
         {/* IMAGES */}
        {/* IMAGES */}
+{/* IMAGES */}
 <div>
-  <label>Product Images (max 8)</label>
+  <label className="font-medium mb-2 block">
+    Product Images <span className="text-sm text-gray-500">(max 8)</span>
+  </label>
+
+  {/* Upload Box */}
+  <div
+    onClick={() => fileInputRef.current?.click()}
+    className="
+      border-2 border-dashed border-gray-300
+      rounded-xl p-8 text-center cursor-pointer
+      hover:border-[#8B5C42] hover:bg-[#8B5C42]/5
+      transition
+    "
+  >
+    <div className="flex flex-col items-center gap-2">
+      <div className="text-3xl">📸</div>
+      <p className="font-medium text-gray-700">
+        Click to upload product images
+      </p>
+      <p className="text-sm text-gray-500">
+        JPG, PNG • Up to 8 images
+      </p>
+    </div>
+  </div>
+
+  {/* Hidden Input */}
   <input
+    ref={fileInputRef}
     type="file"
     multiple
     accept="image/*"
     onChange={handleImageChange}
+    className="hidden"
   />
 
   {/* Existing images (edit mode) */}
   {existingImages.length > 0 && (
-    <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mt-4">
-      {existingImages.map((img, i) => (
-        <img
-          key={i}
-          src={img.url || img}
-          className="w-full h-24 object-cover rounded border"
-        />
-      ))}
-    </div>
+    <>
+      <p className="text-sm font-medium mt-4">Existing Images</p>
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mt-2">
+        {existingImages.map((img, i) => (
+          <img
+            key={i}
+            src={img.url || img}
+            className="w-full h-24 object-cover rounded border"
+          />
+        ))}
+      </div>
+    </>
   )}
 
   {/* New previews */}
   {previews.length > 0 && (
-    <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mt-4">
-      {previews.map((src, i) => (
-        <img
-          key={i}
-          src={src}
-          className="w-full h-24 object-cover rounded"
-        />
-      ))}
-    </div>
+    <>
+      <p className="text-sm font-medium mt-4">New Uploads</p>
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mt-2">
+        {previews.map((src, i) => (
+          <img
+            key={i}
+            src={src}
+            className="w-full h-24 object-cover rounded"
+          />
+        ))}
+      </div>
+    </>
   )}
 </div>
+
 
 
         {/* SUBMIT */}
