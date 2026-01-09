@@ -58,6 +58,7 @@ exports.addProduct = async (req, res) => {
 const {
   title,
   description,
+  dimensions,   // ✅ ADD THIS
   category,
   productType,
   pricePerDay,
@@ -69,6 +70,7 @@ const {
 const product = await Product.create({
   title,
   description,
+  dimensions: dimensions || "", // ✅ ADD THIS
   category,
   productType,
   pricePerDay,
@@ -120,10 +122,15 @@ exports.editProduct = async (req, res) => {
     const updates = {};
 
     // -------- BASIC FIELDS --------
-    if (req.body.title !== undefined) updates.title = req.body.title;
-    if (req.body.description !== undefined)
-      updates.description = req.body.description;
-    if (req.body.category !== undefined) updates.category = req.body.category;
+   // -------- BASIC FIELDS --------
+if (req.body.title !== undefined) updates.title = req.body.title;
+if (req.body.description !== undefined)
+  updates.description = req.body.description;
+if (req.body.dimensions !== undefined)
+  updates.dimensions = req.body.dimensions; // ✅
+if (req.body.category !== undefined) updates.category = req.body.category;
+
+
     if (req.body.productType !== undefined)
       updates.productType = req.body.productType;
     if (req.body.featured !== undefined) {

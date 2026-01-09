@@ -32,6 +32,8 @@ const [isFeatured, setIsFeatured] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
+  const [dimensions, setDimensions] = useState("");
+
   const [availabilityCount, setAvailabilityCount] = useState(1);
 
   // Pricing
@@ -180,6 +182,8 @@ const getImgSrc = (img) =>
         setTitle(data.title || "");
         setDescription(data.description || "");
         setCategory(data.category || "");
+        setDimensions(data.dimensions || "");
+
         setAvailabilityCount(data.availabilityCount || 1);
         setProductType(data.productType);
         setPricePerDay(data.pricePerDay || "");
@@ -287,6 +291,10 @@ Object.entries(selectedAddons).forEach(([groupId, options]) => {
     formData.append("title", title);
     formData.append("category", category);
     formData.append("description", description);
+    if (dimensions && dimensions.trim() !== "") {
+  formData.append("dimensions", dimensions);
+}
+
     formData.append("productType", productType);
     formData.append("availabilityCount", availabilityCount);
 formData.append("featured", productType === "rental" ? String(isFeatured) : "false");
@@ -692,17 +700,34 @@ const overridePrice = selectedAddons[groupKey]?.[oid]?.overridePrice ?? "";
   )}
 </div>
 
-        {/* DESCRIPTION */}
-        <div>
-          <label>Description</label>
-          <textarea
-            rows="4"
-            className="w-full p-3  border border-gray-400 rounded-lg"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Size, usage instructions, notes..."
-          />
-        </div>
+        {/* DIMENSIONS (OPTIONAL) */}
+<div>
+  <label className="flex items-center gap-2">
+    Dimensions
+    <span className="text-xs text-gray-500">(optional)</span>
+  </label>
+
+  <input
+    type="text"
+    className="w-full p-3 border border-gray-300 rounded-lg"
+    value={dimensions}
+    onChange={(e) => setDimensions(e.target.value)}
+    placeholder="e.g. 6ft (H) × 4ft (W) × 2ft (D)"
+  />
+</div>
+
+{/* DESCRIPTION */}
+<div>
+  <label>Description</label>
+  <textarea
+    rows="4"
+    className="w-full p-3 border border-gray-400 rounded-lg"
+    value={description}
+    onChange={(e) => setDescription(e.target.value)}
+    placeholder="Usage instructions, notes, details..."
+  />
+</div>
+
 
         {/* IMAGES */}
        {/* IMAGES */}

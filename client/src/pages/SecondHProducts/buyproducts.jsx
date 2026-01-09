@@ -496,6 +496,18 @@ if (!product) {
 
 
           <div className="mt-10 space-y-4">
+{/* DIMENSIONS (ONLY IF EXISTS) */}
+{product?.dimensions && (
+  <div className="bg-white p-5 rounded-xl shadow">
+    <h3 className="font-semibold text-lg text-[#2D2926]">
+      Dimensions
+    </h3>
+
+    <p className="mt-2 text-gray-700">
+      {product.dimensions}
+    </p>
+  </div>
+)}
 
   {/* DESCRIPTION */}
   <div className="bg-white p-5 rounded-xl shadow">

@@ -61,6 +61,10 @@ const productSchema = new mongoose.Schema(
       type: String,
       maxlength: 2000,
     },
+dimensions: {
+  type: String,
+  trim: true,
+},
 
     /* PRODUCT TYPE */
     productType: {
