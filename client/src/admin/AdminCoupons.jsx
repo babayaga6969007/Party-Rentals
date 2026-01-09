@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../utils/api"; // ✅ adjust if your path differs
 import AdminCreateCoupon from "./components/AdminCreateCoupon";
-
+import AdminLayout from "./AdminLayout";
 function formatDate(d) {
   if (!d) return "—";
   const dt = new Date(d);
@@ -113,6 +113,7 @@ export default function AdminCoupons() {
   };
 
   return (
+    <AdminLayout>
     <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
@@ -293,5 +294,6 @@ export default function AdminCoupons() {
         </div>
       )}
     </div>
+    </AdminLayout>
   );
 }
