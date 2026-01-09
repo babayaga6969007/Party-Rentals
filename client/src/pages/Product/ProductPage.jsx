@@ -34,9 +34,22 @@ const [openShippingModal, setOpenShippingModal] = useState(false); // ✅ ADD TH
 const { addToCart } = useCart();
 
   const [product, setProduct] = useState(null);
+  // ====================
+// VARIATIONS (Rental Variable Products)
+// ====================
+const isVariableRental =
+  product?.productType === "rental" && product?.productSubType === "variable";
+
+const [selectedVarOptions, setSelectedVarOptions] = useState({}); 
+// shape: { [groupId]: optionId }
+
+const [selectedVariation, setSelectedVariation] = useState(null);
+
   const [loadingProduct, setLoadingProduct] = useState(true);
   const [productError, setProductError] = useState("");
-    const maxStock = product?.availabilityCount ?? 1;
+const maxStock = isVariableRental
+  ? Number(selectedVariation?.stock ?? 0)
+  : Number(product?.availabilityCount ?? 1);
 const [signageText, setSignageText] = useState("");
 const [signageError, setSignageError] = useState("");
 // ===== VINYL WRAP STATES =====
@@ -220,7 +233,9 @@ const [showFullDesc, setShowFullDesc] = useState(false);
 const totalRentalDays = selectedDays;
 // Use salePrice if available, else fallback to regular price
 const effectivePricePerDay = Number(
-  product?.salePrice ?? product?.pricePerDay ?? 0
+  isVariableRental
+    ? (selectedVariation?.salePrice ?? selectedVariation?.price ?? 0)
+    : (product?.salePrice ?? product?.pricePerDay ?? 0)
 );
 
 // ====================
@@ -271,6 +286,46 @@ const totalPrice =
 
     if (id) fetchProduct();
   }, [id]);
+// Auto-select first options for each group (only for variable rental)
+useEffect(() => {
+  if (!isVariableRental) {
+    setSelectedVarOptions({});
+    setSelectedVariation(null);
+    return;
+  }
+
+  // Default selection: first option of each group
+  const defaults = {};
+  attributeGroupsForUI.forEach((g) => {
+    if (g.options?.length > 0) defaults[g.groupId] = String(g.options[0]._id);
+  });
+
+  setSelectedVarOptions(defaults);
+}, [isVariableRental, product?._id]); // re-run when product changes
+// Find matching variation whenever selection changes
+useEffect(() => {
+  if (!isVariableRental) return;
+
+  const vars = product?.variations || [];
+  if (vars.length === 0) {
+    setSelectedVariation(null);
+    return;
+  }
+
+  const match = vars.find((v) => {
+    const attrs = v.attributes || [];
+    // every selected group must match the optionId in this variation
+    return Object.entries(selectedVarOptions).every(([groupId, optionId]) =>
+      attrs.some(
+        (a) =>
+          String(a.groupId?._id || a.groupId) === String(groupId) &&
+          String(a.optionId?._id || a.optionId) === String(optionId)
+      )
+    );
+  });
+
+  setSelectedVariation(match || null);
+}, [isVariableRental, selectedVarOptions, product]);
 
 console.log("PRODUCT ADDONS:", product?.addons);
 
@@ -375,6 +430,18 @@ const renderedAttributes = product?.attributes?.map((attr) => {
     values: selectedOptions.map((o) => o.label),
   };
 });
+// Groups available on this product (based on selected attributes)
+const attributeGroupsForUI =
+  product?.attributes
+    ?.filter((a) => a?.groupId && Array.isArray(a.groupId.options))
+    .map((a) => ({
+      groupId: String(a.groupId._id),
+      name: a.groupId.name,
+      // allowed options on this product (only those admin selected)
+      options: (a.groupId.options || []).filter((opt) =>
+        (a.optionIds || []).some((oid) => String(oid) === String(opt._id))
+      ),
+    })) || [];
 
 // ====================
 // ADD-ONS (safe even when product is null during loading)
@@ -635,8 +702,23 @@ const toggleAddon = (addon) => {
 <div className="mt-2 flex flex-col md:flex-row md:items-center md:gap-6">
 
   {/* Price */}
-  <div className="flex items-baseline gap-3">
-  {product.salePrice ? (
+<div className="flex items-baseline gap-3">
+  {isVariableRental ? (
+    selectedVariation?.salePrice ? (
+      <>
+        <span className="text-xl text-gray-500 line-through">
+          $ {selectedVariation?.price} / day
+        </span>
+        <span className="text-3xl font-semibold text-red-600">
+          $ {selectedVariation?.salePrice} / day
+        </span>
+      </>
+    ) : (
+      <span className="text-3xl font-semibold text-[#8B5C42]">
+        $ {selectedVariation?.price ?? 0} / day
+      </span>
+    )
+  ) : product.salePrice ? (
     <>
       <span className="text-xl text-gray-500 line-through">
         $ {product.pricePerDay} / day
@@ -653,12 +735,14 @@ const toggleAddon = (addon) => {
 </div>
 
 
+
   {/* Stock — beside price on desktop, below on mobile */}
   <div className="mt-2 md:mt-0 bg-[#FFF7F0] border border-[#E5DED6] rounded-lg px-4 py-2 inline-block">
     <p className="text-sm font-medium text-[#2D2926]">
       Stock Availability: <span className="text-[#8B5C42] font-semibold">
-  {product?.availabilityCount ?? 0}
+  {maxStock}
 </span>
+
 
     </p>
   </div>
@@ -696,6 +780,59 @@ const toggleAddon = (addon) => {
 
 
 {/* PRODUCT ATTRIBUTES */}
+{/* VARIATIONS (only for rental variable products) */}
+{isVariableRental && (
+  <div className="mt-6 bg-white p-5 rounded-xl shadow">
+    <h3 className="font-semibold text-lg text-[#2D2926] mb-4">
+      Choose Options
+    </h3>
+
+    {attributeGroupsForUI.map((g) => (
+      <div key={g.groupId} className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          {g.name}
+        </label>
+
+        <div className="flex flex-wrap gap-2">
+          {g.options.map((opt) => {
+            const selected = selectedVarOptions[g.groupId] === String(opt._id);
+
+            return (
+              <button
+                key={String(opt._id)}
+                type="button"
+                onClick={() =>
+                  setSelectedVarOptions((prev) => ({
+                    ...prev,
+                    [g.groupId]: String(opt._id),
+                  }))
+                }
+                className={`px-4 py-2 rounded-lg border text-sm transition
+                  ${selected ? "border-black bg-black text-white" : "border-gray-300 bg-white hover:bg-gray-50"}
+                `}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    ))}
+
+    {!selectedVariation && (
+      <p className="text-sm text-red-600">
+        This combination is not available.
+      </p>
+    )}
+
+    {selectedVariation && (
+      <p className="text-sm text-gray-600 mt-2">
+        Stock for selected option:{" "}
+        <span className="font-semibold">{maxStock}</span>
+      </p>
+    )}
+  </div>
+)}
 
 {/* ADD-ONS */}
 {/* ADD-ONS */}
@@ -972,6 +1109,12 @@ const toggleAddon = (addon) => {
   disabled={!startDate || !endDate}
   onClick={() => {
     if (!startDate || !endDate) return;
+    // 🚫 Variable rental must have a valid variation selected
+if (isVariableRental && !selectedVariation) {
+  alert("Please select a valid option combination.");
+  return;
+}
+
 // validate signage text if signage is selected
 if (isSignageSelected && !signageText.trim()) {
   setSignageError("Please enter the signage text.");
@@ -1024,7 +1167,7 @@ unitPrice: effectivePricePerDay,
   lineTotal: totalPrice,
 
   image: productImages[activeImage],
-  maxStock: product.availabilityCount ?? 1,
+maxStock,
 };
 
 // ✅ ADD TO CART IMMEDIATELY (THIS IS THE FIX)

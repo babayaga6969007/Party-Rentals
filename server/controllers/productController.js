@@ -27,6 +27,19 @@ exports.addProduct = async (req, res) => {
         message: "Invalid attributes or addons format",
       });
     }
+const productSubType = req.body.productSubType || "simple";
+
+
+let variations = [];
+if (productSubType === "variable") {
+  try {
+    variations = req.body.variations
+      ? JSON.parse(req.body.variations)
+      : [];
+  } catch (err) {
+    return res.status(400).json({ message: "Invalid variations format" });
+  }
+}
 
     // 3️⃣ Server-side validation for REQUIRED attributes
     if (attributes.length > 0) {
@@ -67,14 +80,13 @@ const {
   tags,
 } = req.body;
 
-const product = await Product.create({
+const basePayload = {
   title,
   description,
-  dimensions: dimensions || "", // ✅ ADD THIS
+  dimensions: dimensions || "",
   category,
   productType,
-  pricePerDay,
-  salePrice,
+  productSubType,
   availabilityCount,
   tags,
   featured: featuredFlag,
@@ -82,7 +94,16 @@ const product = await Product.create({
   attributes,
   addons,
   images: uploadedImages,
-});
+};
+
+if (productSubType === "simple") {
+  basePayload.pricePerDay = pricePerDay;
+  basePayload.salePrice = salePrice;
+} else {
+  basePayload.variations = variations;
+}
+
+const product = await Product.create(basePayload);
 
 
 // 🔒 ENFORCE MAX 8 FEATURED RENTAL PRODUCTS (FIFO)
@@ -129,7 +150,8 @@ if (req.body.description !== undefined)
 if (req.body.dimensions !== undefined)
   updates.dimensions = req.body.dimensions; // ✅
 if (req.body.category !== undefined) updates.category = req.body.category;
-
+if (req.body.productSubType !== undefined)
+  updates.productSubType = req.body.productSubType;
 
     if (req.body.productType !== undefined)
       updates.productType = req.body.productType;
@@ -155,6 +177,23 @@ if (updates.productType === "sale") {
 
     if (req.body.salePrice !== undefined)
       updates.salePrice = Number(req.body.salePrice);
+// -------- VARIABLE PRODUCT HANDLING --------
+if (updates.productSubType === "variable") {
+  if (!req.body.variations) {
+    return res
+      .status(400)
+      .json({ message: "Variations required for variable product" });
+  }
+
+  updates.variations = JSON.parse(req.body.variations);
+
+  // Clear simple pricing fields
+  updates.pricePerDay = undefined;
+  updates.salePrice = undefined;
+} else if (updates.productSubType === "simple") {
+  // Clear variations if switching back to simple
+  updates.variations = [];
+}
 
     // -------- ATTRIBUTES --------
    if (req.body.attributes) {
