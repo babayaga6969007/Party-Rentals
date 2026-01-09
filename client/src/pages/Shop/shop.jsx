@@ -124,7 +124,7 @@ useEffect(() => {
     try {
       setLoadingProducts(true);
 
-      const res = await api("/products");
+const res = await api("/products?limit=1000");
       const allProducts = res?.products || [];
 
       // ✅ ONLY SALE PRODUCTS FOR SHOP PAGE

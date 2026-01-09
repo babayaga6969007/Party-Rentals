@@ -87,7 +87,7 @@ const categoryChips = categories.map((c) => ({
         setLoadingProducts(true);
         setProductsError("");
 
-        const res = await api("/products");
+const res = await api("/products?limit=1000");
         setProducts(res?.products || []);
       } catch (err) {
         console.error(err);
