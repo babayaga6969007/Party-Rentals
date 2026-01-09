@@ -12,7 +12,7 @@ const Products = () => {
 
   const loadProducts = async () => {
     try {
-      const res = await api("/products");
+     const res = await api("/products?limit=1000");
       setItems(res.products);
     } catch {
       alert("Error loading products");
