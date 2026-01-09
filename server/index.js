@@ -14,11 +14,13 @@ const app = express();
    ALLOWED ORIGINS
 ========================= */
 const allowedOrigins = [
-  "http://localhost:5173",
-  "https://party-rentals-ochre.vercel.app",
-  "https://party-rentals.vercel.app",
-  // 👉 add current Vercel preview domain if needed
+  "http://localhost:5173",                  // local dev
+  "https://party-rentals-ochre.vercel.app", // old prod (can keep)
+  "https://party-rentals.vercel.app",       // old prod (can keep)
+  "https://newprojectdesigns.com",           // NEW prod
+  "https://www.newprojectdesigns.com"        // NEW prod (www)
 ];
+
 
 /* =========================
    GLOBAL MIDDLEWARES
