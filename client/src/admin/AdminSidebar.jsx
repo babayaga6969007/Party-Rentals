@@ -22,9 +22,11 @@ const Sidebar = () => {
 
   /* ---------- Active route checks ---------- */
   const isEcommerceActive =
-    location.pathname.startsWith("/admin/products") ||
-    location.pathname.startsWith("/admin/categories") ||
-    location.pathname.startsWith("/admin/attributes");
+  location.pathname.startsWith("/admin/products") ||
+  location.pathname.startsWith("/admin/categories") ||
+  location.pathname.startsWith("/admin/attributes") ||
+  location.pathname.startsWith("/admin/coupons");
+
 
   const isOrdersActive = location.pathname.startsWith("/admin/orders");
   const isReportsActive = location.pathname.startsWith("/admin/reports");
@@ -91,6 +93,10 @@ const Sidebar = () => {
           <NavLink to="/admin/attributes" className={linkClass}>
             Attributes
           </NavLink>
+          <NavLink to="/admin/coupons" className={linkClass}>
+  Coupons
+</NavLink>
+
         </div>
       )}
 

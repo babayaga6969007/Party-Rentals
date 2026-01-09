@@ -12,6 +12,7 @@ import {
 
 const STAIRS_COST = 250;
 const SETUP_COST = 300; // 150 × 2 hours
+const appliedCoupon = location.state?.coupon || null;
 
 export default function CheckoutPage() {
   const location = useLocation();
@@ -56,12 +57,12 @@ const items = cartItems;
     0
   );
 
-  const discount = subtotal * 0.1;
+
   const deliveryFee = 10;
 
-  const total = subtotal - discount + deliveryFee;
+  const total = subtotal + deliveryFee;
 
-  return { subtotal, discount, deliveryFee, total };
+  return { subtotal, deliveryFee, total };
 }, [location.state?.pricing, items]);
 
 
@@ -123,7 +124,14 @@ await api("/orders", {
       ...pricing,
       extraFees,
       finalTotal,
+      discount: appliedCoupon?.discount || 0,
     },
+    coupon: appliedCoupon
+      ? {
+          code: appliedCoupon.code,
+          discount: appliedCoupon.discount,
+        }
+      : null,
     delivery: {
       deliveryDate,
       pickupDate,
@@ -141,6 +149,7 @@ await api("/orders", {
     },
   }),
 });
+
 
 } catch (err) {
   console.error("Failed to save order:", err);
@@ -421,13 +430,7 @@ navigate("/order-complete", {
               </span>
             </div>
 
-            <div className="flex justify-between">
-              <span className="text-gray-500">Discount</span>
-              <span className="font-medium text-red-500">
-                -${pricing.discount.toFixed(2)}
-              </span>
-            </div>
-
+            
             <div className="flex justify-between">
               <span className="text-gray-500">Delivery Fee</span>
               <span className="font-medium">

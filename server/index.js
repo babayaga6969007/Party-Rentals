@@ -1,49 +1,28 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
 const path = require("path");
-
-
 
 const connectDB = require("./config/db");
 
 /* =========================
-   ROUTE IMPORTS
+   APP INIT
 ========================= */
-const adminAuthRoutes = require("./routes/adminAuthRoutes");
-const productRoutes = require("./routes/productRoutes");
-const categoryRoutes = require("./routes/categoryRoutes");
-const attributeRoutes = require("./routes/attributeRoutes"); // admin attributes
-const orderRoutes = require("./routes/orderRoutes");
-const paymentRoutes = require("./routes/paymentRoutes");
-
-
 const app = express();
-app.use(cors());
-app.use(express.json());
 
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "uploads"), {
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith(".png")) res.set("Content-Type", "image/png");
-      if (filePath.endsWith(".jpg") || filePath.endsWith(".jpeg"))
-        res.set("Content-Type", "image/jpeg");
-      if (filePath.endsWith(".webp")) res.set("Content-Type", "image/webp");
-    },
-  })
-);
 /* =========================
-   GLOBAL MIDDLEWARES
+   ALLOWED ORIGINS
 ========================= */
-
 const allowedOrigins = [
   "http://localhost:5173",
   "https://party-rentals-ochre.vercel.app",
-  "https://party-rentals.vercel.app"
+  "https://party-rentals.vercel.app",
+  // 👉 add current Vercel preview domain if needed
 ];
 
+/* =========================
+   GLOBAL MIDDLEWARES
+========================= */
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -60,20 +39,35 @@ app.use(
 );
 
 app.options(/.*/, cors());
-
-// Body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 /* =========================
-   DEBUG (OPTIONAL)
+   STATIC FILES
 ========================= */
-app.post("/api/debug-body", (req, res) => {
-  res.json({
-    received: req.body,
-    contentType: req.headers["content-type"],
-  });
-});
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"), {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith(".png")) res.set("Content-Type", "image/png");
+      if (filePath.endsWith(".jpg") || filePath.endsWith(".jpeg"))
+        res.set("Content-Type", "image/jpeg");
+      if (filePath.endsWith(".webp")) res.set("Content-Type", "image/webp");
+    },
+  })
+);
+
+/* =========================
+   ROUTE IMPORTS
+========================= */
+const adminAuthRoutes = require("./routes/adminAuthRoutes");
+const productRoutes = require("./routes/productRoutes");
+const categoryRoutes = require("./routes/categoryRoutes");
+const attributeRoutes = require("./routes/attributeRoutes");
+const orderRoutes = require("./routes/orderRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
+const adminCouponRoutes = require("./routes/adminCouponRoutes");
+const couponRoutes = require("./routes/couponRoutes");
 
 /* =========================
    DATABASE
@@ -100,13 +94,15 @@ app.use("/api/admin", adminAuthRoutes);
 // 📦 Core resources
 app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
-
-// ✅ ADMIN ATTRIBUTE MANAGER (THIS IS THE IMPORTANT ADDITION)
-app.use("/api/admin/attributes", attributeRoutes);
-
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 
+// 🎟️ Coupons
+app.use("/api/coupons", couponRoutes);              // public validation
+app.use("/api/admin/coupons", adminCouponRoutes);   // admin CRUD
+
+// 🧩 Admin attributes
+app.use("/api/admin/attributes", attributeRoutes);
 
 /* =========================
    404 HANDLER

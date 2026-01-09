@@ -1,6 +1,8 @@
 const Order = require("../models/Order");
 const Product = require("../models/Product");
 const { getDateStringsBetween } = require("../utils/dateRange");
+const { incrementCouponUsage } =
+  require("../controllers/couponController");
 
 
 // -------------------------------
@@ -8,15 +10,16 @@ const { getDateStringsBetween } = require("../utils/dateRange");
 // -------------------------------
 exports.createOrder = async (req, res) => {
   try {
-    const {
-      customer,
-      items,
-      pricing,
-      delivery,
-      paymentMethod,
-      stripePayment,
-      orderStatus,
-    } = req.body;
+   const {
+  customer,
+  items,
+  pricing,
+  coupon,
+  delivery,
+  paymentMethod,
+  stripePayment,
+} = req.body;
+
     // 🔒 Safety: ensure required customer fields exist
 if (!customer?.addressLine) {
   return res.status(400).json({
@@ -29,18 +32,22 @@ if (!customer?.addressLine) {
       return res.status(400).json({ message: "Order items required" });
     }
 
-    const order = new Order({
+const order = new Order({
   customer,
   items,
   pricing,
+  coupon: coupon || null,
   delivery,
   paymentMethod,
   stripePayment,
-orderStatus: "pending",
+  orderStatus: "pending",
 });
 
 await order.save();
 
+if (order.coupon?.code) {
+  await incrementCouponUsage(order.coupon.code);
+}
 
     return res.status(201).json({ order });
   } catch (err) {

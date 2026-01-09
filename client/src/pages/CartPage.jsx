@@ -2,6 +2,7 @@ import { useCart } from "../context/CartContext";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CheckoutSteps from "../components/cart/CheckoutSteps";
+import { api } from "../utils/api";
 
 
 
@@ -16,10 +17,42 @@ export default function CartPage() {
 const { cartItems, updateQty, removeItem, clearCart, cartSubtotal } = useCart();
 const items = cartItems;
   const navigate = useNavigate();
+const safeSubtotal = Number(cartSubtotal) || 0;
 
-const discount = cartSubtotal * 0.1;
 const deliveryFee = 10;
-const total = cartSubtotal - discount + deliveryFee;
+const [couponCode, setCouponCode] = useState("");
+const [appliedCoupon, setAppliedCoupon] = useState(null);
+const [couponError, setCouponError] = useState("");
+const discount = Number(appliedCoupon?.discount || 0);
+
+
+
+
+const total = Math.max(
+  safeSubtotal + deliveryFee - discount,
+  0
+);
+
+
+
+const handleApplyCoupon = async () => {
+  try {
+    const res = await api("/coupons/validate", {
+      method: "POST",
+     body: JSON.stringify({
+  code: couponCode,
+  cartSubtotal: safeSubtotal,
+}),
+
+    });
+
+    setAppliedCoupon(res);
+    setCouponError("");
+  } catch (err) {
+    setCouponError(err.message || "Invalid coupon");
+  }
+};
+
 
 
   
@@ -36,14 +69,33 @@ updateQty(item.cartKey, 1);
 };
 
 
- const handleProceed = () => {
+const handleProceed = () => {
   if (total < 1000) {
     alert("Minimum order limit is $1000. Please add more items to proceed.");
     return;
   }
 
-  navigate("/checkout"); // or your actual checkout page
+  navigate("/checkout", {
+    state: {
+      pricing: {
+        subtotal: cartSubtotal,
+        discount,
+        deliveryFee,
+        total,
+      },
+     coupon: appliedCoupon
+  ? {
+      code: appliedCoupon.code,
+      discount,
+      discountType: appliedCoupon.discountType,
+      discountValue: appliedCoupon.discountValue,
+    }
+  : null,
+
+    },
+  });
 };
+
 
 
   return (
@@ -163,16 +215,57 @@ onClick={() => removeItem(item.cartKey)}
               <span className="text-gray-500">Subtotal</span>
 <span className="font-medium">${cartSubtotal.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Discount (10%)</span>
-              <span className="font-medium text-red-500">
-                -${discount.toFixed(2)}
-              </span>
-            </div>
+            
             <div className="flex justify-between">
               <span className="text-gray-500">Delivery Fee</span>
               <span className="font-medium">${deliveryFee.toFixed(2)}</span>
             </div>
+            {/* COUPON CODE */}
+<div className="mt-3">
+  <label className="block text-xs font-medium text-gray-600 mb-1">
+    Coupon Code
+  </label>
+
+  <div className="flex gap-2">
+    <input
+      type="text"
+      value={couponCode}
+      onChange={(e) => setCouponCode(e.target.value)}
+      placeholder="Enter coupon"
+      className="flex-1 px-3 py-2 border rounded-lg text-sm"
+    />
+
+    <button
+      type="button"
+      onClick={handleApplyCoupon}
+      className="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-black"
+    >
+      Apply
+    </button>
+  </div>
+
+  {couponError && (
+    <p className="text-xs text-red-600 mt-1">
+      {couponError}
+    </p>
+  )}
+
+  {appliedCoupon && (
+    <p className="text-xs text-green-600 mt-1">
+      Coupon <strong>{appliedCoupon.code}</strong> applied
+    </p>
+  )}
+</div>
+{appliedCoupon && (
+  <div className="flex justify-between text-green-600">
+    <span>
+      Discount ({appliedCoupon.discountType === "percent" ? "%" : "flat"})
+    </span>
+    <span>- ${discount.toFixed(2)}</span>
+  </div>
+)}
+
+
           </div>
 
           <div className="mt-4 pt-4 border-t flex justify-between items-center text-sm">

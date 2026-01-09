@@ -43,7 +43,10 @@ const orderSchema = new mongoose.Schema(
       tax: { type: Number, default: 0 },
       total: { type: Number, required: true },
     },
-
+coupon: {
+  code: { type: String },
+  discount: { type: Number },
+},
     paymentStatus: {
       type: String,
       enum: ["pending", "paid", "failed", "refunded"],

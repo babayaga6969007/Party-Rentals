@@ -42,6 +42,7 @@ import Products from "../admin/Products";
 import AddProduct from "../admin/AddProduct";
 import Orders from "../admin/Orders";  
 import Inventory from "../admin/Inventory";
+import AdminCoupons from "../admin/AdminCoupons";
 
 
 const AppRoutes = () => {
@@ -80,6 +81,14 @@ const AppRoutes = () => {
               </ProtectedAdminRoute>
             }
           />
+<Route
+  path="/admin/coupons"
+  element={
+    <ProtectedAdminRoute>
+      <AdminCoupons />
+    </ProtectedAdminRoute>
+  }
+/>
 
           <Route 
             path="/admin/products/new"
