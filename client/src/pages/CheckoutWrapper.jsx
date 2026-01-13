@@ -3,6 +3,8 @@ import { stripePromise } from "../stripe";
 import CheckoutPage from "./CheckoutPage";
 import { useEffect, useState } from "react";
 import { useCart } from "../context/CartContext";
+import { api } from "../utils/api";
+
 
 export default function CheckoutWrapper() {
   const { cartItems } = useCart();
@@ -11,25 +13,31 @@ export default function CheckoutWrapper() {
   // calculate extraFees later inside CheckoutPage
   // here we only initialize Stripe once
   useEffect(() => {
-    if (!cartItems || cartItems.length === 0) return;
+  const init = async () => {
+    try {
+      if (!cartItems || cartItems.length === 0) return;
 
-    fetch("http://localhost:5000/api/payments/create-payment-intent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-     body: JSON.stringify({
-  items: cartItems.map((i) => ({
-    productId: i.productId,
-    qty: i.qty,
-    lineTotal: i.lineTotal,
-  })),
-  extraFees: 0,
-}),
+      const data = await api("/payments/create-payment-intent", {
+        method: "POST",
+        body: JSON.stringify({
+          items: cartItems.map((i) => ({
+            productId: i.productId,
+            qty: i.qty,
+            lineTotal: i.lineTotal,
+          })),
+          extraFees: 0,
+        }),
+      });
 
-    })
-      .then((res) => res.json())
-      .then((data) => setClientSecret(data.clientSecret))
-      .catch(console.error);
-  }, [cartItems]);
+      setClientSecret(data.clientSecret);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  init();
+}, [cartItems]);
+
 
   if (!clientSecret) {
     return (

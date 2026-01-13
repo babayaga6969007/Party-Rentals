@@ -32,6 +32,7 @@ const [customer, setCustomer] = useState({
   const [isPaying, setIsPaying] = useState(false);
   const [paymentError, setPaymentError] = useState("");
 
+
   // ✅ Delivery & Pickup state (MUST be declared before using stairsFee/setupFee)
   const [deliveryDate, setDeliveryDate] = useState("");
   const [pickupDate, setPickupDate] = useState("");
@@ -394,8 +395,9 @@ navigate("/order-complete", {
   </h3>
 
   <div className="border rounded-xl p-3">
-    <PaymentElement />
-  </div>
+  <PaymentElement />
+</div>
+
 
   {paymentError && (
     <p className="mt-2 text-sm text-red-600">{paymentError}</p>
