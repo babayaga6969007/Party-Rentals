@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import hero1 from "../../assets/home2/hero1.png";
 import hero2 from "../../assets/home2/hero2.png";
 import hero3 from "../../assets/home2/hero3.png";
@@ -11,6 +12,8 @@ import { api } from "../../utils/api";
 const today = new Date().toISOString().split("T")[0];
 
 const CategoryPage = () => {
+  const navigate = useNavigate();
+  
   // ====================
   //  FILTER STATES
   // ====================
@@ -462,6 +465,64 @@ width: `${((priceRange[1] - priceRange[0]) / PRICE_MAX) * 100}%`,
 
          <main>
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+
+    {/* Static Signage Card */}
+    <div
+      className="
+        block border-2 border-[#8B5C42] 
+        rounded-xl shadow-lg
+        transition-all duration-300 
+        group hover:shadow-xl hover:scale-[1.02]
+        bg-gradient-to-br from-[#FFF7F0] to-[#FFE5D9]
+      "
+    >
+      {/* IMAGE */}
+      <div className="h-48 rounded-t-xl overflow-hidden bg-gradient-to-br from-[#8B5C42] to-[#704A36] flex items-center justify-center">
+        <div className="text-center text-white">
+          <svg 
+            className="w-20 h-20 mx-auto mb-2" 
+            fill="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+          </svg>
+          <p className="text-sm font-semibold">Custom Signage</p>
+        </div>
+      </div>
+
+      {/* CONTENT */}
+      <div className="p-5">
+        {/* NAME */}
+        <h3 className="font-bold text-lg text-[#2D2926]">
+          Custom Signage Design
+        </h3>
+
+        {/* DESCRIPTION */}
+        <p className="text-sm text-gray-600 mt-2">
+          Create personalized signage with custom text, fonts, colors, and backgrounds for your events.
+        </p>
+
+        {/* FEATURES */}
+        <div className="mt-3 space-y-1">
+          <p className="text-xs text-gray-500">✓ Custom fonts & sizes</p>
+          <p className="text-xs text-gray-500">✓ Multiple color options</p>
+          <p className="text-xs text-gray-500">✓ Background customization</p>
+        </div>
+
+        {/* BUTTON */}
+        <div className="mt-4 
+             opacity-100 md:opacity-0 
+             md:group-hover:opacity-100 
+             transition-opacity duration-300">
+          <button 
+            onClick={() => navigate("/signage")}
+            className="w-full bg-[#8B5C42] text-white px-6 py-2 rounded-lg text-sm shadow-md hover:bg-[#704A36] transition"
+          >
+            Create Signage
+          </button>
+        </div>
+      </div>
+    </div>
 
     {filteredProducts.map((product) => (
       <a

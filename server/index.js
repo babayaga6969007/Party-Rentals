@@ -41,8 +41,8 @@ app.use(
 );
 
 app.options(/.*/, cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 /* =========================
    STATIC FILES
@@ -70,6 +70,7 @@ const orderRoutes = require("./routes/orderRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const adminCouponRoutes = require("./routes/adminCouponRoutes");
 const couponRoutes = require("./routes/couponRoutes");
+const signageConfigRoutes = require("./routes/signageConfigRoutes");
 
 /* =========================
    DATABASE
@@ -105,6 +106,10 @@ app.use("/api/admin/coupons", adminCouponRoutes);   // admin CRUD
 
 // 🧩 Admin attributes
 app.use("/api/admin/attributes", attributeRoutes);
+
+// 🎨 Signage Config (for admin to manage fonts/sizes)
+app.use("/api/signage-config", signageConfigRoutes);
+// Note: Signage creation removed - metadata is stored directly in orders
 
 /* =========================
    404 HANDLER

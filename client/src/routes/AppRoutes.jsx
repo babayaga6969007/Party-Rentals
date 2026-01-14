@@ -29,6 +29,7 @@ import UpdatedProductPage from "../pages/Product/UpdatedProductPage";
 import CategoryPage from "../pages/Category/CategoryPage";
 import Shop from "../pages/Shop/shop";
 import SecondHProducts from "../pages/SecondHProducts/buyproducts";
+import SignageEditor from "../pages/Signage/SignageEditor";
 
 // 🛒 NEW Checkout Flow Pages
 import CartPage from "../pages/CartPage";
@@ -43,6 +44,8 @@ import AddProduct from "../admin/AddProduct";
 import Orders from "../admin/Orders";  
 import Inventory from "../admin/Inventory";
 import AdminCoupons from "../admin/AdminCoupons";
+import AdminSignages from "../admin/AdminSignages";
+import AdminSignageConfig from "../admin/AdminSignageConfig";
 
 
 const AppRoutes = () => {
@@ -62,7 +65,10 @@ const AppRoutes = () => {
           <Route path="/product/demo" element={<UpdatedProductPage />} />
           <Route path="/category" element={<CategoryPage />} />
           <Route path="/shop" element={<Shop />} />
-<Route path="/buyproducts/:id" element={<SecondHProducts />} />
+          <Route path="/buyproducts/:id" element={<SecondHProducts />} />
+          <Route path="/signage" element={<SignageEditor />} />
+          <Route path="/signage/:id" element={<SignageEditor />} />
+          <Route path="/signage/share/:token" element={<SignageEditor />} />
 
           {/* 🛒 Checkout Flow */}
           <Route path="/cart" element={<CartPage />} />
@@ -86,6 +92,22 @@ const AppRoutes = () => {
   element={
     <ProtectedAdminRoute>
       <AdminCoupons />
+    </ProtectedAdminRoute>
+  }
+/>
+<Route
+  path="/admin/signages"
+  element={
+    <ProtectedAdminRoute>
+      <AdminSignages />
+    </ProtectedAdminRoute>
+  }
+/>
+<Route
+  path="/admin/signage-config"
+  element={
+    <ProtectedAdminRoute>
+      <AdminSignageConfig />
     </ProtectedAdminRoute>
   }
 />
