@@ -157,10 +157,15 @@ setStatusDraft(initialStatus);
     return (order?.items || []).reduce((sum, it) => sum + (Number(it?.qty) || 0), 0);
   };
 
-  const getTotal = (order) => {
-    const total = order?.pricing?.total;
-    return typeof total === "number" ? total : 0;
+  const getOrderAmounts = (order) => {
+  return {
+    total: order?.pricing?.total ?? 0,
+    paid: order?.amountPaid ?? 0,
+    due: order?.amountDue ?? 0,
+    paymentType: order?.paymentType ?? "FULL",
   };
+};
+
 
   // Apply filters on client side
   const filteredOrders = useMemo(() => {
@@ -277,7 +282,7 @@ setStatusDraft(initialStatus);
                 const type = getOrderType(order);
                 const itemsCount = getItemsCount(order);
                 const rentalPeriod = getRentalPeriod(order);
-                const total = getTotal(order);
+const { total, paid, due, paymentType } = getOrderAmounts(order);
 
                 return (
                   <tr
@@ -306,9 +311,17 @@ setStatusDraft(initialStatus);
 
                     <td className="px-6 py-4">{rentalPeriod}</td>
 
-                    <td className="px-6 py-4 font-semibold">
-                      ${Number(total).toFixed(2)}
-                    </td>
+                   <td className="px-6 py-4 font-semibold">
+  <div>${Number(total).toFixed(2)}</div>
+
+  {paymentType === "PARTIAL_60" && (
+    <div className="text-xs text-gray-500">
+      Paid: <span className="text-green-600">${paid.toFixed(2)}</span><br />
+      Due: <span className="text-red-600">${due.toFixed(2)}</span>
+    </div>
+  )}
+</td>
+
 <td className="px-6 py-4">
  <select
   className="border rounded-lg px-3 py-1 text-xs"

@@ -36,9 +36,13 @@ const { customer, items, pricing, delivery } = state;
 
 const subtotal = pricing?.subtotal ?? 0;
 const discount = pricing?.discount ?? 0;
-const deliveryFee = pricing?.deliveryFee ?? 0;
 const extraFees = pricing?.extraFees ?? 0;
-const total = pricing?.finalTotal ?? 0;
+
+const orderTotal = pricing?.orderTotal ?? 0;
+const amountPaid = pricing?.amountPaid ?? 0;
+const amountDue = pricing?.amountDue ?? 0;
+const paymentType = pricing?.paymentType ?? "FULL";
+
 
 
   return (
@@ -65,7 +69,7 @@ const total = pricing?.finalTotal ?? 0;
 
             <div className="text-sm text-gray-700 space-y-1 mb-8">
               <p><span className="font-medium">Name:</span> {customer.name}</p>
-              <p><span className="font-medium">Address:</span> {customer.addressline}</p>
+<p><span className="font-medium">Address:</span> {customer.addressLine}</p>
               <p><span className="font-medium">Phone:</span> {customer.phone}</p>
               <p><span className="font-medium">Email:</span> {customer.email}</p>
             </div>
@@ -141,11 +145,13 @@ key={index}
   <span className="text-gray-600">Discount</span>
   <span className="text-red-500">-${discount.toFixed(2)}</span>
 </div>
-
 <div className="flex justify-between">
-  <span className="text-gray-600">Delivery Fee</span>
-  <span>${deliveryFee.toFixed(2)}</span>
+  <span className="text-gray-600">Labor Charge (14%)</span>
+  <span>
+    ${(orderTotal - subtotal - extraFees + discount).toFixed(2)}
+  </span>
 </div>
+
 
 {extraFees > 0 && (
   <div className="flex justify-between">
@@ -154,10 +160,29 @@ key={index}
   </div>
 )}
 
-<div className="flex justify-between pt-3 font-semibold text-base">
-  <span>Order Total</span>
-  <span>${total.toFixed(2)}</span>
+<div className="flex justify-between">
+  <span className="text-gray-600">Order Total</span>
+  <span>${orderTotal.toFixed(2)}</span>
 </div>
+
+<div className="flex justify-between font-semibold text-green-600">
+  <span>Amount Paid</span>
+  <span>${amountPaid.toFixed(2)}</span>
+</div>
+
+{amountDue > 0 && (
+  <div className="flex justify-between font-semibold text-red-600">
+    <span>Amount Due</span>
+    <span>${amountDue.toFixed(2)}</span>
+  </div>
+)}
+
+{paymentType === "PARTIAL_60" && (
+  <p className="mt-3 text-xs text-gray-500">
+    Remaining balance will be collected later through mutual coordination.
+  </p>
+)}
+
 
           </div>
 

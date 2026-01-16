@@ -9,10 +9,14 @@ import { api } from "../utils/api";
 export default function CheckoutWrapper() {
   const { cartItems } = useCart();
   const [clientSecret, setClientSecret] = useState("");
+  const [paymentMode, setPaymentMode] = useState("FULL"); 
+// FULL = 100% payment
+// PARTIAL = 60% upfront payment
+
 
   // calculate extraFees later inside CheckoutPage
   // here we only initialize Stripe once
-  useEffect(() => {
+useEffect(() => {
   const init = async () => {
     try {
       if (!cartItems || cartItems.length === 0) return;
@@ -26,17 +30,19 @@ export default function CheckoutWrapper() {
             lineTotal: i.lineTotal,
           })),
           extraFees: 0,
+          paymentMode, // 👈 FULL or PARTIAL
         }),
       });
 
       setClientSecret(data.clientSecret);
     } catch (e) {
-      console.error(e);
+      console.error("Payment intent init failed:", e);
     }
   };
 
   init();
-}, [cartItems]);
+}, [cartItems, paymentMode]);
+
 
 
   if (!clientSecret) {
@@ -52,7 +58,10 @@ export default function CheckoutWrapper() {
       stripe={stripePromise}
       options={{ clientSecret }}   // 🔥 THIS WAS MISSING
     >
-      <CheckoutPage />
+<CheckoutPage
+  paymentMode={paymentMode}
+  setPaymentMode={setPaymentMode}
+/>
     </Elements>
   );
 }

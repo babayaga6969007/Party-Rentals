@@ -52,6 +52,22 @@ coupon: {
       enum: ["pending", "paid", "failed", "refunded"],
       default: "pending",
     },
+    paymentType: {
+  type: String,
+  enum: ["FULL", "PARTIAL_60"],
+  default: "FULL",
+},
+
+amountPaid: {
+  type: Number,
+  default: 0,
+},
+
+amountDue: {
+  type: Number,
+  default: 0,
+},
+
 orderStatus: {
   type: String,
   enum: ["pending", "confirmed", "dispatched", "completed", "cancelled"],
@@ -70,5 +86,19 @@ orderStatus: {
   },
   { timestamps: true }
 );
+orderSchema.pre("save", function (next) {
+  if (this.paymentType === "FULL") {
+    this.amountDue = 0;
+    if (this.amountPaid >= this.pricing.total) {
+      this.paymentStatus = "paid";
+    }
+  }
+
+  if (this.paymentType === "PARTIAL_60") {
+    this.paymentStatus = "pending";
+  }
+
+  next();
+});
 
 module.exports = mongoose.model("Order", orderSchema);

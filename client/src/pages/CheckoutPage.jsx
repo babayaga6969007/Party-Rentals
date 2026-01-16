@@ -12,10 +12,11 @@ import {
 
 const STAIRS_COST = 250;
 const SETUP_COST = 300; // 150 × 2 hours
-const appliedCoupon = location.state?.coupon || null;
 
-export default function CheckoutPage() {
+export default function CheckoutPage({ paymentMode, setPaymentMode }) {
   const location = useLocation();
+  const appliedCoupon = location.state?.coupon || null;
+
   const navigate = useNavigate();
   const stripe = useStripe();
   const elements = useElements();
@@ -51,7 +52,13 @@ const items = cartItems;
 
   // ✅ Base pricing (memo to avoid recalculating every render)
   const pricing = useMemo(() => {
-  if (location.state?.pricing) return location.state.pricing;
+if (location.state?.pricing) {
+  const p = location.state.pricing;
+  const subtotal = Number(p.subtotal || 0);
+  const laborCharge = subtotal * 0.14;
+  const total = subtotal + laborCharge;
+  return { subtotal, laborCharge, total };
+}
 
   const subtotal = items.reduce(
     (sum, item) => sum + Number(item.lineTotal || 0),
@@ -59,11 +66,11 @@ const items = cartItems;
   );
 
 
-  const deliveryFee = 10;
+ const laborCharge = subtotal * 0.14;
+const total = subtotal + laborCharge;
 
-  const total = subtotal + deliveryFee;
+return { subtotal, laborCharge, total };
 
-  return { subtotal, deliveryFee, total };
 }, [location.state?.pricing, items]);
 
 
@@ -71,7 +78,7 @@ const items = cartItems;
   const extraFees = (stairsFee ? STAIRS_COST : 0) + (setupFee ? SETUP_COST : 0);
   const finalTotal = pricing.total + extraFees;
 
-   const handlePlaceOrder = async () => {
+const handlePlaceOrder = async (mode = "FULL") => {
     if (
   !customer.name ||
   !customer.email ||
@@ -97,6 +104,7 @@ const items = cartItems;
 
     try {
       setIsPaying(true);
+setPaymentMode(mode);
 
       const result = await stripe.confirmPayment({
         elements,
@@ -144,6 +152,10 @@ await api("/orders", {
       },
     },
     paymentMethod: "Stripe",
+    paymentType: mode === "PARTIAL" ? "PARTIAL_60" : "FULL",
+amountPaid: mode === "PARTIAL" ? finalTotal * 0.6 : finalTotal,
+amountDue: mode === "PARTIAL" ? finalTotal * 0.4 : 0,
+
     stripePayment: {
       paymentIntentId: result.paymentIntent?.id,
       status: result.paymentIntent?.status,
@@ -168,7 +180,10 @@ navigate("/order-complete", {
     pricing: {
       ...pricing,
       extraFees,
-      finalTotal,
+      orderTotal: finalTotal,
+      amountPaid: mode === "PARTIAL" ? finalTotal * 0.6 : finalTotal,
+      amountDue: mode === "PARTIAL" ? finalTotal * 0.4 : 0,
+      paymentType: mode === "PARTIAL" ? "PARTIAL_60" : "FULL",
     },
     delivery: {
       deliveryDate,
@@ -182,6 +197,7 @@ navigate("/order-complete", {
     },
   },
 });
+
 
       setIsPaying(false);
     } catch (err) {
@@ -418,7 +434,7 @@ navigate("/order-complete", {
                   {item.name} × {item.qty}
                 </span>
                 <span className="font-medium">
-                  ${(item.price * item.qty).toFixed(2)}
+${Number(item.lineTotal).toFixed(2)}
                 </span>
               </div>
             ))}
@@ -433,12 +449,12 @@ navigate("/order-complete", {
             </div>
 
             
-            <div className="flex justify-between">
-              <span className="text-gray-500">Delivery Fee</span>
-              <span className="font-medium">
-                ${pricing.deliveryFee.toFixed(2)}
-              </span>
-            </div>
+          <div className="flex justify-between">
+  <span className="text-gray-500">Labor Charge (14%)</span>
+  <span className="font-medium">
+    ${pricing.laborCharge.toFixed(2)}
+  </span>
+</div>
 
             {stairsFee && (
               <div className="flex justify-between text-sm">
@@ -485,7 +501,7 @@ navigate("/order-complete", {
                       
 <button
   type="button"
-  onClick={handlePlaceOrder}
+  onClick={() => handlePlaceOrder("FULL")}
   disabled={!stripe || !elements || isPaying}
   className={`w-full py-3 rounded-full text-sm font-semibold ${
     !stripe || !elements || isPaying
@@ -493,7 +509,20 @@ navigate("/order-complete", {
       : "bg-black text-white hover:bg-gray-900"
   }`}
 >
-  {isPaying ? "Processing..." : "Place Order"}
+  {isPaying ? "Processing..." : "Place Order (Pay 100%)"}
+</button>
+
+<button
+  type="button"
+  onClick={() => handlePlaceOrder("PARTIAL")}
+  disabled={!stripe || !elements || isPaying}
+  className={`w-full py-3 rounded-full text-sm font-semibold border ${
+    !stripe || !elements || isPaying
+      ? "border-gray-300 text-gray-400 cursor-not-allowed"
+      : "border-black text-black hover:bg-gray-100"
+  }`}
+>
+  Place Order (Pay 60% Now)
 </button>
 
           

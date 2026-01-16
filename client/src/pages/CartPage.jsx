@@ -19,7 +19,6 @@ const items = cartItems;
   const navigate = useNavigate();
 const safeSubtotal = Number(cartSubtotal) || 0;
 
-const deliveryFee = 10;
 const [couponCode, setCouponCode] = useState("");
 const [appliedCoupon, setAppliedCoupon] = useState(null);
 const [couponError, setCouponError] = useState("");
@@ -29,7 +28,7 @@ const discount = Number(appliedCoupon?.discount || 0);
 
 
 const total = Math.max(
-  safeSubtotal + deliveryFee - discount,
+  safeSubtotal - discount,
   0
 );
 
@@ -80,7 +79,6 @@ const handleProceed = () => {
       pricing: {
         subtotal: cartSubtotal,
         discount,
-        deliveryFee,
         total,
       },
      coupon: appliedCoupon
@@ -216,10 +214,7 @@ onClick={() => removeItem(item.cartKey)}
 <span className="font-medium">${cartSubtotal.toFixed(2)}</span>
             </div>
             
-            <div className="flex justify-between">
-              <span className="text-gray-500">Delivery Fee</span>
-              <span className="font-medium">${deliveryFee.toFixed(2)}</span>
-            </div>
+          
             {/* COUPON CODE */}
 <div className="mt-3">
   <label className="block text-xs font-medium text-gray-600 mb-1">
