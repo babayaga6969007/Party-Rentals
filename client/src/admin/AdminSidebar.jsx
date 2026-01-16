@@ -8,7 +8,6 @@ import {
   FiBarChart2,
   FiUsers,
   FiCalendar,
-  FiSettings,
   FiLogOut,
 } from "react-icons/fi";
 
@@ -30,15 +29,13 @@ const Sidebar = () => {
 
   const isOrdersActive = location.pathname.startsWith("/admin/orders");
   const isReportsActive = location.pathname.startsWith("/admin/reports");
-  const isSettingsActive = location.pathname.startsWith("/admin/settings");
 
   /* ---------- Auto-open submenu ---------- */
   useEffect(() => {
     if (isEcommerceActive) setOpen("ecommerce");
     else if (isOrdersActive) setOpen("orders");
     else if (isReportsActive) setOpen("reports");
-    else if (isSettingsActive) setOpen("settings");
-  }, [isEcommerceActive, isOrdersActive, isReportsActive, isSettingsActive]);
+  }, [isEcommerceActive, isOrdersActive, isReportsActive]);
 
   /* ---------- Styles ---------- */
   const linkClass = ({ isActive }) =>
@@ -157,21 +154,6 @@ const Sidebar = () => {
         Calendar
       </div>
 
-      {/* Settings */}
-      <button
-        onClick={() => toggle("settings")}
-        className={parentButtonClass(isSettingsActive)}
-      >
-        <FiSettings className="inline mr-2" />
-        Settings
-      </button>
-
-      {open === "settings" && (
-        <div className="ml-6 space-y-1">
-          <div className={placeholderClass}>Store Settings</div>
-          <div className={placeholderClass}>Admin Users</div>
-        </div>
-      )}
 
       {/* Logout */}
       <button
