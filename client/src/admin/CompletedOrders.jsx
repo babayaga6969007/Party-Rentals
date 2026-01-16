@@ -60,7 +60,7 @@ const CompletedOrders = () => {
           Completed Orders
         </h1>
         <p className="text-gray-600 mt-1">
-          Rentals that have been returned and closed
+          List of completed rental and purchase orders.
         </p>
       </div>
 
