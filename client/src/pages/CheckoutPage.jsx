@@ -20,15 +20,15 @@ export default function CheckoutPage({ paymentMode, setPaymentMode }) {
   const navigate = useNavigate();
   const stripe = useStripe();
   const elements = useElements();
-const [customer, setCustomer] = useState({
-  name: "",
-  email: "",
-  phone: "",
-  addressLine: "",
-  city: "",
-  state: "",
-  postalCode: "",
-});
+  const [customer, setCustomer] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    addressLine: "",
+    city: "",
+    state: "",
+    postalCode: "",
+  });
 
   const [isPaying, setIsPaying] = useState(false);
   const [paymentError, setPaymentError] = useState("");
@@ -43,51 +43,52 @@ const [customer, setCustomer] = useState({
 
   const [stairsFee, setStairsFee] = useState(false);
   const [setupFee, setSetupFee] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
 
   // Fallback demo data if user opens this page directly
- 
 
-const { cartItems, clearCart } = useCart();
-const items = cartItems;
+
+  const { cartItems, clearCart } = useCart();
+  const items = cartItems;
 
   // ✅ Base pricing (memo to avoid recalculating every render)
   const pricing = useMemo(() => {
-if (location.state?.pricing) {
-  const p = location.state.pricing;
-  const subtotal = Number(p.subtotal || 0);
-  const laborCharge = subtotal * 0.14;
-  const total = subtotal + laborCharge;
-  return { subtotal, laborCharge, total };
-}
+    if (location.state?.pricing) {
+      const p = location.state.pricing;
+      const subtotal = Number(p.subtotal || 0);
+      const laborCharge = subtotal * 0.14;
+      const total = subtotal + laborCharge;
+      return { subtotal, laborCharge, total };
+    }
 
-  const subtotal = items.reduce(
-    (sum, item) => sum + Number(item.lineTotal || 0),
-    0
-  );
+    const subtotal = items.reduce(
+      (sum, item) => sum + Number(item.lineTotal || 0),
+      0
+    );
 
 
- const laborCharge = subtotal * 0.14;
-const total = subtotal + laborCharge;
+    const laborCharge = subtotal * 0.14;
+    const total = subtotal + laborCharge;
 
-return { subtotal, laborCharge, total };
+    return { subtotal, laborCharge, total };
 
-}, [location.state?.pricing, items]);
+  }, [location.state?.pricing, items]);
 
 
   // ✅ Extra fees (now stairsFee/setupFee exist)
   const extraFees = (stairsFee ? STAIRS_COST : 0) + (setupFee ? SETUP_COST : 0);
   const finalTotal = pricing.total + extraFees;
 
-const handlePlaceOrder = async (mode = "FULL") => {
+  const handlePlaceOrder = async (mode = "FULL") => {
     if (
-  !customer.name ||
-  !customer.email ||
-  !customer.phone ||
-  !customer.addressLine
-) {
-  setPaymentError("Please fill all required contact details.");
-  return;
-}
+      !customer.name ||
+      !customer.email ||
+      !customer.phone ||
+      !customer.addressLine
+    ) {
+      setPaymentError("Please fill all required contact details.");
+      return;
+    }
     setPaymentError("");
 
     // Basic validation
@@ -104,7 +105,7 @@ const handlePlaceOrder = async (mode = "FULL") => {
 
     try {
       setIsPaying(true);
-setPaymentMode(mode);
+      setPaymentMode(mode);
 
       const result = await stripe.confirmPayment({
         elements,
@@ -123,80 +124,80 @@ setPaymentMode(mode);
 
 
 
-try {
-await api("/orders", {
-  method: "POST",
-  body: JSON.stringify({
-    customer,
-    items,
-    pricing: {
-      ...pricing,
-      extraFees,
-      finalTotal,
-      discount: appliedCoupon?.discount || 0,
-    },
-    coupon: appliedCoupon
-      ? {
-          code: appliedCoupon.code,
-          discount: appliedCoupon.discount,
-        }
-      : null,
-    delivery: {
-      deliveryDate,
-      pickupDate,
-      deliveryTime,
-      pickupTime,
-      services: {
-        stairs: stairsFee,
-        setup: setupFee,
-      },
-    },
-    paymentMethod: "Stripe",
-    paymentType: mode === "PARTIAL" ? "PARTIAL_60" : "FULL",
-amountPaid: mode === "PARTIAL" ? finalTotal * 0.6 : finalTotal,
-amountDue: mode === "PARTIAL" ? finalTotal * 0.4 : 0,
+      try {
+        await api("/orders", {
+          method: "POST",
+          body: JSON.stringify({
+            customer,
+            items,
+            pricing: {
+              ...pricing,
+              extraFees,
+              finalTotal,
+              discount: appliedCoupon?.discount || 0,
+            },
+            coupon: appliedCoupon
+              ? {
+                code: appliedCoupon.code,
+                discount: appliedCoupon.discount,
+              }
+              : null,
+            delivery: {
+              deliveryDate,
+              pickupDate,
+              deliveryTime,
+              pickupTime,
+              services: {
+                stairs: stairsFee,
+                setup: setupFee,
+              },
+            },
+            paymentMethod: "Stripe",
+            paymentType: mode === "PARTIAL" ? "PARTIAL_60" : "FULL",
+            amountPaid: mode === "PARTIAL" ? finalTotal * 0.6 : finalTotal,
+            amountDue: mode === "PARTIAL" ? finalTotal * 0.4 : 0,
 
-    stripePayment: {
-      paymentIntentId: result.paymentIntent?.id,
-      status: result.paymentIntent?.status,
-    },
-  }),
-});
-
-
-} catch (err) {
-  console.error("Failed to save order:", err);
-  // optional: show toast / alert
-}
+            stripePayment: {
+              paymentIntentId: result.paymentIntent?.id,
+              status: result.paymentIntent?.status,
+            },
+          }),
+        });
 
 
-// ✅ Payment success — NOW it is safe to clear cart
-clearCart();
+      } catch (err) {
+        console.error("Failed to save order:", err);
+        // optional: show toast / alert
+      }
 
-navigate("/order-complete", {
-  state: {
-    customer,
-    items,
-    pricing: {
-      ...pricing,
-      extraFees,
-      orderTotal: finalTotal,
-      amountPaid: mode === "PARTIAL" ? finalTotal * 0.6 : finalTotal,
-      amountDue: mode === "PARTIAL" ? finalTotal * 0.4 : 0,
-      paymentType: mode === "PARTIAL" ? "PARTIAL_60" : "FULL",
-    },
-    delivery: {
-      deliveryDate,
-      pickupDate,
-      deliveryTime,
-      pickupTime,
-      services: {
-        stairs: stairsFee,
-        setup: setupFee,
-      },
-    },
-  },
-});
+
+      // ✅ Payment success — NOW it is safe to clear cart
+      clearCart();
+
+      navigate("/order-complete", {
+        state: {
+          customer,
+          items,
+          pricing: {
+            ...pricing,
+            extraFees,
+            orderTotal: finalTotal,
+            amountPaid: mode === "PARTIAL" ? finalTotal * 0.6 : finalTotal,
+            amountDue: mode === "PARTIAL" ? finalTotal * 0.4 : 0,
+            paymentType: mode === "PARTIAL" ? "PARTIAL_60" : "FULL",
+          },
+          delivery: {
+            deliveryDate,
+            pickupDate,
+            deliveryTime,
+            pickupTime,
+            services: {
+              stairs: stairsFee,
+              setup: setupFee,
+            },
+          },
+        },
+      });
 
 
       setIsPaying(false);
@@ -206,7 +207,7 @@ navigate("/order-complete", {
     }
   };
 
-  
+
 
   return (
     <div className="page-wrapper-checkoutt min-h-screen bg-[#FFFFFF]">
@@ -228,98 +229,98 @@ navigate("/order-complete", {
               <div>
                 <label className="block text-gray-500 mb-1">Full name</label>
                 <input
-  type="text"
-  value={customer.name}
-  onChange={(e) =>
-    setCustomer({ ...customer, name: e.target.value })
-  }
-  placeholder="John Doe"
-  className="w-full border rounded-lg px-3 py-2 text-sm"
-/>
+                  type="text"
+                  value={customer.name}
+                  onChange={(e) =>
+                    setCustomer({ ...customer, name: e.target.value })
+                  }
+                  placeholder="John Doe"
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
 
               </div>
               <div>
                 <label className="block text-gray-500 mb-1">Email</label>
-<input
-  type="email"
-  value={customer.email}
-  onChange={(e) =>
-    setCustomer({ ...customer, email: e.target.value })
-  }
-  placeholder="john@example.com"
-  className="w-full border rounded-lg px-3 py-2 text-sm"
- />
+                <input
+                  type="email"
+                  value={customer.email}
+                  onChange={(e) =>
+                    setCustomer({ ...customer, email: e.target.value })
+                  }
+                  placeholder="john@example.com"
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
 
 
               </div>
               <div>
                 <label className="block text-gray-500 mb-1">Phone</label>
                 <input
-  type="tel"
-  value={customer.phone}
-  onChange={(e) =>
-    setCustomer({ ...customer, phone: e.target.value })
-  }
-  placeholder="+1 234 567 890"
-/>
-
+                  type="tel"
+                  value={customer.phone}
+                  onChange={(e) =>
+                    setCustomer({ ...customer, phone: e.target.value })
+                  }
+                  placeholder="+1 234 567 890"
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
               </div>
             </div>
           </section>
 
           {/* Shipping */}
           <section className="mb-6">
-           
+
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div className="sm:col-span-2">
-  <label className="block text-gray-500 mb-1">Street address</label>
-  <input
-    type="text"
-    value={customer.addressLine}
-    onChange={(e) =>
-      setCustomer({ ...customer, addressLine: e.target.value })
-    }
-    placeholder="Street address"
-    className="w-full border rounded-lg px-3 py-2 text-sm"
-  />
-</div>
+                <label className="block text-gray-500 mb-1">Street address</label>
+                <input
+                  type="text"
+                  value={customer.addressLine}
+                  onChange={(e) =>
+                    setCustomer({ ...customer, addressLine: e.target.value })
+                  }
+                  placeholder="Street address"
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
 
-<div>
-  <label className="block text-gray-500 mb-1">City</label>
-  <input
-    type="text"
-    value={customer.city}
-    onChange={(e) =>
-      setCustomer({ ...customer, city: e.target.value })
-    }
-    className="w-full border rounded-lg px-3 py-2 text-sm"
-  />
-</div>
+              <div>
+                <label className="block text-gray-500 mb-1">City</label>
+                <input
+                  type="text"
+                  value={customer.city}
+                  onChange={(e) =>
+                    setCustomer({ ...customer, city: e.target.value })
+                  }
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
 
-<div>
-  <label className="block text-gray-500 mb-1">State</label>
-  <input
-    type="text"
-    value={customer.state}
-    onChange={(e) =>
-      setCustomer({ ...customer, state: e.target.value })
-    }
-    className="w-full border rounded-lg px-3 py-2 text-sm"
-  />
-</div>
+              <div>
+                <label className="block text-gray-500 mb-1">State</label>
+                <input
+                  type="text"
+                  value={customer.state}
+                  onChange={(e) =>
+                    setCustomer({ ...customer, state: e.target.value })
+                  }
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
 
-<div>
-  <label className="block text-gray-500 mb-1">Postal Code</label>
-  <input
-    type="text"
-    value={customer.postalCode}
-    onChange={(e) =>
-      setCustomer({ ...customer, postalCode: e.target.value })
-    }
-    className="w-full border rounded-lg px-3 py-2 text-sm"
-  />
-</div>
+              <div>
+                <label className="block text-gray-500 mb-1">Postal Code</label>
+                <input
+                  type="text"
+                  value={customer.postalCode}
+                  onChange={(e) =>
+                    setCustomer({ ...customer, postalCode: e.target.value })
+                  }
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
 
             </div>
           </section>
@@ -403,22 +404,22 @@ navigate("/order-complete", {
             </div>
           </section>
 
-                    {/* Payment */}
           {/* Payment */}
-<section>
-  <h3 className="text-sm font-semibold mb-2 text-gray-800">
-    Payment method
-  </h3>
+          {/* Payment */}
+          <section>
+            <h3 className="text-sm font-semibold mb-2 text-gray-800">
+              Payment method
+            </h3>
 
-  <div className="border rounded-xl p-3">
-  <PaymentElement />
-</div>
+            <div className="border rounded-xl p-3">
+              <PaymentElement />
+            </div>
 
 
-  {paymentError && (
-    <p className="mt-2 text-sm text-red-600">{paymentError}</p>
-  )}
-</section>
+            {paymentError && (
+              <p className="mt-2 text-sm text-red-600">{paymentError}</p>
+            )}
+          </section>
 
 
         </div>
@@ -434,7 +435,7 @@ navigate("/order-complete", {
                   {item.name} × {item.qty}
                 </span>
                 <span className="font-medium">
-${Number(item.lineTotal).toFixed(2)}
+                  ${Number(item.lineTotal).toFixed(2)}
                 </span>
               </div>
             ))}
@@ -448,13 +449,13 @@ ${Number(item.lineTotal).toFixed(2)}
               </span>
             </div>
 
-            
-          <div className="flex justify-between">
-  <span className="text-gray-500">Labor Charge (14%)</span>
-  <span className="font-medium">
-    ${pricing.laborCharge.toFixed(2)}
-  </span>
-</div>
+
+            <div className="flex justify-between">
+              <span className="text-gray-500">Labor Charge (14%)</span>
+              <span className="font-medium">
+                ${pricing.laborCharge.toFixed(2)}
+              </span>
+            </div>
 
             {stairsFee && (
               <div className="flex justify-between text-sm">
@@ -483,6 +484,8 @@ ${Number(item.lineTotal).toFixed(2)}
             <input
               type="checkbox"
               id="agree"
+              checked={agreeToTerms}
+              onChange={(e) => setAgreeToTerms(e.target.checked)}
               className="mt-1 w-4 h-4 border-gray-400 rounded"
             />
             <label htmlFor="agree" className="text-gray-700 leading-tight">
@@ -498,34 +501,32 @@ ${Number(item.lineTotal).toFixed(2)}
           </div>
 
           <div className="mt-5 flex flex-col gap-2">
-                      
-<button
-  type="button"
-  onClick={() => handlePlaceOrder("FULL")}
-  disabled={!stripe || !elements || isPaying}
-  className={`w-full py-3 rounded-full text-sm font-semibold ${
-    !stripe || !elements || isPaying
-      ? "bg-gray-400 text-white cursor-not-allowed"
-      : "bg-black text-white hover:bg-gray-900"
-  }`}
->
-  {isPaying ? "Processing..." : "Place Order (Pay 100%)"}
-</button>
 
-<button
-  type="button"
-  onClick={() => handlePlaceOrder("PARTIAL")}
-  disabled={!stripe || !elements || isPaying}
-  className={`w-full py-3 rounded-full text-sm font-semibold border ${
-    !stripe || !elements || isPaying
-      ? "border-gray-300 text-gray-400 cursor-not-allowed"
-      : "border-black text-black hover:bg-gray-100"
-  }`}
->
-  Place Order (Pay 60% Now)
-</button>
+            <button
+              type="button"
+              onClick={() => handlePlaceOrder("FULL")}
+              disabled={!stripe || !elements || isPaying || !agreeToTerms}
+              className={`w-full py-3 rounded-full text-sm font-semibold ${!stripe || !elements || isPaying || !agreeToTerms
+                ? "bg-gray-400 text-white cursor-not-allowed"
+                : "bg-black text-white hover:bg-gray-900"
+                }`}
+            >
+              {isPaying ? "Processing..." : "Place Order (Pay 100%)"}
+            </button>
 
-          
+            <button
+              type="button"
+              onClick={() => handlePlaceOrder("PARTIAL")}
+              disabled={!stripe || !elements || isPaying}
+              className={`w-full py-3 rounded-full text-sm font-semibold border ${!stripe || !elements || isPaying
+                ? "border-gray-300 text-gray-400 cursor-not-allowed"
+                : "border-black text-black hover:bg-gray-100"
+                }`}
+            >
+              Place Order (Pay 60% Now)
+            </button>
+
+
 
             <button
               type="button"

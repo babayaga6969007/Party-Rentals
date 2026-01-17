@@ -37,7 +37,7 @@ export const DEFAULT_TEXT_SIZES = {
 };
 
 export const CANVAS_WIDTH = 800;
-export const CANVAS_HEIGHT = 600;
+export const CANVAS_HEIGHT = 500;
 
 const SignageContext = createContext();
 

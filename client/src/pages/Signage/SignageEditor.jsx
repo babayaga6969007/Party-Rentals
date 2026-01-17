@@ -8,12 +8,13 @@ import { SignageProvider, useSignage, CANVAS_WIDTH, CANVAS_HEIGHT } from "../../
 import SignagePreview from "../../components/signage/SignagePreview";
 import SignageHeader from "../../components/signage/SignageHeader";
 import SignageControls from "../../components/signage/SignageControls";
+import BackgroundImageOptions from "../../components/signage/BackgroundImageOptions";
 import { createCanvasPreview } from "../../utils/signageCart";
 
 const SignageEditorContent = () => {
   const { id: productId, token } = useParams();
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const { addToCart, cartItems } = useCart();
   const canvasRef = useRef(null);
   const [isSharedView, setIsSharedView] = useState(false);
   const [sharedSignage, setSharedSignage] = useState(null);
@@ -47,22 +48,21 @@ const SignageEditorContent = () => {
   // Track if we've initialized the position for this session
   const positionInitializedRef = useRef(false);
 
-  // Ensure text is centered on initial load (only for new signages, not shared ones)
+  // Ensure text is centered on initial load (for all new signages, not shared ones)
   useEffect(() => {
-    if (!token && productId && !loading && !isSharedView) {
-      // Always reset position to center when creating a new signage
+    if (!token && !loading && !isSharedView && !positionInitializedRef.current) {
+      // Calculate center position accounting for text block dimensions
+      // Since we use translate(-50%, -50%), the position should be the center of the canvas
+      // The translate will handle moving it by half width/height
       const centerPosition = { 
         x: CANVAS_WIDTH / 2, 
         y: CANVAS_HEIGHT / 2 
       };
       
-      // Only set if position is not already centered (to avoid unnecessary updates)
-      if (textPosition.x !== centerPosition.x || textPosition.y !== centerPosition.y) {
-        setTextPosition(centerPosition);
-      }
+      setTextPosition(centerPosition);
       positionInitializedRef.current = true;
     }
-  }, [productId, token, loading, isSharedView, setTextPosition, textPosition]);
+  }, [token, loading, isSharedView, setTextPosition]);
 
   // Fetch product data or shared signage (productId is optional)
   useEffect(() => {
@@ -317,6 +317,13 @@ const SignageEditorContent = () => {
                   <p className="text-sm text-gray-500 mt-4 text-center">
                     Click and drag text to reposition
                   </p>
+                )}
+                
+                {/* Background Image Options - Only show if cart has items */}
+                {!isSharedView && cartItems.length > 0 && (
+                  <div className="mt-4 shrink-0">
+                    <BackgroundImageOptions cartItems={cartItems} />
+                  </div>
                 )}
               </div>
             </div>

@@ -111,8 +111,8 @@ const SignagePreview = memo(({
           style={{
             width: `${CANVAS_WIDTH}px`,
             height: `${CANVAS_HEIGHT}px`,
-            maxWidth: "calc(100% - 2rem)",
-            maxHeight: "calc(100% - 2rem)",
+            maxWidth: "100%",
+            maxHeight: "100%",
             aspectRatio: `${CANVAS_WIDTH} / ${CANVAS_HEIGHT}`,
             backgroundColor: backgroundType === "color" && !backgroundGradient ? backgroundColor : "transparent",
             background: backgroundType === "color" && backgroundGradient 
