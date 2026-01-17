@@ -36,8 +36,9 @@ export const DEFAULT_TEXT_SIZES = {
   extralarge: { width: 450, height: 100, fontSize: 80 },
 };
 
-export const CANVAS_WIDTH = 800;
-export const CANVAS_HEIGHT = 500;
+// Default canvas dimensions (will be overridden by config)
+export const DEFAULT_CANVAS_WIDTH = 800;
+export const DEFAULT_CANVAS_HEIGHT = 500;
 
 const SignageContext = createContext();
 
@@ -53,7 +54,11 @@ export const SignageProvider = ({ children }) => {
   // Config from backend
   const [fonts, setFonts] = useState(DEFAULT_FONTS);
   const [textSizes, setTextSizes] = useState(DEFAULT_TEXT_SIZES);
-  const [basePrice, setBasePrice] = useState(0);
+  const [textSizesConfig, setTextSizesConfig] = useState([]); // Raw config with labels
+  const [textColors, setTextColors] = useState([]);
+  const [backgroundGradients, setBackgroundGradients] = useState(BACKGROUND_GRADIENTS);
+  const [canvasWidth, setCanvasWidth] = useState(DEFAULT_CANVAS_WIDTH);
+  const [canvasHeight, setCanvasHeight] = useState(DEFAULT_CANVAS_HEIGHT);
   const [configLoading, setConfigLoading] = useState(true);
 
   // Fetch config from backend
@@ -63,8 +68,20 @@ export const SignageProvider = ({ children }) => {
         const res = await api("/signage-config");
         if (res.config) {
           // Convert fonts array to format expected by components
-          const fontsArray = res.config.fonts || DEFAULT_FONTS;
-          setFonts(fontsArray);
+          // Use fonts from config if available, otherwise use defaults
+          // Deduplicate by font value to avoid duplicates
+          const configFonts = res.config.fonts || [];
+          const fontsArray = configFonts.length > 0 ? configFonts : DEFAULT_FONTS;
+          
+          // Remove duplicates based on font value
+          const uniqueFonts = fontsArray.filter((font, index, self) =>
+            index === self.findIndex((f) => f.value === font.value)
+          );
+          
+          setFonts(uniqueFonts);
+          
+          // Store raw sizes config (with labels)
+          setTextSizesConfig(res.config.sizes || []);
           
           // Convert sizes array to object format
           const sizesObj = {};
@@ -73,13 +90,30 @@ export const SignageProvider = ({ children }) => {
               width: size.width,
               height: size.height,
               fontSize: size.fontSize,
+              price: size.price || 0,
             };
           });
           if (Object.keys(sizesObj).length > 0) {
             setTextSizes(sizesObj);
           }
           
-          setBasePrice(res.config.basePrice || 0);
+          // Text colors from config
+          if (res.config.textColors && res.config.textColors.length > 0) {
+            setTextColors(res.config.textColors);
+          }
+          
+          // Background gradients from config
+          if (res.config.backgroundGradients && res.config.backgroundGradients.length > 0) {
+            setBackgroundGradients(res.config.backgroundGradients);
+          }
+          
+          // Canvas dimensions from config
+          if (res.config.canvasWidth) {
+            setCanvasWidth(res.config.canvasWidth);
+          }
+          if (res.config.canvasHeight) {
+            setCanvasHeight(res.config.canvasHeight);
+          }
         }
       } catch (err) {
         console.error("Failed to load signage config:", err);
@@ -107,8 +141,8 @@ export const SignageProvider = ({ children }) => {
   
   // Text position (single position for entire text block)
   const [textPosition, setTextPosition] = useState({ 
-    x: CANVAS_WIDTH / 2, 
-    y: CANVAS_HEIGHT / 2 
+    x: DEFAULT_CANVAS_WIDTH / 2, 
+    y: DEFAULT_CANVAS_HEIGHT / 2 
   });
 
   // Background
@@ -132,6 +166,11 @@ export const SignageProvider = ({ children }) => {
     ? customSize 
     : (textSizes[selectedSize] || textSizes.medium || DEFAULT_TEXT_SIZES.medium);
   const fontSize = textSize.fontSize;
+  
+  // Get current price based on selected size
+  const currentPrice = useCustomSize 
+    ? 0 // Custom sizes don't have a price
+    : (textSizes[selectedSize]?.price || textSizes.medium?.price || 0);
 
   // Memoize functions to prevent rerenders
   const memoizedGetLinePositions = useCallback(() => {
@@ -172,7 +211,7 @@ export const SignageProvider = ({ children }) => {
     setSelectedFont("'Dancing Script', cursive");
     setSelectedTextColor("#FFFFFF");
     setSelectedSize("medium");
-    setTextPosition({ x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 });
+    setTextPosition({ x: canvasWidth / 2, y: canvasHeight / 2 });
     setBackgroundType("color");
     setBackgroundColor("#F8F9FA");
     setBackgroundGradient("linear-gradient(135deg, #FFE5B4 0%, #FFCCCB 50%, #FFDAB9 100%)");
@@ -282,7 +321,12 @@ export const SignageProvider = ({ children }) => {
     // Config from backend
     fonts,
     textSizes,
-    basePrice,
+    textSizesConfig,
+    textColors,
+    backgroundGradients,
+    canvasWidth,
+    canvasHeight,
+    currentPrice,
     configLoading,
     
     // Custom size
@@ -318,7 +362,12 @@ export const SignageProvider = ({ children }) => {
     fontSize,
     fonts,
     textSizes,
-    basePrice,
+    textSizesConfig,
+    textColors,
+    backgroundGradients,
+    canvasWidth,
+    canvasHeight,
+    currentPrice,
     configLoading,
     useCustomSize,
     customSize,

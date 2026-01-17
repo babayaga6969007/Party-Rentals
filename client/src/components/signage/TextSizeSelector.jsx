@@ -6,6 +6,7 @@ const TextSizeSelector = memo(() => {
     selectedSize, 
     setSelectedSize, 
     textSizes, 
+    textSizesConfig,
     configLoading,
     useCustomSize,
     setUseCustomSize,
@@ -13,17 +14,15 @@ const TextSizeSelector = memo(() => {
     setCustomSize,
   } = useSignage();
 
-  // Generate sizes from textSizes object
+  // Generate sizes from textSizes object, using label from config if available
   const sizes = Object.keys(textSizes).map((key) => {
-    const labelMap = {
-      small: "S",
-      medium: "MD",
-      large: "LG",
-      extralarge: "XL",
-    };
+    // Try to find label from config
+    const configSize = textSizesConfig?.find(s => s.key === key);
+    const label = configSize?.label || key.toUpperCase();
+    
     return {
       key,
-      label: labelMap[key] || key.toUpperCase(),
+      label,
     };
   });
 

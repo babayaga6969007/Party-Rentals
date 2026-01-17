@@ -1,7 +1,8 @@
 import { memo } from "react";
 import { useSignage } from "../../context/SignageContext";
 
-const PRESET_COLORS = [
+// Default colors fallback
+const DEFAULT_PRESET_COLORS = [
   { name: "White", value: "#FFFFFF" },
   { name: "Black", value: "#000000" },
   { name: "Gold", value: "#FFD700" },
@@ -17,7 +18,10 @@ const PRESET_COLORS = [
 ];
 
 const TextColorPicker = memo(() => {
-  const { selectedTextColor, setSelectedTextColor } = useSignage();
+  const { selectedTextColor, setSelectedTextColor, textColors } = useSignage();
+  
+  // Use colors from config if available, otherwise use defaults
+  const PRESET_COLORS = textColors.length > 0 ? textColors : DEFAULT_PRESET_COLORS;
 
   return (
     <div className="bg-white p-5 rounded-xl shadow">

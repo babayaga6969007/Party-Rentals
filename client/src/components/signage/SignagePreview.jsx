@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, memo } from "react";
-import { useSignage, CANVAS_WIDTH, CANVAS_HEIGHT } from "../../context/SignageContext";
+import { useSignage } from "../../context/SignageContext";
 
 const SignagePreview = memo(({ 
   isEditable = true, 
@@ -33,6 +33,8 @@ const SignagePreview = memo(({
     fontSize,
     getLinePositions,
     getTextLines,
+    canvasWidth,
+    canvasHeight,
   } = useSignage();
 
   // Use props for drag state instead of context
@@ -109,11 +111,11 @@ const SignagePreview = memo(({
           ref={actualRef}
           className="relative border-2 border-gray-300 rounded-lg overflow-hidden shrink-0"
           style={{
-            width: `${CANVAS_WIDTH}px`,
-            height: `${CANVAS_HEIGHT}px`,
+            width: `${canvasWidth || 800}px`,
+            height: `${canvasHeight || 500}px`,
             maxWidth: "100%",
             maxHeight: "100%",
-            aspectRatio: `${CANVAS_WIDTH} / ${CANVAS_HEIGHT}`,
+            aspectRatio: `${canvasWidth || 800} / ${canvasHeight || 500}`,
             backgroundColor: backgroundType === "color" && !backgroundGradient ? backgroundColor : "transparent",
             background: backgroundType === "color" && backgroundGradient 
               ? backgroundGradient 

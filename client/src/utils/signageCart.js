@@ -1,4 +1,4 @@
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from "../context/SignageContext";
+import { DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT } from "../context/SignageContext";
 
 export const createCanvasPreview = (
   backgroundType,
@@ -6,17 +6,19 @@ export const createCanvasPreview = (
   backgroundGradient,
   backgroundImageUrl,
   getTextsFromContent,
-  callback
+  callback,
+  canvasWidth = DEFAULT_CANVAS_WIDTH,
+  canvasHeight = DEFAULT_CANVAS_HEIGHT
 ) => {
   const canvas = document.createElement("canvas");
-  canvas.width = CANVAS_WIDTH;
-  canvas.height = CANVAS_HEIGHT;
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
   const ctx = canvas.getContext("2d");
 
   // Draw background
   if (backgroundType === "color") {
     if (backgroundGradient) {
-      const gradient = ctx.createLinearGradient(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      const gradient = ctx.createLinearGradient(0, 0, canvasWidth, canvasHeight);
       // Extract colors from gradient string
       if (backgroundGradient.includes("#667eea")) {
         gradient.addColorStop(0, "#667eea");
@@ -48,16 +50,16 @@ export const createCanvasPreview = (
         gradient.addColorStop(1, backgroundColor);
       }
       ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     } else {
       ctx.fillStyle = backgroundColor;
-      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     }
   } else if (backgroundImageUrl) {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
-      ctx.drawImage(img, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
       drawTexts(ctx, getTextsFromContent);
       // Use JPEG with quality 0.85 to reduce file size significantly
       callback(canvas.toDataURL("image/jpeg", 0.85));

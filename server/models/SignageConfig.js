@@ -18,6 +18,7 @@ const signageConfigSchema = new mongoose.Schema(
         width: { type: Number, required: true },
         height: { type: Number, required: true },
         fontSize: { type: Number, required: true },
+        price: { type: Number, default: 0, min: 0 }, // Price for this size
       },
     ],
 
@@ -58,10 +59,10 @@ signageConfigSchema.statics.getConfig = async function () {
         { name: "Caveat", value: "'Caveat', cursive" },
       ],
       sizes: [
-        { key: "small", label: "Small", width: 150, height: 40, fontSize: 32 },
-        { key: "medium", label: "Medium", width: 250, height: 60, fontSize: 48 },
-        { key: "large", label: "Large", width: 350, height: 80, fontSize: 64 },
-        { key: "extralarge", label: "Extra Large", width: 450, height: 100, fontSize: 80 },
+        { key: "small", label: "Small", width: 150, height: 40, fontSize: 32, price: 0 },
+        { key: "medium", label: "Medium", width: 250, height: 60, fontSize: 48, price: 0 },
+        { key: "large", label: "Large", width: 350, height: 80, fontSize: 64, price: 0 },
+        { key: "extralarge", label: "Extra Large", width: 450, height: 100, fontSize: 80, price: 0 },
       ],
       basePrice: 0,
     });

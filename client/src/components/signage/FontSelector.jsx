@@ -20,9 +20,9 @@ const FontSelector = memo(() => {
       </h3>
       <div className="overflow-x-auto pb-2">
         <div className="flex gap-3 min-w-max">
-          {fonts.map((font) => (
+          {fonts.map((font, index) => (
             <button
-              key={font.value}
+              key={font._id || font.value || `font-${index}`}
               onClick={() => setSelectedFont(font.value)}
               className={`shrink-0 px-4 py-3 rounded-lg border-2 transition ${
                 selectedFont === font.value

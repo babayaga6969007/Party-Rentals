@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { useSignage, BACKGROUND_GRADIENTS } from "../../context/SignageContext";
+import { useSignage, BACKGROUND_GRADIENTS as DEFAULT_GRADIENTS } from "../../context/SignageContext";
 
 const BackgroundOptions = memo(({ onImageUpload }) => {
   const {
@@ -14,7 +14,11 @@ const BackgroundOptions = memo(({ onImageUpload }) => {
     setBackgroundImage,
     customBackgroundColor,
     setCustomBackgroundColor,
+    backgroundGradients,
   } = useSignage();
+  
+  // Use gradients from config if available, otherwise use defaults
+  const GRADIENTS = backgroundGradients.length > 0 ? backgroundGradients : DEFAULT_GRADIENTS;
 
   const handleBackgroundImageUpload = (e) => {
     const file = e.target.files[0];
@@ -74,7 +78,7 @@ const BackgroundOptions = memo(({ onImageUpload }) => {
           {/* Gradients */}
           <div className="mb-3">
             <div className="grid grid-cols-4 gap-2">
-              {BACKGROUND_GRADIENTS.map((gradient, index) => (
+              {GRADIENTS.map((gradient, index) => (
                 <button
                   key={index}
                   onClick={() => {

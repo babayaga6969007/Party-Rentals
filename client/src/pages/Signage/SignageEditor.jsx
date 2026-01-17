@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { api } from "../../utils/api";
 import { useCart } from "../../context/CartContext";
-import { SignageProvider, useSignage, CANVAS_WIDTH, CANVAS_HEIGHT } from "../../context/SignageContext";
+import { SignageProvider, useSignage } from "../../context/SignageContext";
 import SignagePreview from "../../components/signage/SignagePreview";
 import SignageHeader from "../../components/signage/SignageHeader";
 import SignageControls from "../../components/signage/SignageControls";
@@ -42,7 +42,9 @@ const SignageEditorContent = () => {
     selectedSize,
     getTextsFromContent,
     loadSignage,
-    basePrice,
+    currentPrice,
+    canvasWidth,
+    canvasHeight,
   } = useSignage();
 
   // Track if we've initialized the position for this session
@@ -55,8 +57,8 @@ const SignageEditorContent = () => {
       // Since we use translate(-50%, -50%), the position should be the center of the canvas
       // The translate will handle moving it by half width/height
       const centerPosition = { 
-        x: CANVAS_WIDTH / 2, 
-        y: CANVAS_HEIGHT / 2 
+        x: (canvasWidth || 800) / 2, 
+        y: (canvasHeight || 500) / 2 
       };
       
       setTextPosition(centerPosition);
@@ -158,8 +160,8 @@ const SignageEditorContent = () => {
       (lines.length - 1) * lineHeight + fontSize
     );
     
-    const clampedX = Math.max(textSize.width / 2, Math.min(newX, CANVAS_WIDTH - textSize.width / 2));
-    const clampedY = Math.max(dynamicHeight / 2, Math.min(newY, CANVAS_HEIGHT - dynamicHeight / 2));
+    const clampedX = Math.max(textSize.width / 2, Math.min(newX, (canvasWidth || 800) - textSize.width / 2));
+    const clampedY = Math.max(dynamicHeight / 2, Math.min(newY, (canvasHeight || 500) - dynamicHeight / 2));
 
     // Store in ref - no rerender triggered, preview component reads from ref
     dragPositionRef.current = { x: clampedX, y: clampedY };
@@ -181,8 +183,8 @@ const SignageEditorContent = () => {
       (lines.length - 1) * lineHeight + fontSize
     );
     
-    const clampedX = Math.max(textSize.width / 2, Math.min(newX, CANVAS_WIDTH - textSize.width / 2));
-    const clampedY = Math.max(dynamicHeight / 2, Math.min(newY, CANVAS_HEIGHT - dynamicHeight / 2));
+    const clampedX = Math.max(textSize.width / 2, Math.min(newX, (canvasWidth || 800) - textSize.width / 2));
+    const clampedY = Math.max(dynamicHeight / 2, Math.min(newY, (canvasHeight || 500) - dynamicHeight / 2));
 
     // Store in ref - no rerender triggered, preview component reads from ref
     dragPositionRef.current = { x: clampedX, y: clampedY };
@@ -226,10 +228,10 @@ const SignageEditorContent = () => {
           name: `${product?.title || "Custom"} - Custom Signage`,
           productType: "signage",
           qty: 1,
-          unitPrice: basePrice || product?.pricePerDay || 0,
+          unitPrice: currentPrice || product?.pricePerDay || 0,
           days: 1,
           image: previewUrl,
-          lineTotal: basePrice || product?.pricePerDay || 0,
+          lineTotal: currentPrice || product?.pricePerDay || 0,
           // Store all signage metadata directly in cart item (no separate signage entity)
           signageData: {
             texts,
@@ -250,7 +252,9 @@ const SignageEditorContent = () => {
         addToCart(cartItem);
         toast.success("Added to cart successfully!");
         // Don't navigate - just show the toast
-      }
+      },
+      canvasWidth,
+      canvasHeight
     );
   };
 
@@ -297,9 +301,17 @@ const SignageEditorContent = () => {
             {/* RIGHT SIDE - CANVAS (Sticky) */}
             <div className="lg:col-span-2 h-[calc(100vh-200px)]">
               <div className="bg-white p-5 rounded-xl shadow h-full flex flex-col">
-                <h3 className="text-lg font-semibold text-[#2D2926] mb-4 shrink-0">
-                  Preview
-                </h3>
+                <div className="flex items-center justify-between mb-4 shrink-0">
+                  <h3 className="text-lg font-semibold text-[#2D2926]">
+                    Preview
+                  </h3>
+                  <div className="text-right">
+                    <div className="text-sm text-gray-500">Price</div>
+                    <div className="text-xl font-bold text-[#8B5C42]">
+                      ${currentPrice || 0}
+                    </div>
+                  </div>
+                </div>
                 <SignagePreview
                   isEditable={!isSharedView}
                   canvasRef={canvasRef}

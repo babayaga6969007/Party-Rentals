@@ -69,7 +69,7 @@ exports.removeFont = async (req, res) => {
 // Add a size
 exports.addSize = async (req, res) => {
   try {
-    const { key, label, width, height, fontSize } = req.body;
+    const { key, label, width, height, fontSize, price } = req.body;
     if (!key || !label || width === undefined || height === undefined || fontSize === undefined) {
       return res.status(400).json({ error: "All size fields are required" });
     }
@@ -81,7 +81,14 @@ exports.addSize = async (req, res) => {
       return res.status(400).json({ error: "Size key already exists" });
     }
 
-    config.sizes.push({ key, label, width, height, fontSize });
+    config.sizes.push({ 
+      key, 
+      label, 
+      width, 
+      height, 
+      fontSize, 
+      price: price !== undefined ? Number(price) : 0 
+    });
     await config.save();
 
     res.json({ config, message: "Size added successfully" });
@@ -94,7 +101,7 @@ exports.addSize = async (req, res) => {
 exports.updateSize = async (req, res) => {
   try {
     const { sizeId } = req.params;
-    const { key, label, width, height, fontSize } = req.body;
+    const { key, label, width, height, fontSize, price } = req.body;
     
     const config = await SignageConfig.getConfig();
     const sizeIndex = config.sizes.findIndex(
@@ -111,6 +118,7 @@ exports.updateSize = async (req, res) => {
     if (width !== undefined) config.sizes[sizeIndex].width = width;
     if (height !== undefined) config.sizes[sizeIndex].height = height;
     if (fontSize !== undefined) config.sizes[sizeIndex].fontSize = fontSize;
+    if (price !== undefined) config.sizes[sizeIndex].price = Number(price);
 
     await config.save();
 
