@@ -2,9 +2,16 @@ const mongoose = require("mongoose");
 
 const orderItemSchema = new mongoose.Schema(
   {
-    productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
+    productId: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: "Product", 
+      required: function() {
+        // productId is required for rental and purchase, optional for signage
+        return this.productType !== "signage";
+      }
+    },
     name: { type: String, required: true },
-    productType: { type: String, enum: ["rental", "purchase"], required: true },
+    productType: { type: String, enum: ["rental", "purchase", "signage"], required: true },
 
     qty: { type: Number, required: true, min: 1 },
 
@@ -16,6 +23,15 @@ const orderItemSchema = new mongoose.Schema(
     startDate: { type: String, default: "" }, // yyyy-mm-dd
     endDate: { type: String, default: "" },   // yyyy-mm-dd
     days: { type: Number, default: 0 },
+
+    // signage only
+    signageId: { type: mongoose.Schema.Types.ObjectId, ref: "Signage", default: null },
+    signageData: {
+      texts: { type: Array, default: [] },
+      backgroundType: { type: String, default: "" },
+      backgroundColor: { type: String, default: "" },
+      backgroundImageUrl: { type: String, default: "" },
+    },
 
     image: { type: String, default: "" },
   },

@@ -845,7 +845,44 @@ const toggleAddon = (addon) => {
     <div className="space-y-3">
       {renderedAddons.map((addon) => {
         const selected = !!selectedAddons[addon.optionId];
+        const isSignage = addon.optionId === signageOptionId;
 
+        // Special design for signage addon with redirect
+        if (isSignage) {
+          return (
+            <button
+              key={addon.optionId}
+              type="button"
+              onClick={() => navigate("/signage")}
+              className="w-full flex items-center justify-between border-2 border-[#8B5C42] rounded-lg px-4 py-3 transition bg-gradient-to-r from-[#FFF7F0] to-[#FFE5D9] hover:from-[#FFE5D9] hover:to-[#FFF7F0] hover:shadow-md"
+            >
+              <div className="text-left flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#8B5C42] flex items-center justify-center">
+                  <svg 
+                    className="w-6 h-6 text-white" 
+                    fill="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-medium text-gray-700">{addon.name}</div>
+                  <div className="text-sm text-gray-500">
+                    + $ {addon.finalPrice}
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-sm font-semibold px-3 py-1 rounded-full bg-[#8B5C42] text-white flex items-center gap-1">
+                <span>Design</span>
+                <span>→</span>
+              </div>
+            </button>
+          );
+        }
+
+        // Regular addon design
         return (
           <button
             key={addon.optionId}
@@ -1237,6 +1274,7 @@ setOpenModal(true);
 >
   Shipping Rates
 </button>
+
 
 </div>
 
