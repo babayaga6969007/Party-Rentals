@@ -79,12 +79,13 @@ const ProductVariationSchema = new mongoose.Schema(
       min: 0,
     },
 
-    // Optional SKU
-    sku: {
-      type: String,
-      trim: true,
-      default: "",
-    },
+    // dimension
+dimension: {
+  type: String,
+  trim: true,
+  default: "",
+},
+
 
     // Optional image override
     image: {

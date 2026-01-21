@@ -9,7 +9,25 @@ const cloudinary = require("../config/cloudinary");
 exports.addProduct = async (req, res) => {
   try {
     // 1️⃣ Upload images
-    const uploadedImages = await uploadImagesToCloudinary(req.files);
+// 🔹 Separate base images and variation images
+const baseImages = [];
+const variationImageMap = {}; // index → uploaded image
+
+for (const file of req.files || []) {
+  if (file.fieldname === "images") {
+    baseImages.push(file);
+  }
+
+  if (file.fieldname.startsWith("variationImages_")) {
+    const idx = Number(file.fieldname.split("_")[1]);
+    if (!Number.isNaN(idx)) {
+      variationImageMap[idx] = file;
+    }
+  }
+}
+
+// Upload base images (simple product images)
+const uploadedImages = await uploadImagesToCloudinary(baseImages);
 
     // 2️⃣ Parse attributes & addons (from FormData JSON strings)
     let attributes = [];
@@ -101,6 +119,22 @@ if (productSubType === "simple") {
   basePayload.salePrice = salePrice;
 } else {
   basePayload.variations = variations;
+}
+// ===============================
+// HANDLE VARIATION IMAGES (ADD PRODUCT)
+// ===============================
+if (productSubType === "variable" && Array.isArray(basePayload.variations)) {
+  for (let i = 0; i < basePayload.variations.length; i++) {
+    const file = variationImageMap[i];
+
+    if (!file) continue;
+
+    const uploaded = await uploadImagesToCloudinary([file]);
+
+    if (uploaded && uploaded[0]) {
+      basePayload.variations[i].image = uploaded[0];
+    }
+  }
 }
 
 const product = await Product.create(basePayload);
@@ -231,12 +265,46 @@ if (updates.productSubType === "variable") {
     }
 
     // -------- NEW IMAGES --------
-    if (req.files?.length > 0) {
-      const newUploaded = await uploadImagesToCloudinary(req.files);
-      updates.images = updates.images
-        ? [...updates.images, ...newUploaded]
-        : newUploaded;
+   if (req.files?.length > 0) {
+  const baseImages = [];
+  const variationImageMap = {};
+
+  for (const file of req.files) {
+    if (file.fieldname === "images") {
+      baseImages.push(file);
     }
+
+    if (file.fieldname.startsWith("variationImages_")) {
+      const idx = Number(file.fieldname.split("_")[1]);
+      if (!Number.isNaN(idx)) {
+        variationImageMap[idx] = file;
+      }
+    }
+  }
+
+  // Upload base images
+  if (baseImages.length > 0) {
+    const uploaded = await uploadImagesToCloudinary(baseImages);
+    updates.images = updates.images
+      ? [...updates.images, ...uploaded]
+      : uploaded;
+  }
+
+  // Upload variation images
+  if (updates.variations && updates.variations.length > 0) {
+    for (let i = 0; i < updates.variations.length; i++) {
+      if (variationImageMap[i]) {
+        const uploaded = await uploadImagesToCloudinary([
+          variationImageMap[i],
+        ]);
+
+        if (uploaded?.[0]) {
+          updates.variations[i].image = uploaded[0];
+        }
+      }
+    }
+  }
+}
 
     const updated = await Product.findByIdAndUpdate(
       req.params.id,

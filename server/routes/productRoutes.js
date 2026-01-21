@@ -26,7 +26,7 @@ const upload = multer({ storage });
 router.post(
   "/admin/add",
   authAdmin,
-  upload.array("images", 8),
+  upload.any(), // ✅ allows images + variationImages_*
   productController.addProduct
 );
 
@@ -34,9 +34,10 @@ router.post(
 router.put(
   "/admin/edit/:id",
   authAdmin,
-  upload.array("images", 8),
+  upload.any(),
   productController.editProduct
 );
+
 
 // Delete product
 router.delete("/admin/delete/:id", authAdmin, productController.deleteProduct);

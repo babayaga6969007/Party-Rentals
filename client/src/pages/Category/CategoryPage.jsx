@@ -521,7 +521,7 @@ return inCategory && inPrice && inTags;
         {/* IMAGE — NOW FULL WIDTH, NO PADDING */}
         <div className="h-48 rounded-t-xl overflow-hidden">
           <img
-  src={product.images?.[0]?.url || hero1}
+src={product.images?.[0]?.url || "/placeholder-product.png"}
   alt={product.title}
   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
 />

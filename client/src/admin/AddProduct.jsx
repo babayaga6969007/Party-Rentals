@@ -396,28 +396,36 @@ if (productSubType === "simple") {
     }
   }
 
-  formData.append(
-    "variations",
-    JSON.stringify(
-      variations.map((v) => ({
-        attributes: v.attributes,
-        price: Number(v.price),
-        salePrice: v.salePrice === "" ? null : Number(v.salePrice),
-        stock: v.stock === "" ? 0 : Number(v.stock),
-        sku: v.sku || "",
-        image: v.image || null,
-      }))
-    )
-  );
+formData.append(
+  "variations",
+  JSON.stringify(
+    variations.map((v) => ({
+      attributes: v.attributes,
+      price: Number(v.price),
+      salePrice: v.salePrice === "" ? null : Number(v.salePrice),
+      stock: v.stock === "" ? 0 : Number(v.stock),
+      dimension: v.dimension || "",
+    }))
+  )
+);
+
+// append variation images separately
+variations.forEach((v, idx) => {
+  if (v.image instanceof File) {
+    formData.append(`variationImages_${idx}`, v.image);
+  }
+});
+
 }
 
 
   if (isEditMode) {
     formData.append("existingImages", JSON.stringify(existingImages));
-  } else if (images.length === 0) {
-    alert("Upload at least one image");
-    return;
-  }
+ } else if (productSubType === "simple" && images.length === 0) {
+  alert("Upload at least one image");
+  return;
+}
+
 
   images.forEach((img) => formData.append("images", img));
 
@@ -485,15 +493,15 @@ const generateVariations = () => {
 
     const key = buildVariationKey(attrs);
     const old = existingMap.get(key);
+return {
+  attributes: attrs,
+  price: old?.price ?? "",
+  salePrice: old?.salePrice ?? "",
+  stock: old?.stock ?? "",
+  dimension: old?.dimension ?? "",
+  image: old?.image ?? null,
+};
 
-    return {
-      attributes: attrs,
-      price: old?.price ?? "",
-      salePrice: old?.salePrice ?? "",
-      stock: old?.stock ?? "",
-      image: old?.image ?? null,
-      sku: old?.sku ?? "",
-    };
   });
 
   setVariations(next);
@@ -962,16 +970,18 @@ const overridePrice = selectedAddons[groupKey]?.[oid]?.overridePrice ?? "";
       <div className="overflow-x-auto border border-gray-300 rounded-xl">
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50">
-            <tr>
-              <th className="text-left p-3 border-b">Variation</th>
-              <th className="text-left p-3 border-b">
-                {productType === "rental" ? "Price / Day" : "Price"}
-              </th>
-              <th className="text-left p-3 border-b">Sale</th>
-              <th className="text-left p-3 border-b">Stock</th>
-              <th className="text-left p-3 border-b">SKU</th>
-            </tr>
-          </thead>
+  <tr>
+    <th className="text-left p-3 border-b">Variation</th>
+    <th className="text-left p-3 border-b">
+      {productType === "rental" ? "Price / Day" : "Price"}
+    </th>
+    <th className="text-left p-3 border-b">Sale</th>
+    <th className="text-left p-3 border-b">Stock</th>
+    <th className="text-left p-3 border-b">Dimension</th>
+    <th className="text-left p-3 border-b">Image</th>
+  </tr>
+</thead>
+
 
           <tbody>
             {variations.map((v, idx) => {
@@ -1021,15 +1031,35 @@ const overridePrice = selectedAddons[groupKey]?.[oid]?.overridePrice ?? "";
                     />
                   </td>
 
-                  <td className="p-3">
-                    <input
-                      type="text"
-                      className="w-40 p-2 border border-gray-300 rounded-lg"
-                      value={v.sku}
-                      onChange={(e) => update("sku", e.target.value)}
-                      placeholder="optional"
-                    />
-                  </td>
+                <td className="p-3">
+  <input
+    type="text"
+    className="w-40 p-2 border border-gray-300 rounded-lg"
+    value={v.dimension || ""}
+    onChange={(e) => update("dimension", e.target.value)}
+    placeholder="e.g. 6ft x 3ft"
+  />
+</td>
+<td className="p-3">
+  <input
+    type="file"
+    accept="image/*"
+    onChange={(e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      update("image", file);
+    }}
+  />
+
+  {v.image && typeof v.image === "string" && (
+    <img
+      src={v.image}
+      alt="preview"
+      className="mt-2 w-16 h-16 object-cover rounded border"
+    />
+  )}
+</td>
+
                 </tr>
               );
             })}

@@ -107,7 +107,24 @@ const selectedDays =
 
   // ⭐ THIS IS WHERE THE HOOKS MUST GO
     // Product images from backend
-  const productImages = product?.images?.map((img) => img.url) || [];
+// Base product images
+const baseProductImages = product?.images?.map((img) => img.url) || [];
+
+// Variation image (if selected)
+const variationImageUrl =
+  selectedVariation?.image?.url || null;
+// Reset main image when variation changes
+useEffect(() => {
+  if (variationImageUrl) {
+    setActiveImage(0);
+  }
+}, [variationImageUrl]);
+
+// Final images to display
+const productImages =
+  variationImageUrl
+    ? [variationImageUrl, ...baseProductImages]
+    : baseProductImages;
 
   const [activeImage, setActiveImage] = useState(0);
 
