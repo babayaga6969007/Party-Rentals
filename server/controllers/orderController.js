@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Order = require("../models/Order");
 const Product = require("../models/Product");
 const { getDateStringsBetween } = require("../utils/dateRange");
@@ -32,9 +33,20 @@ if (!customer?.addressLine) {
       return res.status(400).json({ message: "Order items required" });
     }
 
+    // Process items: for signage items without valid productId, set to null
+    const processedItems = items.map(item => {
+      if (item.productType === "signage" && (!item.productId || item.productId === "signage" || !mongoose.Types.ObjectId.isValid(item.productId))) {
+        return {
+          ...item,
+          productId: null, // Set to null for standalone signage items
+        };
+      }
+      return item;
+    });
+
 const order = new Order({
   customer,
-  items,
+  items: processedItems,
   pricing,
   coupon: coupon || null,
   delivery,

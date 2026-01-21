@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import AdminLayout from "./AdminLayout";
 import { FiEye } from "react-icons/fi";
+import ConfirmDeleteModal from "../components/admin/ConfirmDeleteModal";
 
 // ✅ adjust this import path to wherever your api util iss
 // Example possibilities:
@@ -13,68 +15,76 @@ const Orders = () => {
   const [statusDraft, setStatusDraft] = useState({});
 
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, orderId: null });
 
-const updateStatus = async (orderId, newStatus) => {
-  try {
-    const token = localStorage.getItem("admin_token");
+  const updateStatus = async (orderId, newStatus) => {
+    try {
+      const token = localStorage.getItem("admin_token");
 
-    const res = await api(`/orders/admin/${orderId}/status`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ status: newStatus }),
-    });
+      const res = await api(`/orders/admin/${orderId}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
 
-    // 🔑 IMPORTANT: backend returns { order }
-    const updatedOrder = res.order;
+      // 🔑 IMPORTANT: backend returns { order }
+      const updatedOrder = res.order;
 
-    setOrders((prev) =>
-      prev.map((o) => (o._id === updatedOrder._id ? updatedOrder : o))
-    );
-  } catch (err) {
-    console.error(err);
-    alert("Failed to update status");
-  }
-};
+      setOrders((prev) =>
+        prev.map((o) => (o._id === updatedOrder._id ? updatedOrder : o))
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update status");
+    }
+  };
 
 
-const deleteOrder = async (orderId) => {
-  const ok = window.confirm("Delete this order?");
-  if (!ok) return;
+  const handleDeleteClick = (orderId) => {
+    setDeleteConfirm({ isOpen: true, orderId });
+  };
 
-  try {
-    const token = localStorage.getItem("admin_token");
+  const handleDeleteConfirm = async () => {
+    const orderId = deleteConfirm.orderId;
+    if (!orderId) return;
 
-    await api(`/orders/admin/${orderId}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",   // ✅ CONSISTENCY
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    try {
+      const token = localStorage.getItem("admin_token");
 
-    setOrders((prev) => prev.filter((o) => o._id !== orderId));
-  } catch (err) {
-    console.error(err);
-    alert("Failed to delete order");
-  }
-};
+      await api(`/orders/admin/${orderId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-const openOrderDetails = async (orderId) => {
-  try {
-    const token = localStorage.getItem("admin_token");
+      setOrders((prev) => prev.filter((o) => o._id !== orderId));
+      setDeleteConfirm({ isOpen: false, orderId: null });
+      toast.success("Order deleted successfully");
+    } catch (err) {
+      console.error(err);
+      setDeleteConfirm({ isOpen: false, orderId: null });
+      toast.error("Failed to delete order");
+    }
+  };
 
-    const res = await api(`/orders/admin/${orderId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+  const openOrderDetails = async (orderId) => {
+    try {
+      const token = localStorage.getItem("admin_token");
 
-    setSelectedOrder(res.order);
-  } catch {
-    alert("Failed to load order details");
-  }
-};
+      const res = await api(`/orders/admin/${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setSelectedOrder(res.order);
+    } catch {
+      toast.error("Failed to load order details");
+    }
+  };
 
 
   const [loading, setLoading] = useState(true);
@@ -90,8 +100,8 @@ const openOrderDetails = async (orderId) => {
 
   // ✅ IMPORTANT: token function (you must match what your admin login stores)
   const getAdminToken = () => {
-  return localStorage.getItem("admin_token") || "";
-};
+    return localStorage.getItem("admin_token") || "";
+  };
 
 
   const fetchOrders = async () => {
@@ -110,13 +120,13 @@ const openOrderDetails = async (orderId) => {
       });
 
       const serverOrders = res?.orders || [];
-setOrders(serverOrders);
+      setOrders(serverOrders);
 
-const initialStatus = {};
-serverOrders.forEach((o) => {
-  initialStatus[o._id] = o.orderStatus || "pending";
-});
-setStatusDraft(initialStatus);
+      const initialStatus = {};
+      serverOrders.forEach((o) => {
+        initialStatus[o._id] = o.orderStatus || "pending";
+      });
+      setStatusDraft(initialStatus);
     } catch (e) {
       console.error(e);
       setErr(e?.message || "Failed to fetch orders");
@@ -131,19 +141,28 @@ setStatusDraft(initialStatus);
   }, []);
 
   // Helpers for row rendering
- const getOrderType = (order) => {
-  const hasRental = (order?.items || []).some(
-    (it) => String(it?.productType || "").toLowerCase() === "rental"
-  );
-  const hasPurchase = (order?.items || []).some(
-    (it) => String(it?.productType || "").toLowerCase() === "purchase"
-  );
+  const getOrderType = (order) => {
+    const items = order?.items || [];
+    const hasRental = items.some(
+      (it) => String(it?.productType || "").toLowerCase() === "rental"
+    );
+    const hasPurchase = items.some(
+      (it) => String(it?.productType || "").toLowerCase() === "purchase"
+    );
+    const hasSignage = items.some(
+      (it) => String(it?.productType || "").toLowerCase() === "signage"
+    );
 
-  if (hasRental && hasPurchase) return "Mixed";
-  if (hasRental) return "Rental";
-  if (hasPurchase) return "Purchase";
-  return "—";
-};
+    // Count how many types are present
+    const typeCount = [hasRental, hasPurchase, hasSignage].filter(Boolean).length;
+
+    // If more than one type, it's Mixed
+    if (typeCount > 1) return "Mixed";
+    if (hasRental) return "Rental";
+    if (hasPurchase) return "Purchase";
+    if (hasSignage) return "Signage";
+    return "—";
+  };
 
   const getRentalPeriod = (order) => {
     const rentalItem = (order?.items || []).find(
@@ -158,13 +177,13 @@ setStatusDraft(initialStatus);
   };
 
   const getOrderAmounts = (order) => {
-  return {
-    total: order?.pricing?.total ?? 0,
-    paid: order?.amountPaid ?? 0,
-    due: order?.amountDue ?? 0,
-    paymentType: order?.paymentType ?? "FULL",
+    return {
+      total: order?.pricing?.total ?? 0,
+      paid: order?.amountPaid ?? 0,
+      due: order?.amountDue ?? 0,
+      paymentType: order?.paymentType ?? "FULL",
+    };
   };
-};
 
 
   // Apply filters on client side
@@ -177,6 +196,7 @@ setStatusDraft(initialStatus);
       // type filter
       if (typeFilter === "rental" && type !== "rental" && type !== "mixed") return false;
       if (typeFilter === "purchase" && type !== "purchase" && type !== "mixed") return false;
+      if (typeFilter === "signage" && type !== "signage" && type !== "mixed") return false;
 
       // status filter
       if (statusFilter !== "all" && status !== statusFilter) return false;
@@ -212,6 +232,7 @@ setStatusDraft(initialStatus);
           <option value="all">All Order Types</option>
           <option value="rental">Rental</option>
           <option value="purchase">Purchase</option>
+          <option value="signage">Signage</option>
         </select>
 
         <select
@@ -263,6 +284,7 @@ setStatusDraft(initialStatus);
                 <th className="px-6 py-4">Customer</th>
                 <th className="px-6 py-4">Type</th>
                 <th className="px-6 py-4">Items</th>
+                <th className="px-6 py-4">Item Types</th>
                 <th className="px-6 py-4">Rental Period</th>
                 <th className="px-6 py-4">Total</th>
                 <th className="px-6 py-4">Status</th>
@@ -282,7 +304,17 @@ setStatusDraft(initialStatus);
                 const type = getOrderType(order);
                 const itemsCount = getItemsCount(order);
                 const rentalPeriod = getRentalPeriod(order);
-const { total, paid, due, paymentType } = getOrderAmounts(order);
+                const { total, paid, due, paymentType } = getOrderAmounts(order);
+
+                // Get item types for display
+                const itemTypes = (order?.items || []).map(item => {
+                  const pt = String(item?.productType || "").toLowerCase();
+                  if (pt === "rental") return "Rental";
+                  if (pt === "purchase") return "Purchase";
+                  if (pt === "signage") return "Signage";
+                  return pt;
+                });
+                const uniqueItemTypes = [...new Set(itemTypes)];
 
                 return (
                   <tr
@@ -290,18 +322,24 @@ const { total, paid, due, paymentType } = getOrderAmounts(order);
                     className="border-b last:border-0 hover:bg-gray-50 transition"
                   >
                     <td className="px-6 py-4 font-medium text-[#2D2926]">
-                      {id}
+                      <span
+                        className="underline decoration-dotted"
+                        title={id}
+                      >
+                        {id.substring(0, 3)}...
+                      </span>
                     </td>
 
                     <td className="px-6 py-4">{customerName}</td>
 
                     <td className="px-6 py-4">
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          type === "Rental" || type === "Mixed"
-                            ? "bg-blue-100 text-blue-700"
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${type === "Rental" || type === "Mixed"
+                          ? "bg-blue-100 text-blue-700"
+                          : type === "Signage"
+                            ? "bg-purple-100 text-purple-700"
                             : "bg-green-100 text-green-700"
-                        }`}
+                          }`}
                       >
                         {type}
                       </span>
@@ -309,62 +347,79 @@ const { total, paid, due, paymentType } = getOrderAmounts(order);
 
                     <td className="px-6 py-4">{itemsCount}</td>
 
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-1">
+                        {uniqueItemTypes.map((itemType, idx) => (
+                          <span
+                            key={idx}
+                            className={`px-2 py-0.5 rounded text-xs ${itemType === "Rental"
+                              ? "bg-blue-100 text-blue-700"
+                              : itemType === "Signage"
+                                ? "bg-purple-100 text-purple-700"
+                                : "bg-green-100 text-green-700"
+                              }`}
+                          >
+                            {itemType}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+
                     <td className="px-6 py-4">{rentalPeriod}</td>
 
-                   <td className="px-6 py-4 font-semibold">
-  <div>${Number(total).toFixed(2)}</div>
+                    <td className="px-6 py-4 font-semibold">
+                      <div>${Number(total).toFixed(2)}</div>
 
-  {paymentType === "PARTIAL_60" && (
-    <div className="text-xs text-gray-500">
-      Paid: <span className="text-green-600">${paid.toFixed(2)}</span><br />
-      Due: <span className="text-red-600">${due.toFixed(2)}</span>
-    </div>
-  )}
-</td>
+                      {paymentType === "PARTIAL_60" && (
+                        <div className="text-xs text-gray-500">
+                          Paid: <span className="text-green-600">${paid.toFixed(2)}</span><br />
+                          Due: <span className="text-red-600">${due.toFixed(2)}</span>
+                        </div>
+                      )}
+                    </td>
 
-<td className="px-6 py-4">
- <select
-  className="border rounded-lg px-3 py-1 text-xs"
-  value={statusDraft[order._id] || "pending"}
-  onChange={(e) => {
-    const newStatus = e.target.value;
+                    <td className="px-6 py-4">
+                      <select
+                        className="border rounded-lg px-3 py-1 text-xs"
+                        value={statusDraft[order._id] || "pending"}
+                        onChange={(e) => {
+                          const newStatus = e.target.value;
 
-    setStatusDraft((prev) => ({
-      ...prev,
-      [order._id]: newStatus,
-    }));
+                          setStatusDraft((prev) => ({
+                            ...prev,
+                            [order._id]: newStatus,
+                          }));
 
-    updateStatus(order._id, newStatus);
-  }}
->
-
-  
-    <option value="pending">Pending</option>
-    <option value="confirmed">Confirmed</option>
-    <option value="dispatched">Dispatched</option>
-    <option value="completed">Completed</option>
-    <option value="cancelled">Cancelled</option>
-  </select>
-</td>
+                          updateStatus(order._id, newStatus);
+                        }}
+                      >
 
 
-                   <td className="px-6 py-4 text-right">
-  <div className="flex justify-end gap-3">
-    <button
-      onClick={() => openOrderDetails(id)}
-      className="text-[#8B5C42]"
-    >
-      <FiEye />
-    </button>
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="dispatched">Dispatched</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </td>
 
-    <button
-      onClick={() => deleteOrder(id)}
-      className="text-red-600 text-xs"
-    >
-      Delete
-    </button>
-  </div>
-</td>
+
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-3">
+                        <button
+                          onClick={() => openOrderDetails(id)}
+                          className="text-[#8B5C42] hover:text-[#704A36] transition"
+                        >
+                          <FiEye />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(id)}
+                          className="text-red-600 hover:text-red-800 text-sm px-2 py-1 rounded hover:bg-red-50 transition"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
 
                   </tr>
                 );
@@ -372,7 +427,7 @@ const { total, paid, due, paymentType } = getOrderAmounts(order);
 
               {filteredOrders.length === 0 && (
                 <tr>
-                  <td className="px-6 py-8 text-gray-500" colSpan={8}>
+                  <td className="px-6 py-8 text-gray-500" colSpan={9}>
                     No orders match your filters.
                   </td>
                 </tr>
@@ -387,34 +442,374 @@ const { total, paid, due, paymentType } = getOrderAmounts(order);
         Rental orders include date ranges to manage product availability and scheduling.
       </p>
       {selectedOrder && (
-  <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
-    <div className="bg-white w-full max-w-2xl p-6 rounded-xl">
-      <div className="flex justify-between mb-4">
-        <h2 className="font-semibold text-lg">Order Details</h2>
-        <button onClick={() => setSelectedOrder(null)}>✕</button>
-      </div>
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-start z-50 p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-4xl my-8 rounded-xl shadow-xl">
+            <div className="flex justify-between items-center p-6 border-b sticky top-0 bg-white z-10">
+              <div>
+                <h2 className="font-semibold text-2xl text-[#2D2926]">Order Details</h2>
+                <p className="text-sm text-gray-500 mt-1">Order ID: {selectedOrder._id}</p>
+              </div>
+              <button
+                onClick={() => setSelectedOrder(null)}
+                className="text-gray-500 hover:text-gray-700 text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+              >
+                ✕
+              </button>
+            </div>
 
-      <p><b>Name:</b> {selectedOrder.customer?.name}</p>
-      <p><b>Email:</b> {selectedOrder.customer?.email}</p>
-      <p><b>Phone:</b> {selectedOrder.customer?.phone}</p>
-      <p><b>Address:</b> {selectedOrder.customer?.addressLine}</p>
+            <div className="space-y-6 p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              {/* Customer Information */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-lg mb-3 text-[#2D2926]">Customer Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-gray-600">Name:</span>
+                    <span className="ml-2 font-medium">{selectedOrder.customer?.name || "—"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Email:</span>
+                    <span className="ml-2 font-medium">{selectedOrder.customer?.email || "—"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Phone:</span>
+                    <span className="ml-2 font-medium">{selectedOrder.customer?.phone || "—"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Address:</span>
+                    <span className="ml-2 font-medium">{selectedOrder.customer?.addressLine || "—"}</span>
+                  </div>
+                  {selectedOrder.customer?.city && (
+                    <div>
+                      <span className="text-gray-600">City:</span>
+                      <span className="ml-2 font-medium">{selectedOrder.customer.city}</span>
+                    </div>
+                  )}
+                  {selectedOrder.customer?.state && (
+                    <div>
+                      <span className="text-gray-600">State:</span>
+                      <span className="ml-2 font-medium">{selectedOrder.customer.state}</span>
+                    </div>
+                  )}
+                  {selectedOrder.customer?.postalCode && (
+                    <div>
+                      <span className="text-gray-600">Postal Code:</span>
+                      <span className="ml-2 font-medium">{selectedOrder.customer.postalCode}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-      <hr className="my-3" />
+              {/* Delivery Information */}
+              {selectedOrder.delivery && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="font-semibold text-lg mb-3 text-[#2D2926]">Delivery Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                    {selectedOrder.delivery.deliveryDate && (
+                      <div>
+                        <span className="text-gray-600">Delivery Date:</span>
+                        <span className="ml-2 font-medium">{selectedOrder.delivery.deliveryDate}</span>
+                        {selectedOrder.delivery.deliveryTime && (
+                          <span className="ml-2 text-gray-500">({selectedOrder.delivery.deliveryTime})</span>
+                        )}
+                      </div>
+                    )}
+                    {selectedOrder.delivery.pickupDate && (
+                      <div>
+                        <span className="text-gray-600">Pickup Date:</span>
+                        <span className="ml-2 font-medium">{selectedOrder.delivery.pickupDate}</span>
+                        {selectedOrder.delivery.pickupTime && (
+                          <span className="ml-2 text-gray-500">({selectedOrder.delivery.pickupTime})</span>
+                        )}
+                      </div>
+                    )}
+                    {selectedOrder.delivery.services && (
+                      <>
+                        {selectedOrder.delivery.services.stairs && (
+                          <div>
+                            <span className="text-gray-600">Stairs Service:</span>
+                            <span className="ml-2 font-medium text-green-600">Yes</span>
+                          </div>
+                        )}
+                        {selectedOrder.delivery.services.setup && (
+                          <div>
+                            <span className="text-gray-600">Setup Service:</span>
+                            <span className="ml-2 font-medium text-green-600">Yes</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
 
-      {selectedOrder.items.map((item, i) => (
-        <div key={i} className="mb-2">
-          <p>{item.name} — ${item.lineTotal}</p>
-          {item.productType === "rental" && (
-            <p className="text-xs text-gray-500">
-              {item.startDate} → {item.endDate}
-            </p>
-          )}
+              {/* Order Items */}
+              <div>
+                <h3 className="font-semibold text-lg mb-3 text-[#2D2926]">Order Items ({selectedOrder.items?.length || 0})</h3>
+                <div className="space-y-4">
+                  {selectedOrder.items?.map((item, i) => (
+                    <div key={i} className="border rounded-lg p-4 hover:shadow-md transition">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <p className="font-semibold text-lg">{item.name}</p>
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${item.productType === "rental"
+                              ? "bg-blue-100 text-blue-700"
+                              : item.productType === "signage"
+                                ? "bg-purple-100 text-purple-700"
+                                : "bg-green-100 text-green-700"
+                              }`}>
+                              {item.productType?.toUpperCase() || "PURCHASE"}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-600 space-y-1">
+                            <p>Quantity: {item.qty}</p>
+                            <p>Unit Price: ${item.unitPrice?.toFixed(2) || "0.00"}</p>
+                            {item.productType === "rental" && item.days && (
+                              <p>Days: {item.days}</p>
+                            )}
+                            {item.productType === "rental" && item.startDate && item.endDate && (
+                              <p className="text-blue-600">
+                                Period: {item.startDate} → {item.endDate}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-lg text-[#2D2926]">${item.lineTotal?.toFixed(2) || "0.00"}</p>
+                        </div>
+                      </div>
+
+                      {/* Signage Details */}
+                      {item.productType === "signage" && item.signageData && (
+                        <div className="mt-3 pt-3 border-t bg-purple-50 p-3 rounded">
+                          <p className="font-medium text-sm mb-3 text-purple-900">Signage Details:</p>
+
+                          {/* Text Information - Only show if there's text data */}
+                          {(item.signageData.textContent || item.signageData.fontFamily || item.signageData.fontSize || item.signageData.size || item.signageData.textWidth || item.signageData.textHeight) && (
+                            <div className="mb-3">
+                              <p className="text-xs font-semibold text-purple-800 mb-2">Text Information</p>
+                              <div className="text-xs text-gray-700 space-y-1.5 bg-white p-2 rounded">
+                                {item.signageData.textContent && (
+                                  <p><span className="font-medium">Content:</span> {item.signageData.textContent}</p>
+                                )}
+                                {item.signageData.fontFamily && (
+                                  <p><span className="font-medium">Font:</span> {item.signageData.fontFamily.replace(/'/g, '').replace(/, cursive/g, '')}</p>
+                                )}
+                                {item.signageData.fontSize && (
+                                  <p><span className="font-medium">Font Size:</span> {item.signageData.fontSize}px</p>
+                                )}
+                                {item.signageData.size && (
+                                  <p><span className="font-medium">Size Preset:</span> {item.signageData.size}</p>
+                                )}
+                                {(item.signageData.textWidth || item.signageData.textHeight) && (
+                                  <p><span className="font-medium">Dimensions:</span> {item.signageData.textWidth || '—'} × {item.signageData.textHeight || '—'}px</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Text Color - Only show if it exists */}
+                          {item.signageData.textColor && (
+                            <div className="mb-3">
+                              <p className="text-xs font-semibold text-purple-800 mb-2">Text Color</p>
+                              <div className="text-xs text-gray-700 bg-white p-2 rounded">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">Color:</span>
+                                  <span
+                                    className="inline-block w-6 h-6 rounded border-2 border-gray-400 shadow-sm"
+                                    style={{ backgroundColor: item.signageData.textColor }}
+                                  ></span>
+                                  <span className="text-gray-500">{item.signageData.textColor.toUpperCase()}</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Background Information */}
+                          <div className="mb-3">
+                            <p className="text-xs font-semibold text-purple-800 mb-2">Background</p>
+                            <div className="text-xs text-gray-700 space-y-1.5 bg-white p-2 rounded">
+                              {item.signageData.backgroundType && (
+                                <p><span className="font-medium">Type:</span> {item.signageData.backgroundType.charAt(0).toUpperCase() + item.signageData.backgroundType.slice(1)}</p>
+                              )}
+                              {item.signageData.backgroundType === "color" && (
+                                <>
+                                  {item.signageData.backgroundGradient && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium">Gradient:</span>
+                                      <div
+                                        className="w-16 h-8 rounded border border-gray-300"
+                                        style={{ background: item.signageData.backgroundGradient }}
+                                      ></div>
+                                    </div>
+                                  )}
+                                  {item.signageData.backgroundColor && !item.signageData.backgroundGradient && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium">Color:</span>
+                                      <span
+                                        className="inline-block w-6 h-6 rounded border-2 border-gray-400 shadow-sm"
+                                        style={{ backgroundColor: item.signageData.backgroundColor }}
+                                      ></span>
+                                      <span className="text-gray-500">{item.signageData.backgroundColor.toUpperCase()}</span>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                              {item.signageData.backgroundType === "image" && item.signageData.backgroundImageUrl && (
+                                <div>
+                                  <p className="font-medium mb-1">Background Image:</p>
+                                  <img
+                                    src={item.signageData.backgroundImageUrl}
+                                    alt="Background"
+                                    className="max-w-full max-h-32 rounded border border-gray-300 object-cover"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Preview Image */}
+                          {item.image && (
+                            <div className="mt-3">
+                              <p className="font-medium text-xs mb-2 text-purple-900">Preview:</p>
+                              <img
+                                src={item.image}
+                                alt="Signage preview"
+                                className="max-w-full max-h-64 rounded-lg border-2 border-purple-200 shadow-sm"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Item Image */}
+                      {item.image && item.productType !== "signage" && (
+                        <div className="mt-3">
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="max-w-32 max-h-32 rounded border object-cover"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Pricing Summary */}
+              {selectedOrder.pricing && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="font-semibold text-lg mb-3 text-[#2D2926]">Pricing Summary</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Subtotal:</span>
+                      <span className="font-medium">${selectedOrder.pricing.subtotal?.toFixed(2) || "0.00"}</span>
+                    </div>
+                    {selectedOrder.pricing.discount > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>Discount:</span>
+                        <span>-${selectedOrder.pricing.discount?.toFixed(2) || "0.00"}</span>
+                      </div>
+                    )}
+                    {selectedOrder.pricing.deliveryFee > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Delivery Fee:</span>
+                        <span className="font-medium">${selectedOrder.pricing.deliveryFee?.toFixed(2) || "0.00"}</span>
+                      </div>
+                    )}
+                    {selectedOrder.pricing.tax > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Tax:</span>
+                        <span className="font-medium">${selectedOrder.pricing.tax?.toFixed(2) || "0.00"}</span>
+                      </div>
+                    )}
+                    {selectedOrder.pricing.extraFees > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Extra Fees:</span>
+                        <span className="font-medium">${selectedOrder.pricing.extraFees?.toFixed(2) || "0.00"}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between pt-2 border-t font-bold text-lg">
+                      <span>Total:</span>
+                      <span className="text-[#8B5C42]">${selectedOrder.pricing.finalTotal?.toFixed(2) || selectedOrder.pricing.total?.toFixed(2) || "0.00"}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Information */}
+              {selectedOrder.stripePayment && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="font-semibold text-lg mb-3 text-[#2D2926]">Payment Information</h3>
+                  <div className="text-sm space-y-1">
+                    <p><span className="text-gray-600">Method:</span> <span className="font-medium ml-2">{selectedOrder.paymentMethod || "Stripe"}</span></p>
+                    {selectedOrder.stripePayment.paymentIntentId && (
+                      <p><span className="text-gray-600">Payment Intent ID:</span> <span className="font-medium ml-2 font-mono text-xs">{selectedOrder.stripePayment.paymentIntentId}</span></p>
+                    )}
+                    <p>
+                      <span className="text-gray-600">Status:</span>
+                      <span className={`ml-2 px-2 py-1 rounded text-xs font-medium ${selectedOrder.stripePayment.status === "succeeded"
+                        ? "bg-green-100 text-green-700"
+                        : selectedOrder.stripePayment.status === "pending"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-red-100 text-red-700"
+                        }`}>
+                        {selectedOrder.stripePayment.status?.toUpperCase() || "UNKNOWN"}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Order Status & Notes */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-lg mb-3 text-[#2D2926]">Order Status</h3>
+                <div className="text-sm space-y-2">
+                  <p>
+                    <span className="text-gray-600">Status:</span>
+                    <span className={`ml-2 px-2 py-1 rounded text-xs font-medium ${selectedOrder.orderStatus === "completed"
+                      ? "bg-green-100 text-green-700"
+                      : selectedOrder.orderStatus === "confirmed"
+                        ? "bg-blue-100 text-blue-700"
+                        : selectedOrder.orderStatus === "dispatched"
+                          ? "bg-purple-100 text-purple-700"
+                          : selectedOrder.orderStatus === "cancelled"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-yellow-100 text-yellow-700"
+                      }`}>
+                      {selectedOrder.orderStatus?.toUpperCase() || "PENDING"}
+                    </span>
+                  </p>
+                  {selectedOrder.notes && (
+                    <div>
+                      <span className="text-gray-600">Notes:</span>
+                      <p className="mt-1 text-gray-700">{selectedOrder.notes}</p>
+                    </div>
+                  )}
+                  {selectedOrder.createdAt && (
+                    <p>
+                      <span className="text-gray-600">Order Date:</span>
+                      <span className="ml-2 font-medium">
+                        {new Date(selectedOrder.createdAt).toLocaleString()}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      ))}
-    </div>
-  </div>
-)}
+      )}
 
+      {/* Delete Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, orderId: null })}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Order"
+        message="Are you sure you want to delete this order? This action cannot be undone and all order data will be permanently removed."
+      />
     </AdminLayout>
   );
 };
