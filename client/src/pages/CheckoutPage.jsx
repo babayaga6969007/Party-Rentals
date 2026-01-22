@@ -3,6 +3,7 @@ import CheckoutSteps from "../components/cart/CheckoutSteps";
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "../context/CartContext";
 import { api } from "../utils/api";
+import { Link } from "react-router-dom";
 
 import {
   PaymentElement,
@@ -569,12 +570,13 @@ const extraFees =
             />
             <label htmlFor="agree" className="text-gray-700 leading-tight">
               By clicking this box, you agree to our{" "}
-              <a
-                href="/"
-                className="text-[#8B5C42] font-medium underline hover:text-[#704A36]"
-              >
-                Terms and Conditions
-              </a>
+             <Link
+  to="/contract"
+  className="text-[#8B5C42] font-medium underline hover:text-[#704A36]"
+>
+  Terms and Conditions
+</Link>
+
               .
             </label>
           </div>

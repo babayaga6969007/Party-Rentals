@@ -20,6 +20,7 @@ import SalesReports from "../admin/SalesReports";
 
 // Pages
 import Home from "../pages/Home/Home";
+import Contract from "../pages/Contract/Contract";
 import FAQ from "../pages/FAQ/FAQ";
 import Contact from "../pages/Contact/Contact";
 import About from "../pages/About/About";
@@ -64,6 +65,7 @@ const AppRoutes = () => {
           <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/product/demo" element={<UpdatedProductPage />} />
           <Route path="/category" element={<CategoryPage />} />
+          <Route path="/contract" element={<Contract />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/buyproducts/:id" element={<SecondHProducts />} />
           <Route path="/signage" element={<SignageEditor />} />
