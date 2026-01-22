@@ -29,6 +29,18 @@ const signageConfigSchema = new mongoose.Schema(
       min: 0,
     },
 
+    // Canvas dimensions
+    canvasWidth: {
+      type: Number,
+      default: 600,
+      min: 100,
+    },
+    canvasHeight: {
+      type: Number,
+      default: 1200,
+      min: 100,
+    },
+
     // Active status
     isActive: {
       type: Boolean,
@@ -45,18 +57,14 @@ signageConfigSchema.statics.getConfig = async function () {
     // Create default config
     config = await this.create({
       fonts: [
-        { name: "Dancing Script", value: "'Dancing Script', cursive" },
-        { name: "Pacifico", value: "'Pacifico', cursive" },
-        { name: "Great Vibes", value: "'Great Vibes', cursive" },
-        { name: "Satisfy", value: "'Satisfy', cursive" },
-        { name: "Allura", value: "'Allura', cursive" },
-        { name: "Brush Script MT", value: "'Brush Script MT', cursive" },
-        { name: "Lobster", value: "'Lobster', cursive" },
-        { name: "Playball", value: "'Playball', cursive" },
-        { name: "Tangerine", value: "'Tangerine', cursive" },
-        { name: "Cookie", value: "'Cookie', cursive" },
-        { name: "Amatic SC", value: "'Amatic SC', cursive" },
-        { name: "Caveat", value: "'Caveat', cursive" },
+        { name: "Farmhouse", value: "'Farmhouse', cursive" },
+        { name: "Black Mango Bold", value: "'BlackMango-Bold', sans-serif" },
+        { name: "Bodoni 72 Smallcaps", value: "'Bodoni 72 Smallcaps', serif" },
+        { name: "Bright", value: "'Bright', sans-serif" },
+        { name: "Futura", value: "'Futura', sans-serif" },
+        { name: "Greycliff CF Thin", value: "'Greycliff CF Thin', sans-serif" },
+        { name: "SignPainter", value: "'SignPainter', cursive" },
+        { name: "Sloop Script Three", value: "'Sloop Script Three', cursive" },
       ],
       sizes: [
         { key: "small", label: "Small", width: 150, height: 40, fontSize: 32, price: 0 },
@@ -65,6 +73,8 @@ signageConfigSchema.statics.getConfig = async function () {
         { key: "extralarge", label: "Extra Large", width: 450, height: 100, fontSize: 80, price: 0 },
       ],
       basePrice: 0,
+      canvasWidth: 600,
+      canvasHeight: 1200,
     });
   }
   return config;

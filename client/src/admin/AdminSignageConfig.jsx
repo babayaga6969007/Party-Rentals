@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import AdminLayout from "./AdminLayout";
 import { api } from "../utils/api";
 import toast from "react-hot-toast";
 import { DEFAULT_FONTS, DEFAULT_TEXT_SIZES } from "../context/SignageContext";
 
 const AdminSignageConfig = () => {
+  const navigate = useNavigate();
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -21,22 +23,60 @@ const AdminSignageConfig = () => {
   const [editingSize, setEditingSize] = useState(null);
   
   // Canvas dimensions
-  const [canvasWidth, setCanvasWidth] = useState(800);
-  const [canvasHeight, setCanvasHeight] = useState(500);
+  const [canvasWidth, setCanvasWidth] = useState(600);
+  const [canvasHeight, setCanvasHeight] = useState(1200);
 
   const fetchConfig = async () => {
     try {
       setLoading(true);
+      setError(""); // Clear any previous errors
       const token = localStorage.getItem("admin_token");
+      
+      if (!token) {
+        setError("Admin authentication required. Please log in again.");
+        setLoading(false);
+        toast.error("Please log in to access this page");
+        setTimeout(() => {
+          navigate("/admin/login");
+        }, 1500);
+        return;
+      }
+      
       const res = await api("/signage-config/admin", {
         headers: { Authorization: `Bearer ${token}` },
       });
+      
+      if (!res || !res.config) {
+        setError("Invalid response from server. Please try again.");
+        setLoading(false);
+        return;
+      }
+      
       setConfig(res.config);
-      setCanvasWidth(res.config.canvasWidth || 800);
-      setCanvasHeight(res.config.canvasHeight || 500);
+      setCanvasWidth(res.config.canvasWidth || 600);
+      setCanvasHeight(res.config.canvasHeight || 1200);
+      setError(""); // Clear error on success
     } catch (err) {
-      setError("Failed to load configuration");
-      console.error(err);
+      console.error("Config fetch error:", err);
+      const errorMessage = err?.response?.data?.error || err?.response?.data?.message || err?.message || "Failed to load configuration";
+      
+      // If token is invalid or expired, redirect to login
+      if (errorMessage.toLowerCase().includes("invalid token") || 
+          errorMessage.toLowerCase().includes("no token") ||
+          err?.response?.status === 401 ||
+          err?.response?.status === 400) {
+        setError("Your session has expired. Please log in again.");
+        toast.error("Session expired. Redirecting to login...");
+        // Clear the invalid token
+        localStorage.removeItem("admin_token");
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          navigate("/admin/login");
+        }, 2000);
+      } else {
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -237,10 +277,21 @@ const AdminSignageConfig = () => {
     );
   }
 
-  if (error) {
+  if (error && !config) {
     return (
       <AdminLayout>
-        <div className="p-6 text-red-600">{error}</div>
+        <div className="p-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h3 className="text-red-800 font-semibold mb-2">Error Loading Configuration</h3>
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={fetchConfig}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
       </AdminLayout>
     );
   }

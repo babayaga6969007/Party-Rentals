@@ -40,31 +40,31 @@ const SignageEditorContent = () => {
     selectedFont,
     selectedTextColor,
     selectedSize,
+    textSizes,
     getTextsFromContent,
     loadSignage,
     currentPrice,
     canvasWidth,
     canvasHeight,
+    configLoading,
   } = useSignage();
 
   // Track if we've initialized the position for this session
   const positionInitializedRef = useRef(false);
 
-  // Ensure text is centered on initial load (for all new signages, not shared ones)
+  // Ensure text is horizontally centered on initial load (for all new signages, not shared ones)
   useEffect(() => {
-    if (!token && !loading && !isSharedView && !positionInitializedRef.current) {
-      // Calculate center position accounting for text block dimensions
-      // Since we use translate(-50%, -50%), the position should be the center of the canvas
-      // The translate will handle moving it by half width/height
-      const centerPosition = { 
-        x: (canvasWidth || 800) / 2, 
-        y: (canvasHeight || 500) / 2 
+    if (!token && !loading && !isSharedView && !configLoading && !positionInitializedRef.current && canvasWidth && canvasHeight) {
+      // Position horizontally centered, near top
+      const centeredPosition = { 
+        x: canvasWidth / 2, // Horizontally centered
+        y: 200, // Near top with padding
       };
       
-      setTextPosition(centerPosition);
+      setTextPosition(centeredPosition);
       positionInitializedRef.current = true;
     }
-  }, [token, loading, isSharedView, setTextPosition]);
+  }, [token, loading, isSharedView, configLoading, canvasWidth, canvasHeight, setTextPosition]);
 
   // Fetch product data or shared signage (productId is optional)
   useEffect(() => {
@@ -160,8 +160,8 @@ const SignageEditorContent = () => {
       (lines.length - 1) * lineHeight + fontSize
     );
     
-    const clampedX = Math.max(textSize.width / 2, Math.min(newX, (canvasWidth || 800) - textSize.width / 2));
-    const clampedY = Math.max(dynamicHeight / 2, Math.min(newY, (canvasHeight || 500) - dynamicHeight / 2));
+    const clampedX = Math.max(textSize.width / 2, Math.min(newX, (canvasWidth || 600) - textSize.width / 2));
+    const clampedY = Math.max(dynamicHeight / 2, Math.min(newY, (canvasHeight || 1200) - dynamicHeight / 2));
 
     // Store in ref - no rerender triggered, preview component reads from ref
     dragPositionRef.current = { x: clampedX, y: clampedY };
@@ -183,8 +183,8 @@ const SignageEditorContent = () => {
       (lines.length - 1) * lineHeight + fontSize
     );
     
-    const clampedX = Math.max(textSize.width / 2, Math.min(newX, (canvasWidth || 800) - textSize.width / 2));
-    const clampedY = Math.max(dynamicHeight / 2, Math.min(newY, (canvasHeight || 500) - dynamicHeight / 2));
+    const clampedX = Math.max(textSize.width / 2, Math.min(newX, (canvasWidth || 600) - textSize.width / 2));
+    const clampedY = Math.max(dynamicHeight / 2, Math.min(newY, (canvasHeight || 1200) - dynamicHeight / 2));
 
     // Store in ref - no rerender triggered, preview component reads from ref
     dragPositionRef.current = { x: clampedX, y: clampedY };
@@ -266,13 +266,9 @@ const SignageEditorContent = () => {
     );
   }
 
+  // Don't block rendering if config is loading - use defaults
   return (
     <>
-      {/* Import Google Fonts */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Pacifico&family=Great+Vibes&family=Satisfy&family=Allura&family=Lobster&family=Playball&family=Tangerine:wght@400&family=Cookie&family=Amatic+SC:wght@400;700&family=Caveat:wght@400;700&display=swap" rel="stylesheet" />
-      
       <div className="min-h-screen bg-gray-50 pb-8">
         <div className="max-w-7xl mx-auto px-6 pt-32">
           <SignageHeader
@@ -299,7 +295,7 @@ const SignageEditorContent = () => {
             />
 
             {/* RIGHT SIDE - CANVAS (Sticky) */}
-            <div className="lg:col-span-2 h-[calc(100vh-200px)]">
+            <div className="lg:col-span-2 h-[calc(100vh-150px)] min-h-[800px]">
               <div className="bg-white p-5 rounded-xl shadow h-full flex flex-col">
                 <div className="flex items-center justify-between mb-4 shrink-0">
                   <h3 className="text-lg font-semibold text-[#2D2926]">
@@ -331,8 +327,8 @@ const SignageEditorContent = () => {
                   </p>
                 )}
                 
-                {/* Background Image Options - Only show if cart has items */}
-                {!isSharedView && cartItems.length > 0 && (
+                {/* Background Image Options - Show cart images if available */}
+                {!isSharedView && (
                   <div className="mt-4 shrink-0">
                     <BackgroundImageOptions cartItems={cartItems} />
                   </div>

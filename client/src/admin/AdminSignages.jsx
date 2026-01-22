@@ -96,7 +96,6 @@ const AdminSignagesContent = () => {
       {/* Import Google Fonts */}
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Pacifico&family=Great+Vibes&family=Satisfy&family=Allura&family=Lobster&family=Playball&family=Tangerine:wght@400&family=Cookie&family=Amatic+SC:wght@400;700&family=Caveat:wght@400;700&display=swap" rel="stylesheet" />
       
       <div className="p-8">
         {/* Header */}

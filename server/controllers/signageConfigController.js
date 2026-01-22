@@ -162,3 +162,27 @@ exports.updatePrice = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+
+// Update canvas dimensions
+exports.updateCanvas = async (req, res) => {
+  try {
+    const { canvasWidth, canvasHeight } = req.body;
+    
+    if (canvasWidth === undefined || canvasHeight === undefined) {
+      return res.status(400).json({ error: "Canvas width and height are required" });
+    }
+    
+    if (canvasWidth < 100 || canvasHeight < 100) {
+      return res.status(400).json({ error: "Canvas dimensions must be at least 100px" });
+    }
+
+    const config = await SignageConfig.getConfig();
+    config.canvasWidth = Number(canvasWidth);
+    config.canvasHeight = Number(canvasHeight);
+    await config.save();
+
+    res.json({ config, message: "Canvas dimensions updated successfully" });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};

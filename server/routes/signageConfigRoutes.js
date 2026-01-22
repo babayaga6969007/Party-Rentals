@@ -9,6 +9,7 @@ const {
   updateSize,
   removeSize,
   updatePrice,
+  updateCanvas,
 } = require("../controllers/signageConfigController");
 const authAdmin = require("../middleware/authAdmin");
 
@@ -24,5 +25,6 @@ router.post("/admin/sizes", authAdmin, addSize);
 router.put("/admin/sizes/:sizeId", authAdmin, updateSize);
 router.delete("/admin/sizes/:sizeId", authAdmin, removeSize);
 router.put("/admin/price", authAdmin, updatePrice);
+router.put("/admin/canvas", authAdmin, updateCanvas);
 
 module.exports = router;

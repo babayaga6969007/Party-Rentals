@@ -14,7 +14,7 @@ const SignageControls = memo(({ isSharedView, onAddToCart, product, productId, n
         <h2 
           className="text-4xl font-bold"
           style={{
-            fontFamily: "'Great Vibes', cursive",
+            fontFamily: "'Sloop Script Three', cursive",
             color: "#8B5C42",
             textShadow: "2px 2px 4px rgba(0,0,0,0.1)",
             letterSpacing: "0.05em",
