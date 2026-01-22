@@ -1,7 +1,7 @@
 import NavbarTransparent from "../../components/layout/NavbarTransparent";
 import logo from "../../assets/logo.png";
 
-const TermsAndConditions = () => {
+const Contract = () => {
   return (
     <>
       <NavbarTransparent />
@@ -228,4 +228,4 @@ const TermsAndConditions = () => {
   );
 };
 
-export default TermsAndConditions;
+export default Contract;
