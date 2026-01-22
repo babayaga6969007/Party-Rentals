@@ -45,6 +45,9 @@ export const CartProvider = ({ children }) => {
       endDate: payload.endDate || "",
       addons: payload.addons || [],
 
+      // signage-only
+      signageData: payload.signageData || null,
+
       image: payload.image || "",
       maxStock: Number(payload.maxStock || 1),
 

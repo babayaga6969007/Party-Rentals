@@ -63,8 +63,39 @@ const AddProduct = () => {
   const [selectedAttrs, setSelectedAttrs] = useState({});
   const [selectedAddons, setSelectedAddons] = useState({});
 
-  // groupId → optionId → { selected, overridePrice }
+  // groupId → optionId → { selected, overridePrice, shelvingTier, shelvingSize, shelvingQuantity }
   const [loadedAddons, setLoadedAddons] = useState([]);
+
+  // Shelving config for admin
+  const [shelvingConfig, setShelvingConfig] = useState(null);
+  
+  // Fetch shelving config
+  useEffect(() => {
+    const fetchShelvingConfig = async () => {
+      try {
+        const res = await api("/shelving-config");
+        setShelvingConfig(res.config);
+      } catch (err) {
+        console.error("Failed to load shelving config:", err);
+        setShelvingConfig({
+          tierA: {
+            sizes: [
+              { size: "24\"", dimensions: "24\" long x 5.5\" deep x 0.75\" thick", price: 20 },
+              { size: "34\"", dimensions: "34\" long x 5.5\" deep x 0.75\" thick", price: 25 },
+              { size: "46\"", dimensions: "46\" long x 5.5\" deep x 0.75\" thick", price: 25 },
+              { size: "70\"", dimensions: "70\" long x 5.5\" deep x 0.75\" thick", price: 32 },
+              { size: "83\"", dimensions: "83\" long x 5.5\" deep x 0.75\" thick", price: 38 },
+              { size: "94\"", dimensions: "94\" long x 5.5\" deep x 0.75\" thick", price: 43 },
+            ],
+          },
+          tierB: { price: 29 },
+          tierC: { price: 50 },
+        });
+      }
+    };
+    fetchShelvingConfig();
+  }, []);
+  
   const MAX_IMAGES = 8;
 
   const totalImageCount = existingImages.length + previews.length;
@@ -161,11 +192,20 @@ const AddProduct = () => {
       const groupKey = String(addonGroup._id);
       if (!grouped[groupKey]) grouped[groupKey] = {};
 
-      grouped[groupKey][optionId] = {
-        selected: true,
-        overridePrice: a.overridePrice ?? "",
-      };
-    });
+    // Load shelving data if it exists
+    const shelvingData = a.shelvingData || {};
+    // Get tier from option if available, or from shelvingData, or default to "A"
+    const option = addonGroup.options.find(o => String(o._id) === optionId);
+    const tierFromOption = option?.tier || "A";
+    
+    grouped[groupKey][optionId] = {
+      selected: true,
+      overridePrice: a.overridePrice ?? "",
+      shelvingTier: shelvingData.tier || (a.shelvingTier || tierFromOption),
+      shelvingSize: shelvingData.size || (a.shelvingSize || ""),
+      shelvingQuantity: shelvingData.quantity || (a.shelvingQuantity || 1),
+    };
+  });
 
     setSelectedAddons(grouped);
   }, [isEditMode, loadedAddons, attributeGroups]);
@@ -329,19 +369,34 @@ const AddProduct = () => {
 
     const addonsPayload = [];
 
-    Object.entries(selectedAddons).forEach(([, options]) => {
+    Object.entries(selectedAddons).forEach(([groupId, options]) => {
       Object.entries(options).forEach(([optionId, v]) => {
         if (!v?.selected) return;
 
-        addonsPayload.push({
-          optionId,
-          overridePrice:
-            v.overridePrice === "" || v.overridePrice === null
-              ? null
-              : Number(v.overridePrice),
-        });
-      });
-    });
+    // Find the option to check if it's a shelving addon
+    const addonGroup = attributeGroups.find(g => String(g._id) === groupId);
+    const option = addonGroup?.options?.find(o => String(o._id) === optionId);
+    const isShelving = option?.label?.toLowerCase().includes("shelving") || 
+                       option?.label?.toLowerCase().includes("shelf");
+
+    const addonData = {
+      optionId,
+      overridePrice:
+        v.overridePrice === "" || v.overridePrice === null
+          ? null
+          : Number(v.overridePrice),
+    };
+
+    // Add shelving configuration if it's a shelving addon
+    if (isShelving && v.shelvingTier) {
+      addonData.shelvingTier = v.shelvingTier;
+      addonData.shelvingSize = v.shelvingSize || "";
+      addonData.shelvingQuantity = v.shelvingQuantity || 1;
+    }
+
+    addonsPayload.push(addonData);
+  });
+});
 
 
 
@@ -445,7 +500,13 @@ const AddProduct = () => {
       body: formData,
     });
 
-    toast.success(isEditMode ? "Product updated successfully!" : "Product added successfully!");
+    if (isEditMode) {
+      // Store success message in sessionStorage for Products page to show toast
+      sessionStorage.setItem("productEdited", "true");
+    } else {
+      toast.success("Product added successfully!");
+    }
+    // Redirect to products page
     window.location.href = "/admin/products";
   };
 
@@ -733,209 +794,387 @@ const AddProduct = () => {
             <p className="text-gray-600">No attributes found. Create them in Admin → Attributes.</p>
           ) : (
             attributeGroups.map((g) => {
-              const options = (g.options || []).filter((o) => o.isActive !== false);
-              const isAddon = g.type === "addon";
-              const groupIdStr = String(g._id);
+      const options = (g.options || []).filter((o) => o.isActive !== false);
+      const isAddon = g.type === "addon";
+      const groupIdStr = String(g._id);
 
-              const isVariationGroup =
-                productType === "rental" && productSubType === "variable" &&
-                !isAddon &&
-                variationAttrGroupIds.includes(groupIdStr);
+const isVariationGroup =
+  productType === "rental" && productSubType === "variable" &&
+  !isAddon &&
+  variationAttrGroupIds.includes(groupIdStr);
 
-              const isSingle = g.type === "select"; // single-select
-              const isColor = g.type === "color";
-              const required = !!g.required;
+      const isSingle = g.type === "select"; // single-select
+      const isColor = g.type === "color";
+      const required = !!g.required;
 
-              // current selection for normal groups
-              const current = selectedAttrs[String(g._id)] || [];
+      // current selection for normal groups
+const current = selectedAttrs[String(g._id)] || [];
 
-              // helper: toggle option
-              const toggleOption = (optionId) => {
-                setSelectedAttrs((prev) => {
-                  const key = String(g._id);
-                  const prevList = prev[key] || [];
-                  let nextList = prevList;
-                  const forceMultiForVariations = isVariationGroup; // <--- NEW
+      // helper: toggle option
+      const toggleOption = (optionId) => {
+        setSelectedAttrs((prev) => {
+const key = String(g._id);
+const prevList = prev[key] || [];
+          let nextList = prevList;
+const forceMultiForVariations = isVariationGroup; // <--- NEW
 
-                  if (isSingle && !forceMultiForVariations) {
-                    nextList = prevList.includes(optionId) ? [] : [optionId];
-                  } else {
-                    nextList = prevList.includes(optionId)
-                      ? prevList.filter((id) => id !== optionId)
-                      : [...prevList, optionId];
-                  }
-
-
-                  return { ...prev, [key]: nextList };
-                });
-              };
-
-              return (
-                <div key={g._id} className="border border-gray-300 rounded-xl p-5 bg-white">
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="font-medium">
-                      {g.name} {required && <span className="text-red-600">*</span>}
-                    </label>
-                    {productType === "rental" && productSubType === "variable" && !isAddon && (
-                      <label className="flex items-center gap-2 text-sm mt-2">
-                        <input
-                          type="checkbox"
-                          checked={variationAttrGroupIds.includes(groupIdStr)}
-                          onChange={(e) => {
-                            setVariationAttrGroupIds((prev) =>
-                              e.target.checked
-                                ? [...prev, groupIdStr]
-                                : prev.filter((x) => x !== groupIdStr)
-                            );
-                          }}
-                        />
-                        Used for variations
-                      </label>
-                    )}
-
-                    <span className="text-xs text-gray-500">
-                      {g.type === "multi" && "Multi-select"}
-                      {g.type === "select" && "Single-select"}
-                      {g.type === "color" && "Color"}
-                      {g.type === "addon" && "Add-on"}
-                    </span>
-                  </div>
-
-                  {/* Add-ons: special UI with pricing override */}
-                  {isAddon ? (
-                    <div className="space-y-3">
-                      {options.map((o) => {
-                        const oid = String(o._id || o.optionId || o);
-                        const groupKey = String(g._id);
-                        const isSelected = !!selectedAddons[groupKey]?.[oid]?.selected;
-                        const overridePrice = selectedAddons[groupKey]?.[oid]?.overridePrice ?? "";
+if (isSingle && !forceMultiForVariations) {
+  nextList = prevList.includes(optionId) ? [] : [optionId];
+} else {
+  nextList = prevList.includes(optionId)
+    ? prevList.filter((id) => id !== optionId)
+    : [...prevList, optionId];
+}
 
 
+return { ...prev, [key]: nextList };
+        });
+      };
 
-                        return (
-                          <div
-                            key={o._id}
-                            className={`flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-3 rounded-lg border
-                      ${isSelected ? "border-black" : "border-gray-300"}
+      return (
+        <div key={g._id} className="border border-gray-300 rounded-xl p-5 bg-white">
+          <div className="flex items-center justify-between mb-3">
+            <label className="font-medium">
+              {g.name} {required && <span className="text-red-600">*</span>}
+            </label>
+            {productType === "rental" && productSubType === "variable" && !isAddon && (
+  <label className="flex items-center gap-2 text-sm mt-2">
+    <input
+      type="checkbox"
+      checked={variationAttrGroupIds.includes(groupIdStr)}
+      onChange={(e) => {
+        setVariationAttrGroupIds((prev) =>
+          e.target.checked
+            ? [...prev, groupIdStr]
+            : prev.filter((x) => x !== groupIdStr)
+        );
+      }}
+    />
+    Used for variations
+  </label>
+)}
+
+            <span className="text-xs text-gray-500">
+              {g.type === "multi" && "Multi-select"}
+              {g.type === "select" && "Single-select"}
+              {g.type === "color" && "Color"}
+              {g.type === "addon" && "Add-on"}
+            </span>
+          </div>
+
+          {/* Add-ons: special UI with pricing override */}
+          {isAddon ? (
+            <div className="space-y-3">
+              {options.map((o) => {
+const oid = String(o._id || o.optionId || o);
+const groupKey = String(g._id);
+const isSelected = !!selectedAddons[groupKey]?.[oid]?.selected;
+const overridePrice = selectedAddons[groupKey]?.[oid]?.overridePrice ?? "";
+const shelvingTier = selectedAddons[groupKey]?.[oid]?.shelvingTier || (o.tier || "A");
+const shelvingSize = selectedAddons[groupKey]?.[oid]?.shelvingSize || "";
+const shelvingQuantity = selectedAddons[groupKey]?.[oid]?.shelvingQuantity || 1;
+
+// Check if this is a shelving addon
+const isShelving = o.label?.toLowerCase().includes("shelving") || 
+                   o.label?.toLowerCase().includes("shelf");
+const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
+
+
+
+                return (
+                  <div
+                    key={o._id}
+                    className={`flex flex-col gap-3 p-3 rounded-lg border
+                      ${isSelected ? "border-black bg-gray-50" : "border-gray-300"}
                     `}
-                          >
-                            <label className="flex items-center gap-3">
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={(e) => {
-                                  const checked = e.target.checked;
-                                  setSelectedAddons((prev) => {
-                                    const groupKey = String(g._id);
+                  >
+                    <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                         setSelectedAddons((prev) => {
+  const groupKey = String(g._id);
 
-                                    return {
-                                      ...prev,
-                                      [groupKey]: {
-                                        ...(prev[groupKey] || {}),
-                                        [oid]: {
-                                          selected: checked,
-                                          overridePrice: prev[groupKey]?.[oid]?.overridePrice ?? "",
-                                        },
-                                      },
-                                    };
-                                  });
+  return {
+    ...prev,
+    [groupKey]: {
+      ...(prev[groupKey] || {}),
+      [oid]: {
+        selected: checked,
+        overridePrice: prev[groupKey]?.[oid]?.overridePrice ?? "",
+        shelvingTier: prev[groupKey]?.[oid]?.shelvingTier || (o.tier || "A"),
+        shelvingSize: prev[groupKey]?.[oid]?.shelvingSize || "",
+        shelvingQuantity: prev[groupKey]?.[oid]?.shelvingQuantity || 1,
+      },
+    },
+  };
+});
+                        }}
+                      />
+                      <div>
+                        <div className="font-medium">{o.label}</div>
+                        <div className="text-sm text-gray-600">
+                          Base: ${Number(o.priceDelta || 0).toFixed(2)}
+                          {o.tier && (
+                            <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">
+                              Tier {o.tier}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </label>
+
+                    {/* Only allow override when selected */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">Override price</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        disabled={!isSelected}
+                        value={overridePrice}
+                        onChange={(e) => {
+  if (!oid || oid === "null") return;
+
+  const value = e.target.value;
+
+  setSelectedAddons((prev) => {
+  const groupKey = String(g._id);
+
+  return {
+    ...prev,
+    [groupKey]: {
+      ...(prev[groupKey] || {}),
+      [oid]: {
+        ...prev[groupKey]?.[oid],
+        selected: true,
+        overridePrice: value === "" ? "" : Number(value),
+      },
+    },
+  };
+});
+
+}}
 
 
 
-                                }}
-                              />
-                              <div>
-                                <div className="font-medium">{o.label}</div>
-                                <div className="text-sm text-gray-600">
-                                  Base: ${Number(o.priceDelta || 0).toFixed(2)}
-                                </div>
-                              </div>
-                            </label>
-
-                            {/* Only allow override when selected */}
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-gray-600">Override price</span>
-                              <input
-                                type="number"
-                                min="0"
-                                step="1"
-                                disabled={!isSelected}
-                                value={overridePrice}
-                                onChange={(e) => {
-                                  if (!oid || oid === "null") return;
-
-                                  const value = e.target.value;
-
-                                  setSelectedAddons((prev) => {
-                                    const groupKey = String(g._id);
-
-                                    return {
-                                      ...prev,
-                                      [groupKey]: {
-                                        ...(prev[groupKey] || {}),
-                                        [oid]: {
-                                          selected: true,
-                                          overridePrice: value === "" ? "" : Number(value),
-                                        },
-                                      },
-                                    };
-                                  });
-
-                                }}
-
-
-
-                                className="w-36 p-2 border border-gray-300 rounded-lg disabled:bg-gray-100"
-                                placeholder={`${Number(o.priceDelta || 0).toFixed(0)}`}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
+                        className="w-36 p-2 border border-gray-300 rounded-lg disabled:bg-gray-100"
+                        placeholder={`${Number(o.priceDelta || 0).toFixed(0)}`}
+                      />
                     </div>
-                  ) : (
-                    /* Normal groups: buttons/toggles */
-                    <div className="flex flex-wrap gap-3 mt-2">
-                      {options.map((o) => {
-                        const oid = String(o._id);
-                        const active = current.includes(oid);
+                    </div>
 
+                    {/* Shelving Configuration UI (only when shelving addon is selected) */}
+                    {isShelving && isSelected && (
+                      <div className="mt-3 pt-3 border-t border-gray-300 space-y-3">
+                        <h4 className="font-semibold text-sm text-gray-700">Shelving Configuration</h4>
+                        
+                        {/* Tier Selection */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Select Tier
+                          </label>
+                          <div className="flex gap-3">
+                            {["A", "B", "C"].map((tier) => (
+                              <button
+                                key={tier}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedAddons((prev) => {
+                                    const groupKey = String(g._id);
+                                    return {
+                                      ...prev,
+                                      [groupKey]: {
+                                        ...(prev[groupKey] || {}),
+                                        [oid]: {
+                                          ...prev[groupKey]?.[oid],
+                                          selected: true,
+                                          shelvingTier: tier,
+                                          shelvingSize: tier === "A" ? "" : "yes",
+                                          shelvingQuantity: tier === "C" ? 1 : 1,
+                                        },
+                                      },
+                                    };
+                                  });
+                                }}
+                                className={`px-4 py-2 rounded-lg border-2 transition ${
+                                  shelvingTier === tier
+                                    ? "border-[#8B5C42] bg-[#FFF7F0] text-[#8B5C42] font-semibold"
+                                    : "border-gray-300 hover:border-gray-400"
+                                }`}
+                              >
+                                Tier {tier}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
 
-                        return (
-                          <button
-                            type="button"
-                            key={o._id}
-                            onClick={() => toggleOption(o._id)}
-                            className={`px-4 py-2 rounded-lg border transition
+                        {/* Tier A: Size Selection */}
+                        {shelvingTier === "A" && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Select Size
+                            </label>
+                            <select
+                              value={shelvingSize}
+                              onChange={(e) => {
+                                setSelectedAddons((prev) => {
+                                  const groupKey = String(g._id);
+                                  return {
+                                    ...prev,
+                                    [groupKey]: {
+                                      ...(prev[groupKey] || {}),
+                                      [oid]: {
+                                        ...prev[groupKey]?.[oid],
+                                        selected: true,
+                                        shelvingSize: e.target.value,
+                                      },
+                                    },
+                                  };
+                                });
+                              }}
+                              className="w-full p-2 border rounded-lg"
+                            >
+                              <option value="">Select a size</option>
+                              {shelvingTierAOptions.map((opt) => (
+                                <option key={opt.size} value={opt.size}>
+                                  {opt.size} - {opt.dimensions} (${opt.price}/shelf)
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        {/* Tier B & C: Yes/No Selection */}
+                        {(shelvingTier === "B" || shelvingTier === "C") && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Add Shelving?
+                            </label>
+                            <select
+                              value={shelvingSize || ""}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setSelectedAddons((prev) => {
+                                  const groupKey = String(g._id);
+                                  return {
+                                    ...prev,
+                                    [groupKey]: {
+                                      ...(prev[groupKey] || {}),
+                                      [oid]: {
+                                        ...prev[groupKey]?.[oid],
+                                        selected: true,
+                                        shelvingSize: value,
+                                        shelvingQuantity: value === "yes" ? (shelvingTier === "C" ? 1 : 1) : 0,
+                                      },
+                                    },
+                                  };
+                                });
+                              }}
+                              className="w-full p-2 border rounded-lg"
+                            >
+                              <option value="">Select</option>
+                              <option value="yes">Yes</option>
+                              <option value="no">No</option>
+                            </select>
+                            {shelvingSize === "yes" && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                {shelvingTier === "B" 
+                                  ? `${shelvingConfig?.tierB?.dimensions || "43\" wide x 11.5\" deep x 1.5\" thick"} ($${shelvingConfig?.tierB?.price || 29}/shelf)`
+                                  : `${shelvingConfig?.tierC?.dimensions || "75\" wide x 25\" deep x 1.5\" thick"} ($${shelvingConfig?.tierC?.price || 50}/shelf) - Max 1 shelf`
+                                }
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Quantity Selection */}
+                        {((shelvingTier === "A" && shelvingSize) || 
+                          (shelvingTier === "B" && shelvingSize === "yes") ||
+                          (shelvingTier === "C" && shelvingSize === "yes")) && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Quantity {shelvingTier === "C" ? "(Max 1)" : `(Max ${shelvingTier === "A" ? 8 : 8})`}
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              max={shelvingTier === "C" ? 1 : shelvingTier === "A" ? 8 : 8}
+                              value={shelvingQuantity}
+                              onChange={(e) => {
+                                const qty = parseInt(e.target.value) || 1;
+                                const max = shelvingTier === "C" ? 1 : shelvingTier === "A" ? 8 : 8;
+                                setSelectedAddons((prev) => {
+                                  const groupKey = String(g._id);
+                                  return {
+                                    ...prev,
+                                    [groupKey]: {
+                                      ...(prev[groupKey] || {}),
+                                      [oid]: {
+                                        ...prev[groupKey]?.[oid],
+                                        selected: true,
+                                        shelvingQuantity: Math.min(Math.max(1, qty), max),
+                                      },
+                                    },
+                                  };
+                                });
+                              }}
+                              className="w-full p-2 border rounded-lg"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* Normal groups: buttons/toggles */
+            <div className="flex flex-wrap gap-3 mt-2">
+              {options.map((o) => {
+                const oid = String(o._id);
+                const active = current.includes(oid);
+
+                return (
+                  <button
+                    type="button"
+                    key={o._id}
+                    onClick={() => toggleOption(o._id)}
+                    className={`px-4 py-2 rounded-lg border transition
                       ${active ? "bg-black text-white border-black" : "bg-white border-gray-300 hover:bg-gray-100"}
                     `}
-                          >
-                            <span className="inline-flex items-center gap-2">
-                              {isColor && (
-                                <span
-                                  className="w-4 h-4 rounded-full border"
-                                  style={{ backgroundColor: o.hex || "#000" }}
-                                />
-                              )}
-                              {o.label}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      {isColor && (
+                        <span
+                          className="w-4 h-4 rounded-full border"
+                          style={{ backgroundColor: o.hex || "#000" }}
+                        />
+                      )}
+                      {o.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
-                  {/* helper note */}
-                  {required && !isAddon && (
-                    <p className="text-xs text-gray-500 mt-3">
-                      Required: select at least one option.
-                    </p>
-                  )}
-                </div>
-              );
-            })
+          {/* helper note */}
+          {required && !isAddon && (
+            <p className="text-xs text-gray-500 mt-3">
+              Required: select at least one option.
+            </p>
           )}
         </div>
+      );
+    })
+  )}
+        </div>
+
         {/* VARIABLE PRODUCT: VARIATIONS */}
         {productSubType === "variable" && (
           <div className="space-y-4">

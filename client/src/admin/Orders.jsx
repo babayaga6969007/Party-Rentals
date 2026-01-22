@@ -345,7 +345,31 @@ const Orders = () => {
                       </span>
                     </td>
 
-                    <td className="px-6 py-4">{itemsCount}</td>
+                    <td className="px-6 py-4">
+                      <div>{itemsCount}</div>
+                      {/* Show addons count if any (excluding shelvings) */}
+                      {(() => {
+                        const addonsCount = (order?.items || []).reduce((sum, item) => {
+                          if (item.addons && Array.isArray(item.addons)) {
+                            // Exclude shelvings from count
+                            const nonShelvingAddons = item.addons.filter(a => 
+                              !a.name?.toLowerCase().includes("shelving") && 
+                              !a.name?.toLowerCase().includes("shelf")
+                            );
+                            return sum + nonShelvingAddons.length;
+                          }
+                          return sum;
+                        }, 0);
+                        if (addonsCount > 0) {
+                          return (
+                            <div className="text-xs text-gray-500 mt-1">
+                              <span>+{addonsCount} addon{addonsCount > 1 ? 's' : ''}</span>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </td>
 
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-1">
@@ -584,101 +608,139 @@ const Orders = () => {
                         <div className="mt-3 pt-3 border-t bg-purple-50 p-3 rounded">
                           <p className="font-medium text-sm mb-3 text-purple-900">Signage Details:</p>
 
-                          {/* Text Information - Only show if there's text data */}
-                          {(item.signageData.textContent || item.signageData.fontFamily || item.signageData.fontSize || item.signageData.size || item.signageData.textWidth || item.signageData.textHeight) && (
-                            <div className="mb-3">
-                              <p className="text-xs font-semibold text-purple-800 mb-2">Text Information</p>
-                              <div className="text-xs text-gray-700 space-y-1.5 bg-white p-2 rounded">
-                                {item.signageData.textContent && (
-                                  <p><span className="font-medium">Content:</span> {item.signageData.textContent}</p>
-                                )}
-                                {item.signageData.fontFamily && (
-                                  <p><span className="font-medium">Font:</span> {item.signageData.fontFamily.replace(/'/g, '').replace(/, cursive/g, '')}</p>
-                                )}
-                                {item.signageData.fontSize && (
-                                  <p><span className="font-medium">Font Size:</span> {item.signageData.fontSize}px</p>
-                                )}
-                                {item.signageData.size && (
-                                  <p><span className="font-medium">Size Preset:</span> {item.signageData.size}</p>
-                                )}
-                                {(item.signageData.textWidth || item.signageData.textHeight) && (
-                                  <p><span className="font-medium">Dimensions:</span> {item.signageData.textWidth || '—'} × {item.signageData.textHeight || '—'}px</p>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Text Color - Only show if it exists */}
-                          {item.signageData.textColor && (
-                            <div className="mb-3">
-                              <p className="text-xs font-semibold text-purple-800 mb-2">Text Color</p>
-                              <div className="text-xs text-gray-700 bg-white p-2 rounded">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">Color:</span>
-                                  <span
-                                    className="inline-block w-6 h-6 rounded border-2 border-gray-400 shadow-sm"
-                                    style={{ backgroundColor: item.signageData.textColor }}
-                                  ></span>
-                                  <span className="text-gray-500">{item.signageData.textColor.toUpperCase()}</span>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Background Information */}
-                          <div className="mb-3">
-                            <p className="text-xs font-semibold text-purple-800 mb-2">Background</p>
-                            <div className="text-xs text-gray-700 space-y-1.5 bg-white p-2 rounded">
-                              {item.signageData.backgroundType && (
-                                <p><span className="font-medium">Type:</span> {item.signageData.backgroundType.charAt(0).toUpperCase() + item.signageData.backgroundType.slice(1)}</p>
-                              )}
-                              {item.signageData.backgroundType === "color" && (
-                                <>
-                                  {item.signageData.backgroundGradient && (
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium">Gradient:</span>
-                                      <div
-                                        className="w-16 h-8 rounded border border-gray-300"
-                                        style={{ background: item.signageData.backgroundGradient }}
-                                      ></div>
-                                    </div>
-                                  )}
-                                  {item.signageData.backgroundColor && !item.signageData.backgroundGradient && (
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium">Color:</span>
-                                      <span
-                                        className="inline-block w-6 h-6 rounded border-2 border-gray-400 shadow-sm"
-                                        style={{ backgroundColor: item.signageData.backgroundColor }}
-                                      ></span>
-                                      <span className="text-gray-500">{item.signageData.backgroundColor.toUpperCase()}</span>
-                                    </div>
-                                  )}
-                                </>
-                              )}
-                              {item.signageData.backgroundType === "image" && item.signageData.backgroundImageUrl && (
-                                <div>
-                                  <p className="font-medium mb-1">Background Image:</p>
-                                  <img
-                                    src={item.signageData.backgroundImageUrl}
-                                    alt="Background"
-                                    className="max-w-full max-h-32 rounded border border-gray-300 object-cover"
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
                           {/* Preview Image */}
                           {item.image && (
-                            <div className="mt-3">
+                            <div className="mb-3">
                               <p className="font-medium text-xs mb-2 text-purple-900">Preview:</p>
                               <img
                                 src={item.image}
                                 alt="Signage preview"
                                 className="max-w-full max-h-64 rounded-lg border-2 border-purple-200 shadow-sm"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                }}
                               />
                             </div>
                           )}
+
+                          {/* Text Content */}
+                          <div>
+                            <p className="text-xs font-semibold text-purple-800 mb-2">Text Content:</p>
+                            <div className="text-sm text-gray-700 bg-white p-3 rounded">
+                              {(() => {
+                                const textContent = item.signageData.textContent;
+                                const texts = item.signageData.texts;
+                                
+                                // Try to extract text from various formats
+                                let textLines = [];
+                                
+                                if (textContent && textContent.trim()) {
+                                  // If textContent exists, split by newlines
+                                  textLines = textContent.split('\n').filter(line => line.trim());
+                                } else if (texts && Array.isArray(texts) && texts.length > 0) {
+                                  // Handle array of strings or objects
+                                  textLines = texts
+                                    .map(t => {
+                                      if (typeof t === 'string') return t.trim();
+                                      if (typeof t === 'object' && t !== null) {
+                                        return (t.content || t.text || t.value || '').trim();
+                                      }
+                                      return String(t || '').trim();
+                                    })
+                                    .filter(Boolean);
+                                }
+                                
+                                if (textLines.length > 0) {
+                                  return (
+                                    <div className="space-y-1">
+                                      {textLines.map((line, idx) => (
+                                        <p key={idx} className="pl-2 border-l-2 border-purple-300">{line}</p>
+                                      ))}
+                                    </div>
+                                  );
+                                } else {
+                                  return <p className="text-gray-500 italic">No text content provided</p>;
+                                }
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Add-ons Details */}
+                      {(() => {
+                        // Try multiple ways to access addons
+                        const addons = item.addons || [];
+                        const addonsArray = Array.isArray(addons) ? addons : [];
+                        
+                        if (addonsArray.length > 0) {
+                          return (
+                            <div className="mt-3 pt-3 border-t bg-blue-50 p-3 rounded">
+                              <p className="font-medium text-sm mb-3 text-blue-900">Add-ons ({addonsArray.length})</p>
+                              <div className="space-y-3">
+                                {addonsArray.map((addon, idx) => (
+                                  <div key={idx} className="bg-white p-3 rounded border border-blue-200">
+                                    <div className="flex justify-between items-start mb-2">
+                                      <div>
+                                        <p className="font-semibold text-sm text-blue-900">{addon.name || "Unnamed Add-on"}</p>
+                                        <p className="text-xs text-gray-600">Price: ${addon.price?.toFixed(2) || "0.00"}</p>
+                                      </div>
+                                    </div>
+
+                                    {/* Signage Text */}
+                                    {addon.signageText && (
+                                      <div className="mt-2 text-xs">
+                                        <span className="font-medium text-gray-700">Signage Text:</span>
+                                        <p className="text-gray-600 mt-1">{addon.signageText}</p>
+                                      </div>
+                                    )}
+
+                                    {/* Vinyl Wrap */}
+                                    {(addon.vinylColor || addon.vinylHex) && (
+                                      <div className="mt-2 text-xs">
+                                        <span className="font-medium text-gray-700">Vinyl Color:</span>
+                                        <div className="flex items-center gap-2 mt-1">
+                                          {addon.vinylHex && (
+                                            <span
+                                              className="inline-block w-5 h-5 rounded border border-gray-400"
+                                              style={{ backgroundColor: addon.vinylHex }}
+                                            ></span>
+                                          )}
+                                          <span className="text-gray-600">
+                                            {addon.vinylColor === "custom" ? `Custom (${addon.vinylHex})` : addon.vinylColor}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Shelving Data */}
+                                    {addon.shelvingData && (
+                                      <div className="mt-2 text-xs">
+                                        <span className="font-medium text-gray-700">Shelving Configuration:</span>
+                                        <div className="text-gray-600 mt-1 space-y-1">
+                                          <p><span className="font-medium">Tier:</span> {addon.shelvingData.tier || "—"}</p>
+                                          {addon.shelvingData.size && (
+                                            <p><span className="font-medium">Size:</span> {addon.shelvingData.size}</p>
+                                          )}
+                                          {addon.shelvingData.quantity > 0 && (
+                                            <p><span className="font-medium">Quantity:</span> {addon.shelvingData.quantity} shelf(s)</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                      
+                      {/* Show message if no addons but item is rental (for debugging) */}
+                      {item.productType === "rental" && (!item.addons || !Array.isArray(item.addons) || item.addons.length === 0) && (
+                        <div className="mt-3 pt-3 border-t text-xs text-gray-400 italic">
+                          No add-ons selected for this rental item
                         </div>
                       )}
 

@@ -80,7 +80,7 @@ router.delete("/:groupId", async (req, res) => {
  */
 router.post("/:groupId/options", async (req, res) => {
   try {
-    const { label, hex, priceDelta = 0 } = req.body;
+    const { label, hex, priceDelta = 0, tier } = req.body;
     if (!label) {
       return res.status(400).json({ message: "label is required" });
     }
@@ -99,10 +99,15 @@ router.post("/:groupId/options", async (req, res) => {
         .json({ message: "Option already exists in this group" });
     }
 
+    // Check if this is a shelving addon (for tier assignment)
+    const isShelving = group.type === "addon" && 
+      (label.toLowerCase().includes("shelving") || label.toLowerCase().includes("shelf"));
+
     group.options.push({
       label: label.trim(),
       hex: group.type === "color" ? hex || "#000000" : undefined,
       priceDelta: group.type === "addon" ? Number(priceDelta) : 0,
+      tier: isShelving && tier ? tier : undefined, // Only set tier for shelving addons
     });
 
     await group.save();

@@ -9,7 +9,7 @@ import SignagePreview from "../../components/signage/SignagePreview";
 import SignageHeader from "../../components/signage/SignageHeader";
 import SignageControls from "../../components/signage/SignageControls";
 import BackgroundImageOptions from "../../components/signage/BackgroundImageOptions";
-import { createCanvasPreview } from "../../utils/signageCart";
+import { capturePreviewSnapshot } from "../../utils/signageCart";
 
 const SignageEditorContent = () => {
   const { id: productId, token } = useParams();
@@ -215,14 +215,72 @@ const SignageEditorContent = () => {
       return;
     }
 
-    // Create preview and add to cart (metadata stored in order, no separate signage entity)
-    createCanvasPreview(
-      backgroundType,
-      backgroundColor,
-      backgroundGradient,
-      backgroundImageUrl,
-      getTextsFromContent,
+    // Get the preview element (the div with the preview content)
+    // The canvasRef points to the inner preview div that contains the background and text
+    // This is the div with border-2 and specific width/height (600x1200)
+    const previewElement = canvasRef?.current;
+    if (!previewElement) {
+      console.error("Preview element not found. canvasRef:", canvasRef);
+      toast.error("Preview element not found. Please try again.");
+      return;
+    }
+    
+    // Get the exact dimensions from the element's style (not computed, to avoid padding)
+    const elementStyle = window.getComputedStyle(previewElement);
+    const elementWidth = parseInt(elementStyle.width) || previewElement.offsetWidth;
+    const elementHeight = parseInt(elementStyle.height) || previewElement.offsetHeight;
+    
+    console.log("Preview element found:", previewElement);
+    console.log("Preview element dimensions:", {
+      styleWidth: elementStyle.width,
+      styleHeight: elementStyle.height,
+      offsetWidth: previewElement.offsetWidth,
+      offsetHeight: previewElement.offsetHeight,
+      clientWidth: previewElement.clientWidth,
+      clientHeight: previewElement.clientHeight,
+      padding: elementStyle.padding,
+      margin: elementStyle.margin,
+      border: elementStyle.borderWidth
+    });
+    
+    // Store exact dimensions for html2canvas
+    previewElement.dataset.captureWidth = elementWidth.toString();
+    previewElement.dataset.captureHeight = elementHeight.toString();
+    
+    // Check if text elements are present in the preview
+    const textElements = previewElement.querySelectorAll('[style*="absolute"]');
+    console.log("Text elements found in preview:", textElements.length);
+    textElements.forEach((el, idx) => {
+      const rect = el.getBoundingClientRect();
+      const parentRect = previewElement.getBoundingClientRect();
+      console.log(`Text element ${idx}:`, {
+        text: el.textContent,
+        left: el.style.left,
+        top: el.style.top,
+        relativeLeft: rect.left - parentRect.left,
+        relativeTop: rect.top - parentRect.top,
+        fontSize: el.style.fontSize,
+        color: el.style.color
+      });
+    });
+    
+    // Wait for fonts to load and ensure everything is rendered
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Capture snapshot of the actual preview element
+    // Use the ACTUAL visible dimensions of the preview element, not context dimensions
+    // Provide fallback data in case html2canvas isn't available
+    capturePreviewSnapshot(
+      previewElement,
       (previewUrl) => {
+        if (!previewUrl) {
+          toast.error("Failed to capture preview. Please try again.");
+          return;
+        }
+
         const cartItem = {
           productId: productId || "signage", // Use "signage" as placeholder if no product
           name: `${product?.title || "Custom"} - Custom Signage`,
@@ -253,8 +311,17 @@ const SignageEditorContent = () => {
         toast.success("Added to cart successfully!");
         // Don't navigate - just show the toast
       },
-      canvasWidth,
-      canvasHeight
+      {
+        backgroundType,
+        backgroundColor,
+        backgroundGradient,
+        backgroundImageUrl,
+        getTextsFromContent,
+        // Use ACTUAL visible dimensions from the preview element, not context dimensions
+        // The visible preview is 600x600, not the context canvasWidth/canvasHeight
+        canvasWidth: elementWidth,  // Use the actual element width (600)
+        canvasHeight: elementHeight  // Use the actual element height (600)
+      }
     );
   };
 
