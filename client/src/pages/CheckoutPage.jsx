@@ -13,6 +13,17 @@ import {
 const STAIRS_COST = 250;
 const SETUP_COST = 300; // 150 × 2 hours
 // ====================
+// DELIVERY / PICKUP TIME SLOTS
+// ====================
+const TIME_SLOTS = [
+  { label: "6:00am - 8:00am", fee: 50, type: "early" },
+  { label: "9:00am - 12:00pm", fee: 0 },
+  { label: "1:00pm - 3:00pm", fee: 0 },
+  { label: "4:00pm - 7:00pm", fee: 0 },
+  { label: "8:00pm - 10:00pm", fee: 50, type: "late" },
+];
+
+// ====================
 // DATE HELPERS
 // ====================
 const todayISO = new Date().toISOString().split("T")[0];
@@ -62,8 +73,12 @@ useEffect(() => {
   }
 }, [deliveryDate]);
 
-  const [deliveryTime, setDeliveryTime] = useState("7:00am-11:00am");
-  const [pickupTime, setPickupTime] = useState("7:00am-11:00am");
+const [deliveryTime, setDeliveryTime] = useState("");
+const [pickupTime, setPickupTime] = useState("");
+
+const [deliveryTimeFee, setDeliveryTimeFee] = useState(0);
+const [pickupTimeFee, setPickupTimeFee] = useState(0);
+
 
   const [stairsFee, setStairsFee] = useState(false);
   const [setupFee, setSetupFee] = useState(false);
@@ -100,7 +115,11 @@ useEffect(() => {
 
 
   // ✅ Extra fees (now stairsFee/setupFee exist)
-  const extraFees = (stairsFee ? STAIRS_COST : 0) + (setupFee ? SETUP_COST : 0);
+const extraFees =
+  (stairsFee ? STAIRS_COST : 0) +
+  (setupFee ? SETUP_COST : 0) +
+  deliveryTimeFee +
+  pickupTimeFee;
   const finalTotal = pricing.total + extraFees;
 
   const handlePlaceOrder = async (mode = "FULL") => {
@@ -374,15 +393,23 @@ useEffect(() => {
 
               <div>
                 <label className="block text-gray-500 mb-1">Delivery Time</label>
-                <select
-                  value={deliveryTime}
-                  onChange={(e) => setDeliveryTime(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-black"
-                >
-                  <option>7:00am-11:00am</option>
-                  <option>11:00am-3:00pm</option>
-                  <option>3:00pm-7:00pm</option>
-                </select>
+               <select
+  value={deliveryTime}
+  onChange={(e) => {
+    const selected = TIME_SLOTS.find(t => t.label === e.target.value);
+    setDeliveryTime(e.target.value);
+    setDeliveryTimeFee(selected?.fee || 0);
+  }}
+  className="w-full border rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-black"
+>
+  <option value="">Select time</option>
+  {TIME_SLOTS.map((t) => (
+    <option key={t.label} value={t.label}>
+      {t.label}{t.fee ? " (+$50)" : ""}
+    </option>
+  ))}
+</select>
+
               </div>
 
               <div>
@@ -400,15 +427,23 @@ useEffect(() => {
 
               <div>
                 <label className="block text-gray-500 mb-1">Pickup Time</label>
-                <select
-                  value={pickupTime}
-                  onChange={(e) => setPickupTime(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-black"
-                >
-                  <option>7:00am-11:00am</option>
-                  <option>11:00am-3:00pm</option>
-                  <option>3:00pm-7:00pm</option>
-                </select>
+             <select
+  value={pickupTime}
+  onChange={(e) => {
+    const selected = TIME_SLOTS.find(t => t.label === e.target.value);
+    setPickupTime(e.target.value);
+    setPickupTimeFee(selected?.fee || 0);
+  }}
+  className="w-full border rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-black"
+>
+  <option value="">Select time</option>
+  {TIME_SLOTS.map((t) => (
+    <option key={t.label} value={t.label}>
+      {t.label}{t.fee ? " (+$50)" : ""}
+    </option>
+  ))}
+</select>
+
               </div>
             </div>
 
@@ -431,6 +466,7 @@ useEffect(() => {
                 Set Up & Tear Down (+$150/hour, 2 hours minimum)
               </label>
             </div>
+            
           </section>
 
           {/* Payment */}
@@ -507,6 +543,20 @@ useEffect(() => {
               ${finalTotal.toFixed(2)}
             </span>
           </div>
+          {deliveryTimeFee > 0 && (
+  <div className="flex justify-between text-sm">
+    <span className="text-gray-500">Early / Late Delivery</span>
+    <span className="font-medium">${deliveryTimeFee.toFixed(2)}</span>
+  </div>
+)}
+
+{pickupTimeFee > 0 && (
+  <div className="flex justify-between text-sm">
+    <span className="text-gray-500">Early / Late Pickup</span>
+    <span className="font-medium">${pickupTimeFee.toFixed(2)}</span>
+  </div>
+)}
+
 
           {/* TERMS AGREEMENT CHECKBOX */}
           <div className="mt-4 flex items-start gap-2 text-sm">
