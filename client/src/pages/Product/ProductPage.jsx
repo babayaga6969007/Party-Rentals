@@ -39,6 +39,16 @@ const { addToCart } = useCart();
 // ====================
 const isVariableRental =
   product?.productType === "rental" && product?.productSubType === "variable";
+// 🔑 Helper: get lowest priced variation (salePrice > price)
+const getLowestPriceVariation = (variations = []) => {
+  if (!variations.length) return null;
+
+  return [...variations].sort((a, b) => {
+    const aPrice = a.salePrice ?? a.price ?? Infinity;
+    const bPrice = b.salePrice ?? b.price ?? Infinity;
+    return aPrice - bPrice;
+  })[0];
+};
 
 const [selectedVarOptions, setSelectedVarOptions] = useState({}); 
 // shape: { [groupId]: optionId }
@@ -304,21 +314,28 @@ const totalPrice =
     if (id) fetchProduct();
   }, [id]);
 // Auto-select first options for each group (only for variable rental)
+// ✅ Auto-select lowest priced variation (image + price + stock)
 useEffect(() => {
-  if (!isVariableRental) {
-    setSelectedVarOptions({});
+  if (!isVariableRental || !product?.variations?.length) {
     setSelectedVariation(null);
+    setSelectedVarOptions({});
     return;
   }
 
-  // Default selection: first option of each group
+  const lowest = getLowestPriceVariation(product.variations);
+  if (!lowest) return;
+
+  // Build selectedVarOptions from that variation
   const defaults = {};
-  attributeGroupsForUI.forEach((g) => {
-    if (g.options?.length > 0) defaults[g.groupId] = String(g.options[0]._id);
+  (lowest.attributes || []).forEach((a) => {
+    defaults[String(a.groupId?._id || a.groupId)] =
+      String(a.optionId?._id || a.optionId);
   });
 
   setSelectedVarOptions(defaults);
-}, [isVariableRental, product?._id]); // re-run when product changes
+  setSelectedVariation(lowest);
+}, [isVariableRental, product]);
+
 // Find matching variation whenever selection changes
 useEffect(() => {
   if (!isVariableRental) return;
@@ -711,9 +728,17 @@ const toggleAddon = (addon) => {
 
         {/* RIGHT COLUMN */}
         <div>
-          <h1 className="text-4xl font-semibold text-[#2D2926] mb-4">
-{product?.title || "—"}
-          </h1>
+         <h1 className="text-4xl font-semibold text-[#2D2926] mb-2">
+  {product?.title || "—"}
+</h1>
+
+{/* 📐 Variation Dimension (if exists) */}
+{isVariableRental && selectedVariation?.dimension && (
+  <p className="text-sm text-gray-600 mb-3">
+    Dimension: <span className="font-medium">{selectedVariation.dimension}</span>
+  </p>
+)}
+
 
           {/* PRICE + STOCK (Responsive layout) */}
 <div className="mt-2 flex flex-col md:flex-row md:items-center md:gap-6">

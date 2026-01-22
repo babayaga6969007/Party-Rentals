@@ -12,6 +12,17 @@ import {
 
 const STAIRS_COST = 250;
 const SETUP_COST = 300; // 150 × 2 hours
+// ====================
+// DATE HELPERS
+// ====================
+const todayISO = new Date().toISOString().split("T")[0];
+
+const addDays = (dateStr, days) => {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+};
 
 export default function CheckoutPage({ paymentMode, setPaymentMode }) {
   const location = useLocation();
@@ -37,6 +48,19 @@ export default function CheckoutPage({ paymentMode, setPaymentMode }) {
   // ✅ Delivery & Pickup state (MUST be declared before using stairsFee/setupFee)
   const [deliveryDate, setDeliveryDate] = useState("");
   const [pickupDate, setPickupDate] = useState("");
+// 🔒 Ensure pickup date is always at least 2 days after delivery
+useEffect(() => {
+  if (!deliveryDate) {
+    setPickupDate("");
+    return;
+  }
+
+  const minPickup = addDays(deliveryDate, 2);
+
+  if (!pickupDate || pickupDate < minPickup) {
+    setPickupDate("");
+  }
+}, [deliveryDate]);
 
   const [deliveryTime, setDeliveryTime] = useState("7:00am-11:00am");
   const [pickupTime, setPickupTime] = useState("7:00am-11:00am");
@@ -339,11 +363,13 @@ export default function CheckoutPage({ paymentMode, setPaymentMode }) {
               <div>
                 <label className="block text-gray-500 mb-1">Delivery Date</label>
                 <input
-                  type="date"
-                  value={deliveryDate}
-                  onChange={(e) => setDeliveryDate(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-black"
-                />
+  type="date"
+  min={todayISO}
+  value={deliveryDate}
+  onChange={(e) => setDeliveryDate(e.target.value)}
+  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-black"
+/>
+
               </div>
 
               <div>
@@ -362,11 +388,14 @@ export default function CheckoutPage({ paymentMode, setPaymentMode }) {
               <div>
                 <label className="block text-gray-500 mb-1">Pickup Date</label>
                 <input
-                  type="date"
-                  value={pickupDate}
-                  onChange={(e) => setPickupDate(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-black"
-                />
+  type="date"
+  min={deliveryDate ? addDays(deliveryDate, 2) : ""}
+  value={pickupDate}
+  onChange={(e) => setPickupDate(e.target.value)}
+  disabled={!deliveryDate}
+  className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-black disabled:bg-gray-100"
+/>
+
               </div>
 
               <div>

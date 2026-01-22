@@ -8,6 +8,49 @@ import { api } from "../../utils/api";
 // ====================
 const today = new Date().toISOString().split("T")[0];
 
+// 🔑 Get lowest priced variation (salePrice preferred)
+const getLowestVariation = (product) => {
+  if (
+    product?.productType === "rental" &&
+    product?.productSubType === "variable" &&
+    Array.isArray(product.variations) &&
+    product.variations.length > 0
+  ) {
+    return [...product.variations].sort((a, b) => {
+      const aPrice = a.salePrice ?? a.price ?? Infinity;
+      const bPrice = b.salePrice ?? b.price ?? Infinity;
+      return aPrice - bPrice;
+    })[0];
+  }
+  return null;
+};
+
+// 🖼️ Get correct image for product card
+const getProductCardImage = (product) => {
+  const lowestVar = getLowestVariation(product);
+  return (
+    lowestVar?.image?.url ||
+    product.images?.[0]?.url ||
+    "/placeholder-product.png"
+  );
+};
+
+// 💰 Get correct price for product card
+const getProductCardPrice = (product) => {
+  const lowestVar = getLowestVariation(product);
+
+  if (lowestVar) {
+    return {
+      price: lowestVar.price,
+      salePrice: lowestVar.salePrice,
+    };
+  }
+
+  return {
+    price: product.pricePerDay,
+    salePrice: product.salePrice,
+  };
+};
 
 
 
@@ -521,10 +564,11 @@ return inCategory && inPrice && inTags;
         {/* IMAGE — NOW FULL WIDTH, NO PADDING */}
         <div className="h-48 rounded-t-xl overflow-hidden">
           <img
-src={product.images?.[0]?.url || "/placeholder-product.png"}
+  src={getProductCardImage(product)}
   alt={product.title}
   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
 />
+
 
         </div>
 
@@ -538,27 +582,29 @@ src={product.images?.[0]?.url || "/placeholder-product.png"}
 
           {/* PRICE SECTION */}
           {/* PRICE SECTION */}
-<div className="mt-1 flex items-center gap-2">
-  {product.salePrice && Number(product.salePrice) < Number(product.pricePerDay)
- ? (
-    <>
-      {/* Regular price (striked) */}
-      <span className="text-gray-500 line-through text-sm">
-        $ {product.pricePerDay} / day
-      </span>
+{(() => {
+  const { price, salePrice } = getProductCardPrice(product);
 
-      {/* Sale price (actual backend value) */}
-      <span className="text-red-600 font-bold text-lg">
-        $ {product.salePrice} / day
-      </span>
-    </>
-  ) : (
-    /* No sale price */
-    <span className="text-black font-semibold text-lg">
-      $ {product.pricePerDay} / day
-    </span>
-  )}
-</div>
+  return (
+    <div className="mt-1 flex items-center gap-2">
+      {salePrice && Number(salePrice) < Number(price) ? (
+        <>
+          <span className="text-gray-500 line-through text-sm">
+            $ {price} / day
+          </span>
+          <span className="text-red-600 font-bold text-lg">
+            $ {salePrice} / day
+          </span>
+        </>
+      ) : (
+        <span className="text-black font-semibold text-lg">
+          $ {price} / day
+        </span>
+      )}
+    </div>
+  );
+})()}
+
 
 
           {/* CATEGORY */}
