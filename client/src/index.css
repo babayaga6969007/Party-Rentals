@@ -2,6 +2,63 @@
 
 @import "tailwindcss";
 
+/* Signage Fonts from public/fonts */
+@font-face {
+  font-family: 'BlackMango-Bold';
+  src: url('/fonts/BlackMango-Bold.otf') format('opentype');
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Bodoni 72 Smallcaps';
+  src: url('/fonts/Bodoni 72 Smallcaps Book.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Bright';
+  src: url('/fonts/Bright TTF.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Farmhouse';
+  src: url('/fonts/Farmhouse.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Futura';
+  src: url('/fonts/Futura.ttc') format('truetype-collection');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Greycliff CF Thin';
+  src: url('/fonts/Greycliff_CF_Thin.otf') format('opentype');
+  font-weight: 100;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'SignPainter';
+  src: url('/fonts/SignPainter.ttc') format('truetype-collection');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Sloop Script Three';
+  src: url('/fonts/Sloop-ScriptThree.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 
 
 /* Perfect Infinite Loop Animation */

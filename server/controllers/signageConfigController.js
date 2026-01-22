@@ -31,47 +31,12 @@ exports.updateConfig = async (req, res) => {
   }
 };
 
-// Add a font
-exports.addFont = async (req, res) => {
-  try {
-    const { name, value } = req.body;
-    if (!name || !value) {
-      return res.status(400).json({ error: "Font name and value are required" });
-    }
-
-    const config = await SignageConfig.getConfig();
-    config.fonts.push({ name, value });
-    await config.save();
-
-    res.json({ config, message: "Font added successfully" });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
-
-// Remove a font
-exports.removeFont = async (req, res) => {
-  try {
-    const { fontId } = req.params;
-    const config = await SignageConfig.getConfig();
-    
-    config.fonts = config.fonts.filter(
-      (font) => font._id.toString() !== fontId
-    );
-    await config.save();
-
-    res.json({ config, message: "Font removed successfully" });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
-
 // Add a size
 exports.addSize = async (req, res) => {
   try {
-    const { key, label, width, height, fontSize, price } = req.body;
-    if (!key || !label || width === undefined || height === undefined || fontSize === undefined) {
-      return res.status(400).json({ error: "All size fields are required" });
+    const { key, label, fontSize, price } = req.body;
+    if (!key || !label || fontSize === undefined) {
+      return res.status(400).json({ error: "Key, label, and fontSize are required" });
     }
 
     const config = await SignageConfig.getConfig();
@@ -84,8 +49,6 @@ exports.addSize = async (req, res) => {
     config.sizes.push({ 
       key, 
       label, 
-      width, 
-      height, 
       fontSize, 
       price: price !== undefined ? Number(price) : 0 
     });
@@ -101,7 +64,7 @@ exports.addSize = async (req, res) => {
 exports.updateSize = async (req, res) => {
   try {
     const { sizeId } = req.params;
-    const { key, label, width, height, fontSize, price } = req.body;
+    const { key, label, fontSize, price } = req.body;
     
     const config = await SignageConfig.getConfig();
     const sizeIndex = config.sizes.findIndex(
@@ -115,8 +78,6 @@ exports.updateSize = async (req, res) => {
     // Update size
     if (key) config.sizes[sizeIndex].key = key;
     if (label) config.sizes[sizeIndex].label = label;
-    if (width !== undefined) config.sizes[sizeIndex].width = width;
-    if (height !== undefined) config.sizes[sizeIndex].height = height;
     if (fontSize !== undefined) config.sizes[sizeIndex].fontSize = fontSize;
     if (price !== undefined) config.sizes[sizeIndex].price = Number(price);
 
@@ -162,3 +123,4 @@ exports.updatePrice = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+

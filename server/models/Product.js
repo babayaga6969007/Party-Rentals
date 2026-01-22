@@ -34,6 +34,21 @@ const ProductAddonSchema = new mongoose.Schema(
       type: Number,
       default: null, // if null → use base price from Attribute option
     },
+    // Shelving configuration (for shelving addons)
+    shelvingTier: {
+      type: String,
+      enum: ["A", "B", "C"],
+      default: undefined,
+    },
+    shelvingSize: {
+      type: String,
+      default: "",
+    },
+    shelvingQuantity: {
+      type: Number,
+      default: 1,
+      min: 0,
+    },
   },
   { _id: false }
 );

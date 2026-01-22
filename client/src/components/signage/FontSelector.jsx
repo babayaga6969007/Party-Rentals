@@ -1,17 +1,11 @@
 import { memo } from "react";
-import { useSignage } from "../../context/SignageContext";
+import { useSignage, DEFAULT_FONTS } from "../../context/SignageContext";
 
 const FontSelector = memo(() => {
-  const { selectedFont, setSelectedFont, fonts, configLoading } = useSignage();
+  const { selectedFont, setSelectedFont } = useSignage();
 
-  if (configLoading) {
-    return (
-      <div className="bg-white p-5 rounded-xl shadow">
-        <h3 className="text-lg font-semibold text-[#2D2926] mb-4">Font</h3>
-        <div className="text-gray-500">Loading fonts...</div>
-      </div>
-    );
-  }
+  // Always use the 8 custom fonts from fonts folder
+  const fonts = DEFAULT_FONTS;
 
   return (
     <div className="bg-white p-5 rounded-xl shadow">
@@ -22,7 +16,7 @@ const FontSelector = memo(() => {
         <div className="flex gap-3 min-w-max">
           {fonts.map((font, index) => (
             <button
-              key={font._id || font.value || `font-${index}`}
+              key={font.value || `font-${index}`}
               onClick={() => setSelectedFont(font.value)}
               className={`shrink-0 px-4 py-3 rounded-lg border-2 transition ${
                 selectedFont === font.value

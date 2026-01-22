@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { api } from "../utils/api";
 import AdminLayout from "./AdminLayout";
+import toast from "react-hot-toast";
+import ConfirmDeleteModal from "../components/admin/ConfirmDeleteModal";
 
 const Products = () => {
   const [items, setItems] = useState([]);
   const [productFilter, setProductFilter] = useState("all");
   const [categories, setCategories] = useState([]);
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, productId: null });
  
 // "all" | "rental" | "sale"
 
@@ -22,6 +25,13 @@ const Products = () => {
  useEffect(() => {
   loadProducts();
   loadCategories();
+  
+  // Check for success message from edit redirect (using sessionStorage)
+  const productEdited = sessionStorage.getItem("productEdited");
+  if (productEdited === "true") {
+    toast.success("Product updated successfully!");
+    sessionStorage.removeItem("productEdited");
+  }
 }, []);
 
 
@@ -37,25 +47,33 @@ const Products = () => {
 
 
   
-  const handleDelete = async (id) => {
-  if (!confirm("Are you sure you want to delete this product?")) return;
+  const handleDeleteClick = (id) => {
+    setDeleteConfirm({ isOpen: true, productId: id });
+  };
 
-  try {
-    const token = localStorage.getItem("admin_token");
+  const handleDeleteConfirm = async () => {
+    const productId = deleteConfirm.productId;
+    if (!productId) return;
 
-    await api(`/products/admin/delete/${id}`, {
-  method: "DELETE",
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-});
-    alert("Product deleted successfully!");
-    loadProducts(); // refresh list
-  } catch (err) {
-    console.error(err);
-    alert(err.message || "Error deleting product");
-  }
-};
+    try {
+      const token = localStorage.getItem("admin_token");
+
+      await api(`/products/admin/delete/${productId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      toast.success("Product deleted successfully!");
+      setDeleteConfirm({ isOpen: false, productId: null });
+      loadProducts(); // refresh list
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || "Error deleting product");
+      setDeleteConfirm({ isOpen: false, productId: null });
+    }
+  };
 
 
 // ====================
@@ -161,7 +179,7 @@ const filteredItems =
 
               <button
                 className="text-red-500"
-                onClick={() => handleDelete(p._id)}
+                onClick={() => handleDeleteClick(p._id)}
               >
                 Delete
               </button>
@@ -169,6 +187,15 @@ const filteredItems =
           </div>
         ))}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, productId: null })}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Product"
+        message="Are you sure you want to delete this product? This action cannot be undone and all product data will be permanently removed."
+      />
     </AdminLayout>
   );
 };

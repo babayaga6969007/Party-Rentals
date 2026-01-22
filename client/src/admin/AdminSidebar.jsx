@@ -25,7 +25,8 @@ const Sidebar = () => {
   location.pathname.startsWith("/admin/categories") ||
   location.pathname.startsWith("/admin/attributes") ||
   location.pathname.startsWith("/admin/coupons") ||
-  location.pathname.startsWith("/admin/signage-config");
+  location.pathname.startsWith("/admin/signage-config") ||
+  location.pathname.startsWith("/admin/shelving-config");
 
 
   const isOrdersActive = location.pathname.startsWith("/admin/orders");
@@ -96,6 +97,9 @@ const Sidebar = () => {
 </NavLink>
           <NavLink to="/admin/signage-config" className={linkClass}>
             Signage Config
+          </NavLink>
+          <NavLink to="/admin/shelving-config" className={linkClass}>
+            Shelving Config
           </NavLink>
 
         </div>

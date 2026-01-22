@@ -9,7 +9,7 @@ import SignagePreview from "../../components/signage/SignagePreview";
 import SignageHeader from "../../components/signage/SignageHeader";
 import SignageControls from "../../components/signage/SignageControls";
 import BackgroundImageOptions from "../../components/signage/BackgroundImageOptions";
-import { createCanvasPreview } from "../../utils/signageCart";
+import { capturePreviewSnapshot } from "../../utils/signageCart";
 
 const SignageEditorContent = () => {
   const { id: productId, token } = useParams();
@@ -40,31 +40,31 @@ const SignageEditorContent = () => {
     selectedFont,
     selectedTextColor,
     selectedSize,
+    textSizes,
     getTextsFromContent,
     loadSignage,
     currentPrice,
     canvasWidth,
     canvasHeight,
+    configLoading,
   } = useSignage();
 
   // Track if we've initialized the position for this session
   const positionInitializedRef = useRef(false);
 
-  // Ensure text is centered on initial load (for all new signages, not shared ones)
+  // Ensure text is horizontally centered on initial load (for all new signages, not shared ones)
   useEffect(() => {
-    if (!token && !loading && !isSharedView && !positionInitializedRef.current) {
-      // Calculate center position accounting for text block dimensions
-      // Since we use translate(-50%, -50%), the position should be the center of the canvas
-      // The translate will handle moving it by half width/height
-      const centerPosition = { 
-        x: (canvasWidth || 800) / 2, 
-        y: (canvasHeight || 500) / 2 
+    if (!token && !loading && !isSharedView && !configLoading && !positionInitializedRef.current && canvasWidth && canvasHeight) {
+      // Position horizontally centered, near top
+      const centeredPosition = { 
+        x: canvasWidth / 2, // Horizontally centered
+        y: 200, // Near top with padding
       };
       
-      setTextPosition(centerPosition);
+      setTextPosition(centeredPosition);
       positionInitializedRef.current = true;
     }
-  }, [token, loading, isSharedView, setTextPosition]);
+  }, [token, loading, isSharedView, configLoading, canvasWidth, canvasHeight, setTextPosition]);
 
   // Fetch product data or shared signage (productId is optional)
   useEffect(() => {
@@ -160,8 +160,8 @@ const SignageEditorContent = () => {
       (lines.length - 1) * lineHeight + fontSize
     );
     
-    const clampedX = Math.max(textSize.width / 2, Math.min(newX, (canvasWidth || 800) - textSize.width / 2));
-    const clampedY = Math.max(dynamicHeight / 2, Math.min(newY, (canvasHeight || 500) - dynamicHeight / 2));
+    const clampedX = Math.max(textSize.width / 2, Math.min(newX, (canvasWidth || 600) - textSize.width / 2));
+    const clampedY = Math.max(dynamicHeight / 2, Math.min(newY, (canvasHeight || 1200) - dynamicHeight / 2));
 
     // Store in ref - no rerender triggered, preview component reads from ref
     dragPositionRef.current = { x: clampedX, y: clampedY };
@@ -183,8 +183,8 @@ const SignageEditorContent = () => {
       (lines.length - 1) * lineHeight + fontSize
     );
     
-    const clampedX = Math.max(textSize.width / 2, Math.min(newX, (canvasWidth || 800) - textSize.width / 2));
-    const clampedY = Math.max(dynamicHeight / 2, Math.min(newY, (canvasHeight || 500) - dynamicHeight / 2));
+    const clampedX = Math.max(textSize.width / 2, Math.min(newX, (canvasWidth || 600) - textSize.width / 2));
+    const clampedY = Math.max(dynamicHeight / 2, Math.min(newY, (canvasHeight || 1200) - dynamicHeight / 2));
 
     // Store in ref - no rerender triggered, preview component reads from ref
     dragPositionRef.current = { x: clampedX, y: clampedY };
@@ -215,14 +215,72 @@ const SignageEditorContent = () => {
       return;
     }
 
-    // Create preview and add to cart (metadata stored in order, no separate signage entity)
-    createCanvasPreview(
-      backgroundType,
-      backgroundColor,
-      backgroundGradient,
-      backgroundImageUrl,
-      getTextsFromContent,
+    // Get the preview element (the div with the preview content)
+    // The canvasRef points to the inner preview div that contains the background and text
+    // This is the div with border-2 and specific width/height (600x1200)
+    const previewElement = canvasRef?.current;
+    if (!previewElement) {
+      console.error("Preview element not found. canvasRef:", canvasRef);
+      toast.error("Preview element not found. Please try again.");
+      return;
+    }
+    
+    // Get the exact dimensions from the element's style (not computed, to avoid padding)
+    const elementStyle = window.getComputedStyle(previewElement);
+    const elementWidth = parseInt(elementStyle.width) || previewElement.offsetWidth;
+    const elementHeight = parseInt(elementStyle.height) || previewElement.offsetHeight;
+    
+    console.log("Preview element found:", previewElement);
+    console.log("Preview element dimensions:", {
+      styleWidth: elementStyle.width,
+      styleHeight: elementStyle.height,
+      offsetWidth: previewElement.offsetWidth,
+      offsetHeight: previewElement.offsetHeight,
+      clientWidth: previewElement.clientWidth,
+      clientHeight: previewElement.clientHeight,
+      padding: elementStyle.padding,
+      margin: elementStyle.margin,
+      border: elementStyle.borderWidth
+    });
+    
+    // Store exact dimensions for html2canvas
+    previewElement.dataset.captureWidth = elementWidth.toString();
+    previewElement.dataset.captureHeight = elementHeight.toString();
+    
+    // Check if text elements are present in the preview
+    const textElements = previewElement.querySelectorAll('[style*="absolute"]');
+    console.log("Text elements found in preview:", textElements.length);
+    textElements.forEach((el, idx) => {
+      const rect = el.getBoundingClientRect();
+      const parentRect = previewElement.getBoundingClientRect();
+      console.log(`Text element ${idx}:`, {
+        text: el.textContent,
+        left: el.style.left,
+        top: el.style.top,
+        relativeLeft: rect.left - parentRect.left,
+        relativeTop: rect.top - parentRect.top,
+        fontSize: el.style.fontSize,
+        color: el.style.color
+      });
+    });
+    
+    // Wait for fonts to load and ensure everything is rendered
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Capture snapshot of the actual preview element
+    // Use the ACTUAL visible dimensions of the preview element, not context dimensions
+    // Provide fallback data in case html2canvas isn't available
+    capturePreviewSnapshot(
+      previewElement,
       (previewUrl) => {
+        if (!previewUrl) {
+          toast.error("Failed to capture preview. Please try again.");
+          return;
+        }
+
         const cartItem = {
           productId: productId || "signage", // Use "signage" as placeholder if no product
           name: `${product?.title || "Custom"} - Custom Signage`,
@@ -253,8 +311,17 @@ const SignageEditorContent = () => {
         toast.success("Added to cart successfully!");
         // Don't navigate - just show the toast
       },
-      canvasWidth,
-      canvasHeight
+      {
+        backgroundType,
+        backgroundColor,
+        backgroundGradient,
+        backgroundImageUrl,
+        getTextsFromContent,
+        // Use ACTUAL visible dimensions from the preview element, not context dimensions
+        // The visible preview is 600x600, not the context canvasWidth/canvasHeight
+        canvasWidth: elementWidth,  // Use the actual element width (600)
+        canvasHeight: elementHeight  // Use the actual element height (600)
+      }
     );
   };
 
@@ -266,13 +333,9 @@ const SignageEditorContent = () => {
     );
   }
 
+  // Don't block rendering if config is loading - use defaults
   return (
     <>
-      {/* Import Google Fonts */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Pacifico&family=Great+Vibes&family=Satisfy&family=Allura&family=Lobster&family=Playball&family=Tangerine:wght@400&family=Cookie&family=Amatic+SC:wght@400;700&family=Caveat:wght@400;700&display=swap" rel="stylesheet" />
-      
       <div className="min-h-screen bg-gray-50 pb-8">
         <div className="max-w-7xl mx-auto px-6 pt-32">
           <SignageHeader
@@ -299,7 +362,7 @@ const SignageEditorContent = () => {
             />
 
             {/* RIGHT SIDE - CANVAS (Sticky) */}
-            <div className="lg:col-span-2 h-[calc(100vh-200px)]">
+            <div className="lg:col-span-2 h-[calc(100vh-150px)] min-h-[800px]">
               <div className="bg-white p-5 rounded-xl shadow h-full flex flex-col">
                 <div className="flex items-center justify-between mb-4 shrink-0">
                   <h3 className="text-lg font-semibold text-[#2D2926]">
@@ -331,8 +394,8 @@ const SignageEditorContent = () => {
                   </p>
                 )}
                 
-                {/* Background Image Options - Only show if cart has items */}
-                {!isSharedView && cartItems.length > 0 && (
+                {/* Background Image Options - Show cart images if available */}
+                {!isSharedView && (
                   <div className="mt-4 shrink-0">
                     <BackgroundImageOptions cartItems={cartItems} />
                   </div>

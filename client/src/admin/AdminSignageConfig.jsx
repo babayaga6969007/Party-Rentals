@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import AdminLayout from "./AdminLayout";
 import { api } from "../utils/api";
 import toast from "react-hot-toast";
 import { DEFAULT_FONTS, DEFAULT_TEXT_SIZES } from "../context/SignageContext";
 
 const AdminSignageConfig = () => {
+  const navigate = useNavigate();
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -13,30 +15,60 @@ const AdminSignageConfig = () => {
   const [newSize, setNewSize] = useState({
     key: "",
     label: "",
-    width: "",
-    height: "",
     fontSize: "",
     price: "",
   });
   const [editingSize, setEditingSize] = useState(null);
-  
-  // Canvas dimensions
-  const [canvasWidth, setCanvasWidth] = useState(800);
-  const [canvasHeight, setCanvasHeight] = useState(500);
 
   const fetchConfig = async () => {
     try {
       setLoading(true);
+      setError(""); // Clear any previous errors
       const token = localStorage.getItem("admin_token");
+      
+      if (!token) {
+        setError("Admin authentication required. Please log in again.");
+        setLoading(false);
+        toast.error("Please log in to access this page");
+        setTimeout(() => {
+          navigate("/admin/login");
+        }, 1500);
+        return;
+      }
+      
       const res = await api("/signage-config/admin", {
         headers: { Authorization: `Bearer ${token}` },
       });
+      
+      if (!res || !res.config) {
+        setError("Invalid response from server. Please try again.");
+        setLoading(false);
+        return;
+      }
+      
       setConfig(res.config);
-      setCanvasWidth(res.config.canvasWidth || 800);
-      setCanvasHeight(res.config.canvasHeight || 500);
+      setError(""); // Clear error on success
     } catch (err) {
-      setError("Failed to load configuration");
-      console.error(err);
+      console.error("Config fetch error:", err);
+      const errorMessage = err?.response?.data?.error || err?.response?.data?.message || err?.message || "Failed to load configuration";
+      
+      // If token is invalid or expired, redirect to login
+      if (errorMessage.toLowerCase().includes("invalid token") || 
+          errorMessage.toLowerCase().includes("no token") ||
+          err?.response?.status === 401 ||
+          err?.response?.status === 400) {
+        setError("Your session has expired. Please log in again.");
+        toast.error("Session expired. Redirecting to login...");
+        // Clear the invalid token
+        localStorage.removeItem("admin_token");
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          navigate("/admin/login");
+        }, 2000);
+      } else {
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -57,48 +89,9 @@ const AdminSignageConfig = () => {
     }
   }, [config]);
 
-  const handleRemoveFont = async (fontId) => {
-    if (!window.confirm("Remove this font?")) return;
-
-    try {
-      const token = localStorage.getItem("admin_token");
-      const res = await api(`/signage-config/admin/fonts/${fontId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setConfig(res.config);
-      toast.success("Font removed successfully");
-    } catch (err) {
-      toast.error("Failed to remove font");
-      console.error(err);
-    }
-  };
-  
-  const handleUpdateCanvas = async () => {
-    try {
-      const token = localStorage.getItem("admin_token");
-      const res = await api("/signage-config/admin/canvas", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          canvasWidth: Number(canvasWidth),
-          canvasHeight: Number(canvasHeight),
-        }),
-      });
-      setConfig(res.config);
-      toast.success("Canvas dimensions updated successfully");
-    } catch (err) {
-      toast.error("Failed to update canvas dimensions");
-      console.error(err);
-    }
-  };
-
   const handleAddSize = async (e) => {
     e.preventDefault();
-    if (!newSize.key || !newSize.label || !newSize.width || !newSize.height || !newSize.fontSize || !newSize.price) {
+    if (!newSize.key || !newSize.label || !newSize.fontSize || !newSize.price) {
       toast.error("Please fill in all size fields including price");
       return;
     }
@@ -113,14 +106,12 @@ const AdminSignageConfig = () => {
         },
         body: JSON.stringify({
           ...newSize,
-          width: Number(newSize.width),
-          height: Number(newSize.height),
           fontSize: Number(newSize.fontSize),
           price: Number(newSize.price),
         }),
       });
       setConfig(res.config);
-      setNewSize({ key: "", label: "", width: "", height: "", fontSize: "", price: "" });
+      setNewSize({ key: "", label: "", fontSize: "", price: "" });
       toast.success("Size added successfully");
     } catch (err) {
       toast.error(err.message || "Failed to add size");
@@ -135,7 +126,7 @@ const AdminSignageConfig = () => {
       const token = localStorage.getItem("admin_token");
       
       // Validate required fields first
-      if (!editingSize.key || !editingSize.label || !editingSize.width || !editingSize.height || !editingSize.fontSize) {
+      if (!editingSize.key || !editingSize.label || !editingSize.fontSize) {
         toast.error("Please fill in all required fields");
         return;
       }
@@ -154,15 +145,13 @@ const AdminSignageConfig = () => {
       const updateData = {
         key: editingSize.key,
         label: editingSize.label,
-        width: Number(editingSize.width),
-        height: Number(editingSize.height),
         fontSize: Number(editingSize.fontSize),
         price: priceValue,
       };
       
       // Validate numeric fields
-      if (isNaN(updateData.width) || isNaN(updateData.height) || isNaN(updateData.fontSize)) {
-        toast.error("Width, height, and font size must be valid numbers");
+      if (isNaN(updateData.fontSize)) {
+        toast.error("Font size must be a valid number");
         return;
       }
       
@@ -237,10 +226,21 @@ const AdminSignageConfig = () => {
     );
   }
 
-  if (error) {
+  if (error && !config) {
     return (
       <AdminLayout>
-        <div className="p-6 text-red-600">{error}</div>
+        <div className="p-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h3 className="text-red-800 font-semibold mb-2">Error Loading Configuration</h3>
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={fetchConfig}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
       </AdminLayout>
     );
   }
@@ -249,66 +249,6 @@ const AdminSignageConfig = () => {
     <AdminLayout>
       <div className="p-6">
         <h1 className="text-2xl font-bold mb-6">Signage Configuration</h1>
-
-        {/* Canvas Dimensions */}
-        <div className="bg-white p-6 rounded-lg shadow mb-6">
-          <h2 className="text-xl font-semibold mb-4">Canvas Dimensions</h2>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Width (px)</label>
-              <input
-                type="number"
-                value={canvasWidth}
-                onChange={(e) => setCanvasWidth(e.target.value)}
-                className="border rounded px-3 py-2 w-full"
-                min="100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Height (px)</label>
-              <input
-                type="number"
-                value={canvasHeight}
-                onChange={(e) => setCanvasHeight(e.target.value)}
-                className="border rounded px-3 py-2 w-full"
-                min="100"
-              />
-            </div>
-          </div>
-          <button
-            onClick={handleUpdateCanvas}
-            className="bg-[#8B5C42] text-white px-4 py-2 rounded-lg hover:bg-[#704A36] transition"
-          >
-            Update Canvas Dimensions
-          </button>
-        </div>
-
-        {/* Fonts Section */}
-        <div className="bg-white p-6 rounded-lg shadow mb-6">
-          <h2 className="text-xl font-semibold mb-4">Fonts</h2>
-          <p className="text-sm text-gray-500 mb-4">Fonts are managed by the system. You can only remove existing fonts.</p>
-
-          {/* Fonts List */}
-          <div className="space-y-2">
-            {config?.fonts?.map((font) => (
-              <div
-                key={font._id}
-                className="flex items-center justify-between p-3 border rounded"
-              >
-                <div>
-                  <span className="font-medium">{font.name}</span>
-                  <span className="text-gray-500 ml-2">({font.value})</span>
-                </div>
-                <button
-                  onClick={() => handleRemoveFont(font._id)}
-                  className="text-red-600 hover:text-red-800 text-sm px-3 py-1 rounded-lg hover:bg-red-50 transition"
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
 
         {/* Sizes Section */}
         <div className="bg-white p-6 rounded-lg shadow">
@@ -335,26 +275,6 @@ const AdminSignageConfig = () => {
                   onChange={(e) => setNewSize({ ...newSize, label: e.target.value })}
                   className="border rounded px-3 py-2 w-full"
                   placeholder="e.g., Small, Medium"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Width (px)</label>
-                <input
-                  type="number"
-                  value={newSize.width}
-                  onChange={(e) => setNewSize({ ...newSize, width: e.target.value })}
-                  className="border rounded px-3 py-2 w-full"
-                  min="1"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Height (px)</label>
-                <input
-                  type="number"
-                  value={newSize.height}
-                  onChange={(e) => setNewSize({ ...newSize, height: e.target.value })}
-                  className="border rounded px-3 py-2 w-full"
-                  min="1"
                 />
               </div>
               <div>
@@ -415,24 +335,6 @@ const AdminSignageConfig = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">Width</label>
-                      <input
-                        type="number"
-                        value={editingSize.width}
-                        onChange={(e) => setEditingSize({ ...editingSize, width: e.target.value })}
-                        className="border rounded px-3 py-2 w-full"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Height</label>
-                      <input
-                        type="number"
-                        value={editingSize.height}
-                        onChange={(e) => setEditingSize({ ...editingSize, height: e.target.value })}
-                        className="border rounded px-3 py-2 w-full"
-                      />
-                    </div>
-                    <div>
                       <label className="block text-sm font-medium mb-2">Font Size</label>
                       <input
                         type="number"
@@ -473,7 +375,7 @@ const AdminSignageConfig = () => {
                       <span className="font-medium">{size.label}</span>
                       <span className="text-gray-500 ml-2">({size.key})</span>
                       <span className="text-gray-500 ml-4">
-                        {size.width} × {size.height}px, {size.fontSize}px font
+                        {size.fontSize}px font
                       </span>
                       <span className="text-[#8B5C42] font-semibold ml-4">
                         ${size.price || 0}
@@ -484,8 +386,6 @@ const AdminSignageConfig = () => {
                         onClick={() => {
                           const editData = { 
                             ...size, 
-                            width: String(size.width || ""),
-                            height: String(size.height || ""),
                             fontSize: String(size.fontSize || ""),
                             price: size.price !== undefined && size.price !== null ? String(size.price) : "",
                           };
