@@ -16,10 +16,7 @@ const Partners = () => {
         className="max-w-3xl mx-auto text-center text-[32px] text-[#2D2926] mb-6 leading-relaxed"
         style={{ fontFamily: '"Cormorant Garamond", serif' }}
       >
-        We proudly collaborate with trusted event vendors and décor specialists across the 
-        city to bring you high-quality party props and beautiful pre-loved décor. Our partners 
-        help us ensure memorable celebrations, convenient rentals, and exceptional value for 
-        every occasion.
+       You shouldn't have to compromise the unique style of your event - with our customizable rentals and tailored fabrications, you don't.
       </p>
 
       {/* Heading */}

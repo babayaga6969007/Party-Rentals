@@ -179,7 +179,7 @@ const iconHoverClass =
   `}
 >
 
-            Custom Enquiry
+            Custom Inquiry
           </Link>
 
           {/* MOBILE MENU */}
