@@ -270,10 +270,43 @@ const SignageEditorContent = () => {
       });
       
       // Wait for fonts to load and ensure everything is rendered
-      if (document.fonts && document.fonts.ready) {
-        await document.fonts.ready;
+      // Preload fonts by creating hidden elements with all font families
+      if (texts && texts.length > 0) {
+        const fontFamilies = [...new Set(texts.map(t => t.fontFamily || "'Farmhouse', cursive"))];
+      
+      // Preload each font
+      fontFamilies.forEach(font => {
+        const cleanFont = font.replace(/'/g, '').replace(/,.*$/g, '').trim();
+        const testEl = document.createElement('span');
+        testEl.style.fontFamily = `"${cleanFont}", Arial, sans-serif`;
+        testEl.style.position = 'absolute';
+        testEl.style.visibility = 'hidden';
+        testEl.style.fontSize = '48px';
+        testEl.textContent = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        document.body.appendChild(testEl);
+        void testEl.offsetWidth; // Force layout
+      });
+    }
+    
+    // Wait for document.fonts.ready
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+    
+    // Additional wait for fonts to fully load (longer for production)
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Clean up preload elements
+    const preloadElements = document.querySelectorAll('span[style*="visibility: hidden"]');
+    preloadElements.forEach(el => {
+      if (el.textContent === 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') {
+        try {
+          document.body.removeChild(el);
+        } catch (e) {
+          // Element might already be removed
+        }
       }
-      await new Promise(resolve => setTimeout(resolve, 300));
+    });
 
       // Capture snapshot of the actual preview element
       // Use the ACTUAL visible dimensions of the preview element, not context dimensions
