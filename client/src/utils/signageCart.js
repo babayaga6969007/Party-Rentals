@@ -32,8 +32,13 @@ export const capturePreviewSnapshot = async (previewElement, callback, fallbackD
   try {
     console.log("Capturing preview screenshot with html2canvas...");
     
-    // Wait a bit to ensure all text is rendered
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Wait for fonts to be loaded before capturing
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+    
+    // Wait longer to ensure all text and fonts are fully rendered (important for production)
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     // Import html2canvas - it uses default export
     const html2canvasModule = await import('html2canvas');
@@ -104,8 +109,11 @@ export const capturePreviewSnapshot = async (previewElement, callback, fallbackD
     tempContainer.appendChild(clonedPreview);
     document.body.appendChild(tempContainer);
     
-    // Wait for it to render
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Wait for fonts and rendering (longer wait for production)
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+    await new Promise(resolve => setTimeout(resolve, 300));
     
     console.log("Capturing temporary container with exact dimensions:", captureWidth, "x", captureHeight);
     
@@ -126,6 +134,56 @@ export const capturePreviewSnapshot = async (previewElement, callback, fallbackD
       onclone: (clonedDoc, element) => {
         // Ensure fonts are loaded and text is visible in the cloned document
         console.log("=== html2canvas onclone callback ===");
+        
+        // Inject font-face declarations into cloned document to ensure fonts are available
+        const style = clonedDoc.createElement('style');
+        style.textContent = `
+          @font-face {
+            font-family: 'BlackMango-Bold';
+            src: url('${window.location.origin}/fonts/BlackMango-Bold.otf') format('opentype');
+          }
+          @font-face {
+            font-family: 'Bodoni 72 Smallcaps';
+            src: url('${window.location.origin}/fonts/Bodoni 72 Smallcaps Book.ttf') format('truetype');
+          }
+          @font-face {
+            font-family: 'Bright';
+            src: url('${window.location.origin}/fonts/Bright TTF.ttf') format('truetype');
+          }
+          @font-face {
+            font-family: 'Farmhouse';
+            src: url('${window.location.origin}/fonts/Farmhouse.ttf') format('truetype');
+          }
+          @font-face {
+            font-family: 'Futura';
+            src: url('${window.location.origin}/fonts/Futura.ttc') format('truetype-collection');
+          }
+          @font-face {
+            font-family: 'Greycliff CF Thin';
+            src: url('${window.location.origin}/fonts/Greycliff_CF_Thin.otf') format('opentype');
+          }
+          @font-face {
+            font-family: 'SignPainter';
+            src: url('${window.location.origin}/fonts/SignPainter.ttc') format('truetype-collection');
+          }
+          @font-face {
+            font-family: 'Sloop Script Three';
+            src: url('${window.location.origin}/fonts/Sloop-ScriptThree.ttf') format('truetype');
+          }
+        `;
+        clonedDoc.head.appendChild(style);
+        
+        // Preload fonts in cloned document by creating hidden elements
+        const fontFamilies = ['Farmhouse', 'BlackMango-Bold', 'Bodoni 72 Smallcaps', 'Bright', 'Futura', 'Greycliff CF Thin', 'SignPainter', 'Sloop Script Three'];
+        fontFamilies.forEach(font => {
+          const testEl = clonedDoc.createElement('span');
+          testEl.style.fontFamily = `"${font}", Arial, sans-serif`;
+          testEl.style.position = 'absolute';
+          testEl.style.visibility = 'hidden';
+          testEl.style.fontSize = '48px';
+          testEl.textContent = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+          clonedDoc.body.appendChild(testEl);
+        });
         
         // Find the cloned container
         const clonedContainer = clonedDoc.body.firstElementChild;
@@ -150,9 +208,15 @@ export const capturePreviewSnapshot = async (previewElement, callback, fallbackD
               bgImage.style.objectPosition = 'center';
             }
             
-            // Fix text transforms
+            // Fix text transforms and ensure fonts are applied
             const clonedTexts = clonedPreview.querySelectorAll('div[style*="absolute"]');
             clonedTexts.forEach((textEl) => {
+              // Ensure font-family is properly set
+              const computedFont = window.getComputedStyle(textEl).fontFamily;
+              if (computedFont) {
+                textEl.style.fontFamily = computedFont;
+              }
+              
               if (textEl.style.transform && textEl.style.transform.includes('translate(-50%, -50%)')) {
                 const leftMatch = textEl.style.left.match(/(\d+)px/);
                 const topMatch = textEl.style.top.match(/(\d+)px/);
@@ -168,6 +232,7 @@ export const capturePreviewSnapshot = async (previewElement, callback, fallbackD
                 }
               }
               textEl.style.zIndex = '999';
+              textEl.style.color = textEl.style.color || '#000000';
             });
           }
         }
@@ -283,21 +348,57 @@ export const createCanvasPreview = (
   
   console.log("Canvas created with size:", canvas.width, "x", canvas.height);
 
+  // Helper function to preload a font by creating a hidden element
+  const preloadFont = (fontFamily) => {
+    const cleanFont = fontFamily
+      .replace(/'/g, '')
+      .replace(/,.*$/g, '')
+      .trim();
+    
+    // Create a hidden element with the font to force loading
+    const testElement = document.createElement('span');
+    testElement.style.fontFamily = `"${cleanFont}", Arial, sans-serif`;
+    testElement.style.position = 'absolute';
+    testElement.style.visibility = 'hidden';
+    testElement.style.fontSize = '16px';
+    testElement.textContent = 'M'; // Use a character that will show font differences
+    document.body.appendChild(testElement);
+    
+    // Force font loading by measuring
+    const width1 = testElement.offsetWidth;
+    testElement.style.fontFamily = 'Arial, sans-serif';
+    const width2 = testElement.offsetWidth;
+    
+    // Remove test element
+    document.body.removeChild(testElement);
+    
+    // If widths are different, font is likely loaded
+    return width1 !== width2;
+  };
+
   // Helper function to check if a specific font is loaded
   const checkFontLoaded = (fontFamily) => {
-    if (!document.fonts || !document.fonts.check) {
-      return true; // Assume loaded if API not available
-    }
-    
     // Clean font family name (remove quotes, fallbacks, etc.)
     const cleanFont = fontFamily
       .replace(/'/g, '')
       .replace(/,.*$/g, '') // Remove fallbacks
       .trim();
     
-    // Check if font is loaded with different variations
-    const fontString = `16px "${cleanFont}"`;
-    return document.fonts.check(fontString);
+    // Method 1: Use document.fonts.check if available
+    if (document.fonts && document.fonts.check) {
+      const fontString = `16px "${cleanFont}"`;
+      if (document.fonts.check(fontString)) {
+        return true;
+      }
+    }
+    
+    // Method 2: Preload and measure (more reliable for production)
+    try {
+      return preloadFont(cleanFont);
+    } catch (e) {
+      console.warn(`Font check failed for ${cleanFont}:`, e);
+      return false;
+    }
   };
 
   // Helper to wait for all fonts used in texts to be loaded
@@ -307,18 +408,49 @@ export const createCanvasPreview = (
     // Get unique font families from texts
     const fontFamilies = [...new Set(texts.map(t => t.fontFamily || "'Farmhouse', cursive"))];
     
+    console.log("waitForFonts: Waiting for fonts:", fontFamilies);
+    
     // Wait for document.fonts.ready first
     if (document.fonts && document.fonts.ready) {
-      await document.fonts.ready;
+      try {
+        await document.fonts.ready;
+        console.log("document.fonts.ready resolved");
+      } catch (e) {
+        console.warn("document.fonts.ready failed:", e);
+      }
     }
+    
+    // Preload all fonts by creating hidden elements
+    fontFamilies.forEach(font => {
+      const cleanFont = font.replace(/'/g, '').replace(/,.*$/g, '').trim();
+      const testEl = document.createElement('span');
+      testEl.style.fontFamily = `"${cleanFont}", Arial, sans-serif`;
+      testEl.style.position = 'absolute';
+      testEl.style.visibility = 'hidden';
+      testEl.style.fontSize = '16px';
+      testEl.textContent = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      document.body.appendChild(testEl);
+      
+      // Force layout calculation
+      void testEl.offsetWidth;
+    });
+    
+    // Wait a bit for fonts to load
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     // Check each font and wait if needed
     let allFontsLoaded = false;
     let attempts = 0;
-    const maxAttempts = 50; // Wait up to 5 seconds (50 * 100ms)
+    const maxAttempts = 100; // Wait up to 10 seconds (100 * 100ms) for production
     
     while (!allFontsLoaded && attempts < maxAttempts) {
-      allFontsLoaded = fontFamilies.every(font => checkFontLoaded(font));
+      allFontsLoaded = fontFamilies.every(font => {
+        const loaded = checkFontLoaded(font);
+        if (!loaded) {
+          console.log(`Font not loaded yet: ${font}`);
+        }
+        return loaded;
+      });
       
       if (!allFontsLoaded) {
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -326,12 +458,23 @@ export const createCanvasPreview = (
       }
     }
     
+    // Clean up preload elements
+    const preloadElements = document.querySelectorAll('span[style*="visibility: hidden"]');
+    preloadElements.forEach(el => {
+      if (el.textContent === 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') {
+        document.body.removeChild(el);
+      }
+    });
+    
     if (!allFontsLoaded) {
-      console.warn("Some fonts may not be fully loaded, proceeding anyway");
+      console.warn("Some fonts may not be fully loaded after", attempts, "attempts, proceeding anyway");
+      console.warn("Fonts that may not be loaded:", fontFamilies.filter(f => !checkFontLoaded(f)));
+    } else {
+      console.log("All fonts loaded successfully");
     }
     
-    // Additional delay to ensure fonts are rendered
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Additional delay to ensure fonts are fully rendered
+    await new Promise(resolve => setTimeout(resolve, 300));
   };
 
   // Helper to draw text and call callback (waits for fonts if available)
@@ -599,9 +742,24 @@ const drawTexts = (context, getTextsFromContent) => {
     // Set font and verify it's applied
     context.font = fontString;
     
-    // Double-check font is loaded by measuring text (if font not loaded, measurement will be wrong)
-    const testMeasurement = context.measureText("M");
-    console.log(`drawTexts: Font "${fontFamily}" measurement:`, testMeasurement.width);
+    // Verify font is actually being used by comparing measurements
+    const testText = "M";
+    const testMeasurement = context.measureText(testText);
+    
+    // Try with fallback font to compare
+    context.font = `${fontSize}px Arial, sans-serif`;
+    const fallbackMeasurement = context.measureText(testText);
+    
+    // Set font back
+    context.font = fontString;
+    
+    // Log comparison
+    const isUsingCustomFont = Math.abs(testMeasurement.width - fallbackMeasurement.width) > 0.1;
+    console.log(`drawTexts: Font "${fontFamily}" - Custom: ${testMeasurement.width.toFixed(2)}px, Fallback: ${fallbackMeasurement.width.toFixed(2)}px, Using custom: ${isUsingCustomFont}`);
+    
+    if (!isUsingCustomFont) {
+      console.warn(`WARNING: Font "${fontFamily}" may not be loaded, using fallback`);
+    }
     context.textAlign = "center";
     context.textBaseline = "middle";
     
