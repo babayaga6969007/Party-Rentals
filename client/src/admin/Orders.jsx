@@ -4,10 +4,7 @@ import AdminLayout from "./AdminLayout";
 import { FiEye } from "react-icons/fi";
 import ConfirmDeleteModal from "../components/admin/ConfirmDeleteModal";
 
-// ✅ adjust this import path to wherever your api util iss
-// Example possibilities:
-// import { api } from "../utils/api";
-// import { api } from "./utils/api";
+
 import { api } from "../utils/api";
 
 const Orders = () => {

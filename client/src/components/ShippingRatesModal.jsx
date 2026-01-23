@@ -120,7 +120,6 @@ const ShippingRatesModal = ({ isOpen, onClose }) => {
         destinationCoords = await geocodeZipCode(zip);
       }
 
-      // Calculate distance using Haversine formula
       const distanceInMiles = calculateDistance(
         warehouse.lat,
         warehouse.lng,
@@ -138,7 +137,6 @@ const ShippingRatesModal = ({ isOpen, onClose }) => {
     }
   };
 
-  // Fetch shipping configuration
   useEffect(() => {
     const fetchShippingConfig = async () => {
       try {
