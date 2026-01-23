@@ -196,6 +196,8 @@ const SignagePreview = ({
             return (
               <div
                 key={`text-line-${index}-${selectedFont}`}
+                data-text-id={`text-${index}`}
+                data-text-content={line || textContent || "Hello"}
                 onMouseDown={onTextMouseDown}
                 onTouchStart={onTouchStart}
                 onMouseEnter={isEditable ? () => setIsTextHovered(true) : undefined}
