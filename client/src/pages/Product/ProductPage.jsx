@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { api } from "../../utils/api";
 import AddToCartModal from "../../components/cart/AddToCartModal";
+import ShippingRatesModal from "../../components/ShippingRatesModal";
 import { useCart } from "../../context/CartContext";
 
 
@@ -97,10 +98,6 @@ const ProductPage = () => {
   // ====================
   const [relatedProducts, setRelatedProducts] = useState([]);
 
-  // ZIP based shipping detection
-  const [zipCode, setZipCode] = useState("");
-  const [detectedZone, setDetectedZone] = useState(null);
-  const [zipError, setZipError] = useState("");
 
   // Convert date to readable format
   const formatDate = (d) =>
@@ -159,56 +156,6 @@ const ProductPage = () => {
     );
   };
 
-  // ====================
-  // ZIP → ZONE DETECTION
-  // ====================
-  const detectZoneFromZip = (zip) => {
-    const z = Number(zip);
-
-    if (z >= 90000 && z <= 93999) {
-      return {
-        zone: "Zone 1",
-        area: "Same State (CA)",
-        oneWay: 20,
-        roundTrip: 35,
-      };
-    }
-
-    if (z >= 94000 && z <= 96999) {
-      return {
-        zone: "Zone 2",
-        area: "Nearby States",
-        oneWay: 35,
-        roundTrip: 60,
-      };
-    }
-
-    if (z >= 97000 && z <= 98999) {
-      return {
-        zone: "Zone 3",
-        area: "Regional",
-        oneWay: 60,
-        roundTrip: 100,
-      };
-    }
-
-    if (z >= 99000 && z <= 99999) {
-      return {
-        zone: "Zone 4",
-        area: "Extended",
-        oneWay: 100,
-        roundTrip: 170,
-      };
-    }
-
-    return {
-      zone: "Zone 5",
-      area: "Outstation",
-      oneWay: null,
-      roundTrip: null,
-      note: "Custom quote required",
-    };
-  };
 
 
   // Quantity of main product
@@ -1843,156 +1790,10 @@ const ProductPage = () => {
         </div>
       )}
       {/* SHIPPING RATES MODAL */}
-      {openShippingModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4">
-
-          <div className="bg-white max-w-3xl w-full rounded-xl shadow-lg p-6 relative">
-
-            {/* CLOSE */}
-            <button
-              onClick={() => setOpenShippingModal(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-black"
-            >
-              ✕
-            </button>
-
-            {/* HEADER */}
-            <h2 className="text-2xl font-semibold text-[#2D2926]">
-              Shipping Rates
-            </h2>
-
-            <p className="mt-2 text-sm text-gray-600">
-              All deliveries are dispatched from our warehouse at:
-              <br />
-              <strong>2031 Via Burton Street, Suite A, USA</strong>
-            </p>
-            {/* ZIP CODE CHECK */}
-            <div className="mt-5 bg-[#FAF7F5] p-4 rounded-lg border">
-              <h4 className="font-semibold text-[#2D2926] mb-2">
-                Check Delivery Availability by ZIP Code
-              </h4>
-
-              <div className="flex gap-3 flex-col sm:flex-row">
-                <input
-                  type="text"
-                  value={zipCode}
-                  maxLength={5}
-                  placeholder="Enter ZIP code"
-                  className="flex-1 p-3 border rounded-lg"
-                  onChange={(e) => {
-                    setZipCode(e.target.value);
-                    setZipError("");
-                    setDetectedZone(null);
-                  }}
-                />
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!/^\d{5}$/.test(zipCode)) {
-                      setZipError("Please enter a valid 5-digit ZIP code");
-                      return;
-                    }
-
-                    const zone = detectZoneFromZip(zipCode);
-                    setDetectedZone(zone);
-                  }}
-                  className="px-5 py-3 rounded-lg bg-black text-white hover:bg-[#222]"
-                >
-                  Check
-                </button>
-              </div>
-
-              {zipError && (
-                <p className="mt-2 text-sm text-red-600">{zipError}</p>
-              )}
-
-              {detectedZone && (
-                <div className="mt-4 bg-white p-4 rounded-lg border text-sm">
-                  <p>
-                    <strong>Detected Zone:</strong> {detectedZone.zone}
-                  </p>
-                  <p>
-                    <strong>Coverage:</strong> {detectedZone.area}
-                  </p>
-
-                  {detectedZone.oneWay ? (
-                    <>
-                      <p className="mt-1">
-                        <strong>One-way:</strong> $ {detectedZone.oneWay}
-                      </p>
-                      <p>
-                        <strong>Round trip:</strong> $ {detectedZone.roundTrip}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="mt-2 text-orange-600 font-medium">
-                      Custom shipping quote required
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* ZONE TABLE */}
-            <div className="mt-6 overflow-x-auto">
-              <table className="w-full border border-gray-200 rounded-lg text-sm">
-                <thead className="bg-[#F5F7FF]">
-                  <tr>
-                    <th className="px-4 py-3 text-left">Zone</th>
-                    <th className="px-4 py-3 text-left">Coverage</th>
-                    <th className="px-4 py-3 text-left">One-way</th>
-                    <th className="px-4 py-3 text-left">Round trip</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  <tr className="border-t">
-                    <td className="px-4 py-3 font-medium">Zone 1</td>
-                    <td className="px-4 py-3">Same State (CA)</td>
-                    <td className="px-4 py-3">$20</td>
-                    <td className="px-4 py-3">$35</td>
-                  </tr>
-
-                  <tr className="border-t">
-                    <td className="px-4 py-3 font-medium">Zone 2</td>
-                    <td className="px-4 py-3">Nearby States</td>
-                    <td className="px-4 py-3">$35</td>
-                    <td className="px-4 py-3">$60</td>
-                  </tr>
-
-                  <tr className="border-t">
-                    <td className="px-4 py-3 font-medium">Zone 3</td>
-                    <td className="px-4 py-3">Regional</td>
-                    <td className="px-4 py-3">$60</td>
-                    <td className="px-4 py-3">$100</td>
-                  </tr>
-
-                  <tr className="border-t">
-                    <td className="px-4 py-3 font-medium">Zone 4</td>
-                    <td className="px-4 py-3">Extended</td>
-                    <td className="px-4 py-3">$100</td>
-                    <td className="px-4 py-3">$170</td>
-                  </tr>
-
-                  <tr className="border-t">
-                    <td className="px-4 py-3 font-medium">Zone 5</td>
-                    <td className="px-4 py-3">100+ miles</td>
-                    <td className="px-4 py-3">—</td>
-                    <td className="px-4 py-3">Custom</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <p className="mt-4 text-xs text-gray-500">
-              * Shipping charges are indicative. Final cost may vary based on access,
-              timing, and handling requirements.
-            </p>
-
-          </div>
-        </div>
-      )}
+      <ShippingRatesModal
+        isOpen={openShippingModal}
+        onClose={() => setOpenShippingModal(false)}
+      />
 
 
 

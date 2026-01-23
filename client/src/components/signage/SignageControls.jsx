@@ -6,7 +6,7 @@ import TextColorPicker from "./TextColorPicker";
 import BackgroundOptions from "./BackgroundOptions";
 import AddToCartButton from "./AddToCartButton";
 
-const SignageControls = memo(({ isSharedView, onAddToCart, product, productId, navigate }) => {
+const SignageControls = memo(({ isSharedView, onAddToCart, isAddingToCart, product, productId, navigate }) => {
   return (
     <div className="lg:col-span-1 relative">
       {/* Sticky Signage Heading */}
@@ -32,7 +32,7 @@ const SignageControls = memo(({ isSharedView, onAddToCart, product, productId, n
             <FontSelector />
             <TextColorPicker />
             <BackgroundOptions />
-            <AddToCartButton onClick={onAddToCart} />
+            <AddToCartButton onClick={onAddToCart} isLoading={isAddingToCart} />
           </>
         )}
         {isSharedView && (
