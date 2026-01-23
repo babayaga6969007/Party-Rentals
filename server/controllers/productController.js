@@ -9,22 +9,18 @@ const cloudinary = require("../config/cloudinary");
 exports.addProduct = async (req, res) => {
   try {
     // 1️⃣ Upload images
-// 🔹 Separate base images and variation images
-const baseImages = [];
+// 🔹 Separate base images and variation images (upload.fields())
+const baseImages = req.files?.images || [];
 const variationImageMap = {}; // index → uploaded image
 
-for (const file of req.files || []) {
-  if (file.fieldname === "images") {
-    baseImages.push(file);
-  }
-
-  if (file.fieldname.startsWith("variationImages_")) {
-    const idx = Number(file.fieldname.split("_")[1]);
-    if (!Number.isNaN(idx)) {
-      variationImageMap[idx] = file;
+Object.keys(req.files || {}).forEach((field) => {
+  if (field.startsWith("variationImages_")) {
+    const idx = Number(field.split("_")[1]);
+    if (!Number.isNaN(idx) && req.files[field]?.[0]) {
+      variationImageMap[idx] = req.files[field][0];
     }
   }
-}
+});
 
 // Upload base images (simple product images)
 const uploadedImages = await uploadImagesToCloudinary(baseImages);
@@ -175,8 +171,14 @@ if (featuredFlag) {
 exports.editProduct = async (req, res) => {
   try {
     const updates = {};
+    // Load existing product (needed to preserve variation images)
+const existingProduct = await Product.findById(req.params.id).lean();
+if (!existingProduct) {
+  return res.status(404).json({ message: "Product not found" });
+}
 
-    // -------- BASIC FIELDS --------
+
+   
    // -------- BASIC FIELDS --------
 if (req.body.title !== undefined) updates.title = req.body.title;
 if (req.body.description !== undefined)
@@ -219,12 +221,68 @@ if (updates.productSubType === "variable") {
       .json({ message: "Variations required for variable product" });
   }
 
-  updates.variations = JSON.parse(req.body.variations);
+  const incomingVariations = JSON.parse(req.body.variations);
+
+
+if (updates.productSubType === "variable") {
+  if (!req.body.variations) {
+    return res
+      .status(400)
+      .json({ message: "Variations required for variable product" });
+  }
+
+  const incomingVariations = JSON.parse(req.body.variations);
+
+  // 🔑 Build map of existing variation images using attribute signature
+  const existingImageMap = new Map();
+
+  (existingProduct.variations || []).forEach((v) => {
+    const key = (v.attributes || [])
+      .map((a) => `${a.groupId.toString()}_${a.optionId.toString()}`)
+      .sort()
+      .join("|");
+
+    if (v.image?.url) {
+      existingImageMap.set(key, v.image); // FULL object
+    }
+  });
+
+  // ✅ Rebuild variations while PRESERVING images
+  updates.variations = incomingVariations.map((v) => {
+    const key = (v.attributes || [])
+      .map((a) => `${String(a.groupId)}_${String(a.optionId)}`)
+      .sort()
+      .join("|");
+
+    // If frontend sent image object → keep it
+    if (v.image && typeof v.image === "object") {
+      return v;
+    }
+
+    // If frontend sent image URL → normalize to object
+    if (typeof v.image === "string") {
+      return { ...v, image: { url: v.image } };
+    }
+
+    // Otherwise preserve existing image if found
+    if (existingImageMap.has(key)) {
+      return { ...v, image: existingImageMap.get(key) };
+    }
+
+    return v; // brand new variation
+  });
 
   // Clear simple pricing fields
   updates.pricePerDay = undefined;
   updates.salePrice = undefined;
-} else if (updates.productSubType === "simple") {
+}
+
+
+  // Clear simple pricing fields
+  updates.pricePerDay = undefined;
+  updates.salePrice = undefined;
+}
+else if (updates.productSubType === "simple") {
   // Clear variations if switching back to simple
   updates.variations = [];
 }
@@ -265,22 +323,8 @@ if (updates.productSubType === "variable") {
     }
 
     // -------- NEW IMAGES --------
-   if (req.files?.length > 0) {
-  const baseImages = [];
-  const variationImageMap = {};
-
-  for (const file of req.files) {
-    if (file.fieldname === "images") {
-      baseImages.push(file);
-    }
-
-    if (file.fieldname.startsWith("variationImages_")) {
-      const idx = Number(file.fieldname.split("_")[1]);
-      if (!Number.isNaN(idx)) {
-        variationImageMap[idx] = file;
-      }
-    }
-  }
+   if (req.files && typeof req.files === "object") {
+  const baseImages = req.files.images || [];
 
   // Upload base images
   if (baseImages.length > 0) {
@@ -290,21 +334,25 @@ if (updates.productSubType === "variable") {
       : uploaded;
   }
 
-  // Upload variation images
+  // Upload variation images deterministically
   if (updates.variations && updates.variations.length > 0) {
-    for (let i = 0; i < updates.variations.length; i++) {
-      if (variationImageMap[i]) {
-        const uploaded = await uploadImagesToCloudinary([
-          variationImageMap[i],
-        ]);
+    Object.keys(req.files).forEach(async (field) => {
+      if (!field.startsWith("variationImages_")) return;
 
-        if (uploaded?.[0]) {
-          updates.variations[i].image = uploaded[0];
-        }
+      const idx = Number(field.split("_")[1]);
+      if (Number.isNaN(idx)) return;
+
+      const file = req.files[field]?.[0];
+      if (!file) return;
+
+      const uploaded = await uploadImagesToCloudinary([file]);
+      if (uploaded?.[0] && updates.variations[idx]) {
+        updates.variations[idx].image = uploaded[0];
       }
-    }
+    });
   }
 }
+
 
     const updated = await Product.findByIdAndUpdate(
       req.params.id,

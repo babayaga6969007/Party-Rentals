@@ -19,14 +19,29 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
+const uploadFields = upload.fields([
+  { name: "images", maxCount: 10 },           // product images
+  { name: "variationImages_0", maxCount: 1 },
+  { name: "variationImages_1", maxCount: 1 },
+  { name: "variationImages_2", maxCount: 1 },
+  { name: "variationImages_3", maxCount: 1 },
+  { name: "variationImages_4", maxCount: 1 },
+  { name: "variationImages_5", maxCount: 1 },
+  { name: "variationImages_6", maxCount: 1 },
+  { name: "variationImages_7", maxCount: 1 },
+  { name: "variationImages_8", maxCount: 1 },
+  { name: "variationImages_9", maxCount: 1 },
+]);
+
 
 // ============ ADMIN ROUTES ============
 
 // Add new product
+// Add new product
 router.post(
   "/admin/add",
   authAdmin,
-  upload.any(), // ✅ allows images + variationImages_*
+  uploadFields,
   productController.addProduct
 );
 
@@ -34,9 +49,10 @@ router.post(
 router.put(
   "/admin/edit/:id",
   authAdmin,
-  upload.any(),
+  uploadFields,
   productController.editProduct
 );
+
 
 
 // Delete product

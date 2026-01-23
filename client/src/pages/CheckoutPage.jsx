@@ -124,6 +124,12 @@ const extraFees =
   const finalTotal = pricing.total + extraFees;
 
   const handlePlaceOrder = async (mode = "FULL") => {
+    // 🚫 Must agree to Terms & Conditions
+if (!agreeToTerms) {
+  alert("Please agree to the Terms and Conditions before placing your order.");
+  return;
+}
+
     if (
       !customer.name ||
       !customer.email ||
@@ -579,6 +585,8 @@ const extraFees =
 
               .
             </label>
+           
+
           </div>
 
           <div className="mt-5 flex flex-col gap-2">
@@ -596,16 +604,18 @@ const extraFees =
             </button>
 
             <button
-              type="button"
-              onClick={() => handlePlaceOrder("PARTIAL")}
-              disabled={!stripe || !elements || isPaying}
-              className={`w-full py-3 rounded-full text-sm font-semibold border ${!stripe || !elements || isPaying
-                ? "border-gray-300 text-gray-400 cursor-not-allowed"
-                : "border-black text-black hover:bg-gray-100"
-                }`}
-            >
-              Place Order (Pay 60% Now)
-            </button>
+  type="button"
+  onClick={() => handlePlaceOrder("PARTIAL")}
+  disabled={!stripe || !elements || isPaying || !agreeToTerms}
+  className={`w-full py-3 rounded-full text-sm font-semibold border ${
+    !stripe || !elements || isPaying || !agreeToTerms
+      ? "border-gray-300 text-gray-400 cursor-not-allowed"
+      : "border-black text-black hover:bg-gray-100"
+  }`}
+>
+  Place Order (Pay 60% Now)
+</button>
+
 
 
 

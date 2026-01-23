@@ -214,32 +214,48 @@ const getGroupName = (groupId) => groupNameById.get(String(groupId)) || "—";
         setDimensions(data.dimensions || "");
 
         setAvailabilityCount(data.availabilityCount || 1);
-        setProductType(data.productType);
-        setProductSubType(data.productSubType || "simple");
+       setProductType(data.productType);
+setProductSubType(data.productSubType || "simple");
 
-// If variable product, load variations and infer variation groups
-if (data.productType === "rental" && productSubType === "variable") {
-  setVariations(data.variations || []);
+// ✅ FIX: use data.productSubType (NOT state)
+if (data.productType === "rental" && data.productSubType === "variable") {
+  // Normalize variations for edit UI
+  const normalizedVariations = (data.variations || []).map((v) => ({
+    attributes: (v.attributes || []).map((a) => ({
+      groupId: String(a.groupId?._id || a.groupId),
+      optionId: String(a.optionId?._id || a.optionId),
+    })),
+    price: v.price ?? "",
+    salePrice: v.salePrice ?? "",
+    stock: v.stock ?? "",
+    dimension: v.dimension ?? "",
+    image: v.image?.url || v.image || null,
+  }));
 
+  setVariations(normalizedVariations);
+
+  // Infer which attribute groups are used for variations
   const groupSet = new Set();
-  (data.variations || []).forEach((v) => {
-    (v.attributes || []).forEach((a) => {
-      groupSet.add(String(a.groupId?._id || a.groupId));
+  normalizedVariations.forEach((v) => {
+    v.attributes.forEach((a) => {
+      groupSet.add(String(a.groupId));
     });
   });
   setVariationAttrGroupIds([...groupSet]);
 
-  // Also pre-select attribute options in UI for those groups (optional but very useful)
-  const nextSelected = { ...(selectedAttrs || {}) };
-  (data.variations || []).forEach((v) => {
-    (v.attributes || []).forEach((a) => {
-      const gid = String(a.groupId?._id || a.groupId);
-      const oid = String(a.optionId?._id || a.optionId);
-      nextSelected[gid] = Array.from(new Set([...(nextSelected[gid] || []), oid]));
+  // Pre-select options in UI
+  const nextSelected = {};
+  normalizedVariations.forEach((v) => {
+    v.attributes.forEach((a) => {
+      if (!nextSelected[a.groupId]) nextSelected[a.groupId] = [];
+      if (!nextSelected[a.groupId].includes(a.optionId)) {
+        nextSelected[a.groupId].push(a.optionId);
+      }
     });
   });
   setSelectedAttrs(nextSelected);
 }
+
 
         setPricePerDay(data.pricePerDay || "");
         setSalePrice(data.salePrice || "");
@@ -347,6 +363,11 @@ Object.entries(selectedAddons).forEach(([groupId, options]) => {
 
 
     const formData = new FormData();
+// ✅ REQUIRED: identify product for update
+if (isEditMode) {
+  formData.append("_id", id);
+}
+formData.append("isEditMode", String(isEditMode));
 
     formData.append("title", title);
     formData.append("category", category);
@@ -405,6 +426,12 @@ formData.append(
       salePrice: v.salePrice === "" ? null : Number(v.salePrice),
       stock: v.stock === "" ? 0 : Number(v.stock),
       dimension: v.dimension || "",
+image:
+  typeof v.image === "string"
+    ? v.image
+    : v.image?.url
+    ? v.image
+    : null,
     }))
   )
 );

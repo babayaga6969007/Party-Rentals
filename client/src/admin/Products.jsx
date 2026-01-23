@@ -35,8 +35,50 @@ const Products = () => {
   }
 };
 
+// ====================
+// VARIATION HELPERS (ADMIN)
+// ====================
+const getLowestVariation = (product) => {
+  if (
+    product?.productType === "rental" &&
+    product?.productSubType === "variable" &&
+    Array.isArray(product.variations) &&
+    product.variations.length > 0
+  ) {
+    return [...product.variations].sort((a, b) => {
+      const aPrice = a.salePrice ?? a.price ?? Infinity;
+      const bPrice = b.salePrice ?? b.price ?? Infinity;
+      return aPrice - bPrice;
+    })[0];
+  }
+  return null;
+};
 
-  
+const getAdminProductImage = (product) => {
+  const lowestVar = getLowestVariation(product);
+  return (
+    lowestVar?.image?.url ||
+    product.images?.[0]?.url ||
+    "/placeholder-product.png"
+  );
+};
+
+const getAdminProductPrice = (product) => {
+  if (product.productType !== "rental") {
+    return product.salePrice;
+  }
+
+  const lowestVar = getLowestVariation(product);
+
+  if (lowestVar) {
+    return lowestVar.salePrice ?? lowestVar.price;
+  }
+
+  return product.pricePerDay;
+};
+
+
+
   const handleDelete = async (id) => {
   if (!confirm("Are you sure you want to delete this product?")) return;
 
@@ -108,11 +150,12 @@ const filteredItems =
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 {filteredItems.map((p) => (
           <div key={p._id} className="bg-white p-4 rounded-xl shadow">
-            <img
-              src={p.images[0]?.url}
-              className="w-full h-40 object-cover rounded"
-              alt={p.title}
-            />
+           <img
+  src={getAdminProductImage(p)}
+  className="w-full h-40 object-cover rounded"
+  alt={p.title}
+/>
+
 
            <h3 className="font-semibold mt-3">{p.title}</h3>
 
@@ -145,11 +188,12 @@ const filteredItems =
 {/* PRICE */}
 <p className="text-gray-600 mt-1">
   {p.productType === "rental" ? (
-    <>$ {p.pricePerDay} / day</>
+    <>$ {getAdminProductPrice(p)} / day</>
   ) : (
     <>$ {p.salePrice}</>
   )}
 </p>
+
 
             <div className="mt-3 flex justify-between">
               <a
