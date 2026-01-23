@@ -1,4 +1,5 @@
 import { DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT } from "../context/SignageContext";
+import { waitForFonts as waitForFontsUtil, preloadFontsWithFontFace } from "./fontLoader";
 
 /**
  * Captures a snapshot of the preview element and converts it to an image
@@ -28,301 +29,39 @@ export const capturePreviewSnapshot = async (previewElement, callback, fallbackD
     return;
   }
 
-  // Use html2canvas to capture the actual rendered preview (screenshot of what's displayed)
-  try {
-    console.log("Capturing preview screenshot with html2canvas...");
-    
-    // Wait for fonts to be loaded before capturing
-    if (document.fonts && document.fonts.ready) {
-      await document.fonts.ready;
-    }
-    
-    // Wait longer to ensure all text and fonts are fully rendered (important for production)
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Import html2canvas - it uses default export
-    const html2canvasModule = await import('html2canvas');
-    const html2canvas = html2canvasModule.default;
-    
-    if (typeof html2canvas !== 'function') {
-      throw new Error("html2canvas.default is not a function");
-    }
-    
-    console.log("html2canvas loaded, capturing preview element...");
-    
-    // Get the exact dimensions from the preview element's style
-    const computedStyle = window.getComputedStyle(previewElement);
-    const styleWidth = parseFloat(computedStyle.width) || previewElement.offsetWidth;
-    const styleHeight = parseFloat(computedStyle.height) || previewElement.offsetHeight;
-    
-    const captureWidth = Math.round(styleWidth);
-    const captureHeight = Math.round(styleHeight);
-    
-    console.log("Preview container dimensions:", captureWidth, "x", captureHeight);
-    
-    // Create a temporary container with EXACT dimensions to capture
-    // This ensures we only capture what's in the preview, nothing more
-    const tempContainer = document.createElement('div');
-    tempContainer.style.position = 'fixed';
-    tempContainer.style.left = '-9999px';
-    tempContainer.style.top = '0';
-    tempContainer.style.width = `${captureWidth}px`;
-    tempContainer.style.height = `${captureHeight}px`;
-    tempContainer.style.overflow = 'hidden';
-    tempContainer.style.position = 'relative';
-    tempContainer.style.boxSizing = 'border-box';
-    tempContainer.style.backgroundColor = previewElement.style.backgroundColor || 'transparent';
-    
-    // Clone the preview element's content
-    const clonedPreview = previewElement.cloneNode(true);
-    clonedPreview.style.width = `${captureWidth}px`;
-    clonedPreview.style.height = `${captureHeight}px`;
-    clonedPreview.style.overflow = 'hidden';
-    clonedPreview.style.position = 'relative';
-    clonedPreview.style.margin = '0';
-    clonedPreview.style.padding = '0';
-    clonedPreview.style.border = 'none';
-    
-    // Ensure background image is exactly the container size
-    const bgImage = clonedPreview.querySelector('img');
-    if (bgImage) {
-      bgImage.style.width = `${captureWidth}px`;
-      bgImage.style.height = `${captureHeight}px`;
-      bgImage.style.objectFit = 'cover';
-      bgImage.style.objectPosition = 'center';
-      bgImage.style.position = 'absolute';
-      bgImage.style.top = '0';
-      bgImage.style.left = '0';
-      bgImage.style.zIndex = '1';
-      bgImage.style.maxWidth = 'none';
-      bgImage.style.maxHeight = 'none';
-    }
-    
-    // Ensure text elements are positioned correctly
-    const textElements = clonedPreview.querySelectorAll('[style*="absolute"]');
-    textElements.forEach((textEl) => {
-      textEl.style.position = 'absolute';
-      textEl.style.zIndex = '999';
-    });
-    
-    // Append to body temporarily
-    tempContainer.appendChild(clonedPreview);
-    document.body.appendChild(tempContainer);
-    
-    // Wait for fonts and rendering (longer wait for production)
-    if (document.fonts && document.fonts.ready) {
-      await document.fonts.ready;
-    }
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    console.log("Capturing temporary container with exact dimensions:", captureWidth, "x", captureHeight);
-    
-    // Capture the temporary container (which has exact dimensions)
-    const canvas = await html2canvas(tempContainer, {
-      backgroundColor: null,
-      scale: 1,
-      useCORS: true,
-      logging: false,
-      allowTaint: true,
-      foreignObjectRendering: false,
-      width: captureWidth,
-      height: captureHeight,
-      x: 0,
-      y: 0,
-      scrollX: 0,
-      scrollY: 0,
-      onclone: (clonedDoc, element) => {
-        // Ensure fonts are loaded and text is visible in the cloned document
-        console.log("=== html2canvas onclone callback ===");
-        
-        // Inject font-face declarations into cloned document to ensure fonts are available
-        const style = clonedDoc.createElement('style');
-        style.textContent = `
-          @font-face {
-            font-family: 'BlackMango-Bold';
-            src: url('${window.location.origin}/fonts/BlackMango-Bold.otf') format('opentype');
-          }
-          @font-face {
-            font-family: 'Bodoni 72 Smallcaps';
-            src: url('${window.location.origin}/fonts/Bodoni 72 Smallcaps Book.ttf') format('truetype');
-          }
-          @font-face {
-            font-family: 'Bright';
-            src: url('${window.location.origin}/fonts/Bright TTF.ttf') format('truetype');
-          }
-          @font-face {
-            font-family: 'Farmhouse';
-            src: url('${window.location.origin}/fonts/Farmhouse.ttf') format('truetype');
-          }
-          @font-face {
-            font-family: 'Futura';
-            src: url('${window.location.origin}/fonts/Futura.ttc') format('truetype-collection');
-          }
-          @font-face {
-            font-family: 'Greycliff CF Thin';
-            src: url('${window.location.origin}/fonts/Greycliff_CF_Thin.otf') format('opentype');
-          }
-          @font-face {
-            font-family: 'SignPainter';
-            src: url('${window.location.origin}/fonts/SignPainter.ttc') format('truetype-collection');
-          }
-          @font-face {
-            font-family: 'Sloop Script Three';
-            src: url('${window.location.origin}/fonts/Sloop-ScriptThree.ttf') format('truetype');
-          }
-        `;
-        clonedDoc.head.appendChild(style);
-        
-        // Preload fonts in cloned document by creating hidden elements
-        const fontFamilies = ['Farmhouse', 'BlackMango-Bold', 'Bodoni 72 Smallcaps', 'Bright', 'Futura', 'Greycliff CF Thin', 'SignPainter', 'Sloop Script Three'];
-        fontFamilies.forEach(font => {
-          const testEl = clonedDoc.createElement('span');
-          testEl.style.fontFamily = `"${font}", Arial, sans-serif`;
-          testEl.style.position = 'absolute';
-          testEl.style.visibility = 'hidden';
-          testEl.style.fontSize = '48px';
-          testEl.textContent = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-          clonedDoc.body.appendChild(testEl);
-        });
-        
-        // Find the cloned container
-        const clonedContainer = clonedDoc.body.firstElementChild;
-        if (clonedContainer) {
-          clonedContainer.style.width = `${captureWidth}px`;
-          clonedContainer.style.height = `${captureHeight}px`;
-          clonedContainer.style.overflow = 'hidden';
-          
-          // Find the cloned preview inside
-          const clonedPreview = clonedContainer.firstElementChild;
-          if (clonedPreview) {
-            clonedPreview.style.width = `${captureWidth}px`;
-            clonedPreview.style.height = `${captureHeight}px`;
-            clonedPreview.style.overflow = 'hidden';
-            
-            // Ensure background image is exactly the preview size
-            const bgImage = clonedPreview.querySelector('img');
-            if (bgImage) {
-              bgImage.style.width = `${captureWidth}px`;
-              bgImage.style.height = `${captureHeight}px`;
-              bgImage.style.objectFit = 'cover';
-              bgImage.style.objectPosition = 'center';
-            }
-            
-            // Fix text transforms and ensure fonts are applied
-            const clonedTexts = clonedPreview.querySelectorAll('div[style*="absolute"]');
-            clonedTexts.forEach((textEl) => {
-              // Ensure font-family is properly set
-              const computedFont = window.getComputedStyle(textEl).fontFamily;
-              if (computedFont) {
-                textEl.style.fontFamily = computedFont;
-              }
-              
-              if (textEl.style.transform && textEl.style.transform.includes('translate(-50%, -50%)')) {
-                const leftMatch = textEl.style.left.match(/(\d+)px/);
-                const topMatch = textEl.style.top.match(/(\d+)px/);
-                if (leftMatch && topMatch) {
-                  const leftPx = parseFloat(leftMatch[1]);
-                  const topPx = parseFloat(topMatch[1]);
-                  const fontSize = parseFloat(textEl.style.fontSize) || 48;
-                  const textWidth = textEl.textContent.length * (fontSize * 0.6);
-                  const textHeight = fontSize;
-                  textEl.style.transform = 'none';
-                  textEl.style.left = `${leftPx - textWidth / 2}px`;
-                  textEl.style.top = `${topPx - textHeight / 2}px`;
-                }
-              }
-              textEl.style.zIndex = '999';
-              textEl.style.color = textEl.style.color || '#000000';
-            });
-          }
-        }
-      }
-    });
-    
-    console.log("html2canvas capture successful!");
-    console.log("Canvas size:", canvas.width, "x", canvas.height);
-    console.log("Expected preview size:", captureWidth, "x", captureHeight);
-    
-    // ALWAYS crop to exact preview dimensions - this ensures we only get the preview, not the whole image
-    const targetWidth = captureWidth;
-    const targetHeight = captureHeight;
-    
-    console.log("Canvas before crop:", canvas.width, "x", canvas.height);
-    console.log("Target preview size:", targetWidth, "x", targetHeight);
-    
-    // Create a new canvas with exact preview dimensions
-    const croppedCanvas = document.createElement('canvas');
-    croppedCanvas.width = targetWidth;
-    croppedCanvas.height = targetHeight;
-    const croppedCtx = croppedCanvas.getContext('2d');
-    
-    // Fill with white background first (in case of transparency)
-    croppedCtx.fillStyle = '#FFFFFF';
-    croppedCtx.fillRect(0, 0, targetWidth, targetHeight);
-    
-    // Calculate how to crop: take the center portion if canvas is larger, or scale if smaller
-    let sourceX = 0;
-    let sourceY = 0;
-    let sourceWidth = Math.min(targetWidth, canvas.width);
-    let sourceHeight = Math.min(targetHeight, canvas.height);
-    
-    // If canvas is larger than target, take from top-left corner
-    if (canvas.width > targetWidth) {
-      sourceWidth = targetWidth;
-    }
-    if (canvas.height > targetHeight) {
-      sourceHeight = targetHeight;
-    }
-    
-    console.log("Cropping from canvas:", {
-      sourceX, sourceY, sourceWidth, sourceHeight,
-      targetWidth, targetHeight
-    });
-    
-    // Draw only the portion we need - this crops out any extra image
-    croppedCtx.drawImage(
-      canvas,
-      sourceX, sourceY, // Source x, y (start from top-left)
-      sourceWidth, sourceHeight, // Source width/height (crop to preview size)
-      0, 0, // Destination x, y
-      targetWidth, targetHeight // Destination size (exact preview dimensions)
-    );
-    
-    console.log("Canvas cropped to:", croppedCanvas.width, "x", croppedCanvas.height);
-    
-    // Remove temporary container from DOM
-    document.body.removeChild(tempContainer);
-    
-    // Convert to data URL (JPEG with quality 0.9)
-    const dataUrl = croppedCanvas.toDataURL("image/jpeg", 0.9);
-    console.log("Preview image generated, data URL length:", dataUrl.length);
-    
-    callback(dataUrl);
-    return;
-  } catch (error) {
-    console.error("Error capturing preview with html2canvas:", error);
-    console.error("Error details:", error.message, error.stack);
-    console.log("Falling back to canvas method (which will crop the image)");
-    // Fall through to fallback method
-  }
-
-  // Fallback: use legacy method (this crops the image to canvas size)
-  if (fallbackData) {
-    console.log("Using fallback canvas method with dimensions:", fallbackData.canvasWidth, "x", fallbackData.canvasHeight);
-    createCanvasPreview(
-      fallbackData.backgroundType,
-      fallbackData.backgroundColor,
-      fallbackData.backgroundGradient,
-      fallbackData.backgroundImageUrl,
-      fallbackData.getTextsFromContent,
-      callback,
-      fallbackData.canvasWidth,
-      fallbackData.canvasHeight
-    );
-  } else {
-    console.error("No fallback data available!");
+  // Use canvas method directly - it's more reliable for text rendering
+  // html2canvas has issues with custom fonts in production environments
+  console.log("Using canvas method for preview generation (more reliable for text)...");
+  
+  if (!fallbackData) {
+    console.error("No fallback data provided - cannot generate preview");
     callback(null);
+    return;
   }
+  
+  // Preload fonts before generating canvas
+  console.log("Preloading fonts with FontFace API...");
+  await preloadFontsWithFontFace();
+  
+  // Wait for fonts to be loaded
+  if (document.fonts && document.fonts.ready) {
+    await document.fonts.ready;
+  }
+  
+  // Additional wait to ensure fonts are fully loaded
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  // Use canvas method directly (skips html2canvas entirely)
+  createCanvasPreview(
+    fallbackData.backgroundType,
+    fallbackData.backgroundColor,
+    fallbackData.backgroundGradient,
+    fallbackData.backgroundImageUrl,
+    fallbackData.getTextsFromContent,
+    callback,
+    fallbackData.canvasWidth,
+    fallbackData.canvasHeight
+  );
 };
 
 /**
@@ -402,79 +141,26 @@ export const createCanvasPreview = (
   };
 
   // Helper to wait for all fonts used in texts to be loaded
-  const waitForFonts = async (texts) => {
+  const waitForFontsLocal = async (texts) => {
     if (!texts || texts.length === 0) return;
     
     // Get unique font families from texts
     const fontFamilies = [...new Set(texts.map(t => t.fontFamily || "'Farmhouse', cursive"))];
     
-    console.log("waitForFonts: Waiting for fonts:", fontFamilies);
+    console.log("waitForFontsLocal: Waiting for fonts:", fontFamilies);
     
-    // Wait for document.fonts.ready first
-    if (document.fonts && document.fonts.ready) {
-      try {
+    // Use the utility function for better font loading
+    try {
+      await waitForFontsUtil(fontFamilies, 10000);
+    } catch (e) {
+      console.warn("Font loading utility failed, using fallback:", e);
+      
+      // Fallback: wait for document.fonts.ready
+      if (document.fonts && document.fonts.ready) {
         await document.fonts.ready;
-        console.log("document.fonts.ready resolved");
-      } catch (e) {
-        console.warn("document.fonts.ready failed:", e);
       }
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
-    
-    // Preload all fonts by creating hidden elements
-    fontFamilies.forEach(font => {
-      const cleanFont = font.replace(/'/g, '').replace(/,.*$/g, '').trim();
-      const testEl = document.createElement('span');
-      testEl.style.fontFamily = `"${cleanFont}", Arial, sans-serif`;
-      testEl.style.position = 'absolute';
-      testEl.style.visibility = 'hidden';
-      testEl.style.fontSize = '16px';
-      testEl.textContent = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-      document.body.appendChild(testEl);
-      
-      // Force layout calculation
-      void testEl.offsetWidth;
-    });
-    
-    // Wait a bit for fonts to load
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Check each font and wait if needed
-    let allFontsLoaded = false;
-    let attempts = 0;
-    const maxAttempts = 100; // Wait up to 10 seconds (100 * 100ms) for production
-    
-    while (!allFontsLoaded && attempts < maxAttempts) {
-      allFontsLoaded = fontFamilies.every(font => {
-        const loaded = checkFontLoaded(font);
-        if (!loaded) {
-          console.log(`Font not loaded yet: ${font}`);
-        }
-        return loaded;
-      });
-      
-      if (!allFontsLoaded) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
-    }
-    
-    // Clean up preload elements
-    const preloadElements = document.querySelectorAll('span[style*="visibility: hidden"]');
-    preloadElements.forEach(el => {
-      if (el.textContent === 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') {
-        document.body.removeChild(el);
-      }
-    });
-    
-    if (!allFontsLoaded) {
-      console.warn("Some fonts may not be fully loaded after", attempts, "attempts, proceeding anyway");
-      console.warn("Fonts that may not be loaded:", fontFamilies.filter(f => !checkFontLoaded(f)));
-    } else {
-      console.log("All fonts loaded successfully");
-    }
-    
-    // Additional delay to ensure fonts are fully rendered
-    await new Promise(resolve => setTimeout(resolve, 300));
   };
 
   // Helper to draw text and call callback (waits for fonts if available)
@@ -485,7 +171,7 @@ export const createCanvasPreview = (
     
     // Wait for fonts to be loaded
     if (texts && texts.length > 0) {
-      await waitForFonts(texts);
+      await waitForFontsLocal(texts);
     }
     
     // Now draw the texts
@@ -555,7 +241,7 @@ export const createCanvasPreview = (
       
       // Wait for fonts to be loaded before drawing
       if (texts && texts.length > 0) {
-        await waitForFonts(texts);
+        await waitForFontsLocal(texts);
       }
       
       if (texts && texts.length > 0) {
