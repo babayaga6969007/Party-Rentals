@@ -1,20 +1,16 @@
 import { createContext, useContext, useState, useMemo, useCallback, useEffect } from "react";
 import { api } from "../utils/api";
 
-// Default constants (fallback)
+// Default constants (fallback) - Using local fonts from public/fonts
 export const DEFAULT_FONTS = [
-  { name: "Dancing Script", value: "'Dancing Script', cursive" },
-  { name: "Pacifico", value: "'Pacifico', cursive" },
-  { name: "Great Vibes", value: "'Great Vibes', cursive" },
-  { name: "Satisfy", value: "'Satisfy', cursive" },
-  { name: "Allura", value: "'Allura', cursive" },
-  { name: "Brush Script MT", value: "'Brush Script MT', cursive" },
-  { name: "Lobster", value: "'Lobster', cursive" },
-  { name: "Playball", value: "'Playball', cursive" },
-  { name: "Tangerine", value: "'Tangerine', cursive" },
-  { name: "Cookie", value: "'Cookie', cursive" },
-  { name: "Amatic SC", value: "'Amatic SC', cursive" },
-  { name: "Caveat", value: "'Caveat', cursive" },
+  { name: "Farmhouse", value: "'Farmhouse', cursive" },
+  { name: "Black Mango Bold", value: "'BlackMango-Bold', sans-serif" },
+  { name: "Bodoni 72 Smallcaps", value: "'Bodoni 72 Smallcaps', serif" },
+  { name: "Bright", value: "'Bright', sans-serif" },
+  { name: "Futura", value: "'Futura', sans-serif" },
+  { name: "Greycliff CF Thin", value: "'Greycliff CF Thin', sans-serif" },
+  { name: "SignPainter", value: "'SignPainter', cursive" },
+  { name: "Sloop Script Three", value: "'Sloop Script Three', cursive" },
 ];
 
 export const BACKGROUND_GRADIENTS = [
@@ -37,8 +33,9 @@ export const DEFAULT_TEXT_SIZES = {
 };
 
 // Default canvas dimensions (will be overridden by config)
-export const DEFAULT_CANVAS_WIDTH = 800;
-export const DEFAULT_CANVAS_HEIGHT = 500;
+// Portrait orientation for better signage display
+export const DEFAULT_CANVAS_WIDTH = 600;
+export const DEFAULT_CANVAS_HEIGHT = 1200;
 
 const SignageContext = createContext();
 
@@ -127,32 +124,42 @@ export const SignageProvider = ({ children }) => {
 
   // Text content and styling
   const [textContent, setTextContent] = useState("Hello");
-  const [selectedFont, setSelectedFont] = useState("'Dancing Script', cursive");
-  const [selectedTextColor, setSelectedTextColor] = useState("#FFFFFF");
+  const [selectedFont, setSelectedFont] = useState("'Farmhouse', cursive");
+  const [selectedTextColor, setSelectedTextColor] = useState("#000000"); // Black by default
   const [selectedSize, setSelectedSize] = useState("medium");
   
-  // Custom size (when user wants to set custom dimensions)
-  const [useCustomSize, setUseCustomSize] = useState(false);
-  const [customSize, setCustomSize] = useState({
-    width: 250,
-    height: 60,
-    fontSize: 48,
+  // Text position (single position for entire text block)
+  // Initialize at center horizontally, top vertically
+  const [textPosition, setTextPosition] = useState({ 
+    x: DEFAULT_CANVAS_WIDTH / 2, // Horizontally centered
+    y: 200, // Near top
   });
   
-  // Text position (single position for entire text block)
-  const [textPosition, setTextPosition] = useState({ 
-    x: DEFAULT_CANVAS_WIDTH / 2, 
-    y: DEFAULT_CANVAS_HEIGHT / 2 
-  });
+  // Update text position when canvas dimensions are loaded (horizontally centered)
+  useEffect(() => {
+    if (canvasWidth && canvasHeight && !configLoading) {
+      setTextPosition(prev => {
+        // Only update if position hasn't been manually set (still at default)
+        if (prev.x === DEFAULT_CANVAS_WIDTH / 2 && prev.y === 200) {
+          // Position horizontally centered, near top
+          return {
+            x: canvasWidth / 2, // Horizontally centered
+            y: 200, // Near top with padding
+          };
+        }
+        return prev;
+      });
+    }
+  }, [canvasWidth, canvasHeight, configLoading]);
 
-  // Background
-  const [backgroundType, setBackgroundType] = useState("color");
+  // Background - Default to pink wallpaper image
+  const [backgroundType, setBackgroundType] = useState("image");
   const [backgroundColor, setBackgroundColor] = useState("#F8F9FA");
   const [backgroundGradient, setBackgroundGradient] = useState(
     "linear-gradient(135deg, #FFE5B4 0%, #FFCCCB 50%, #FFDAB9 100%)"
   );
   const [backgroundImage, setBackgroundImage] = useState(null);
-  const [backgroundImageUrl, setBackgroundImageUrl] = useState(null);
+  const [backgroundImageUrl, setBackgroundImageUrl] = useState("/signage/8X8WALLPINK.jpeg");
   const [customBackgroundColor, setCustomBackgroundColor] = useState("#F8F9FA");
 
   // Drag state (moved to local in SignageEditor, but kept here for compatibility)
@@ -161,16 +168,16 @@ export const SignageProvider = ({ children }) => {
   const [isTextHovered, setIsTextHovered] = useState(false);
   const [isTextClicked, setIsTextClicked] = useState(false);
 
-  // Get current text size (use custom if enabled, otherwise use predefined)
-  const textSize = useCustomSize 
-    ? customSize 
-    : (textSizes[selectedSize] || textSizes.medium || DEFAULT_TEXT_SIZES.medium);
-  const fontSize = textSize.fontSize;
+  // Get current text size from selected size (with safe fallbacks)
+  const textSize = (textSizes && Object.keys(textSizes).length > 0)
+    ? (textSizes[selectedSize] || textSizes.medium || DEFAULT_TEXT_SIZES.medium)
+    : DEFAULT_TEXT_SIZES.medium;
+  const fontSize = textSize?.fontSize || 48;
   
   // Get current price based on selected size
-  const currentPrice = useCustomSize 
-    ? 0 // Custom sizes don't have a price
-    : (textSizes[selectedSize]?.price || textSizes.medium?.price || 0);
+  const currentPrice = (textSizes && Object.keys(textSizes).length > 0)
+    ? (textSizes[selectedSize]?.price || textSizes.medium?.price || 0)
+    : 0;
 
   // Memoize functions to prevent rerenders
   const memoizedGetLinePositions = useCallback(() => {
@@ -208,21 +215,25 @@ export const SignageProvider = ({ children }) => {
 
   const memoizedResetSignage = useCallback(() => {
     setTextContent("Hello");
-    setSelectedFont("'Dancing Script', cursive");
-    setSelectedTextColor("#FFFFFF");
+    setSelectedFont("'Farmhouse', cursive");
+    setSelectedTextColor("#000000"); // Black by default
     setSelectedSize("medium");
-    setTextPosition({ x: canvasWidth / 2, y: canvasHeight / 2 });
-    setBackgroundType("color");
+    // Position horizontally centered, near top
+    setTextPosition({ 
+      x: canvasWidth / 2, // Horizontally centered
+      y: 200, // Near top
+    });
+    setBackgroundType("image");
     setBackgroundColor("#F8F9FA");
     setBackgroundGradient("linear-gradient(135deg, #FFE5B4 0%, #FFCCCB 50%, #FFDAB9 100%)");
     setBackgroundImage(null);
-    setBackgroundImageUrl(null);
+    setBackgroundImageUrl("/signage/8X8WALLPINK.jpeg");
     setCustomBackgroundColor("#F8F9FA");
     setIsDragging(false);
     setDragOffset({ x: 0, y: 0 });
     setIsTextHovered(false);
     setIsTextClicked(false);
-  }, []);
+  }, [canvasWidth]);
 
   const memoizedLoadSignage = useCallback((signageData) => {
     if (signageData.texts && signageData.texts.length > 0) {
@@ -238,7 +249,7 @@ export const SignageProvider = ({ children }) => {
           x: firstText.x,
           y: firstText.y + (totalHeight / 2),
         });
-        setSelectedFont(firstText.fontFamily || "'Dancing Script', cursive");
+        setSelectedFont(firstText.fontFamily || "'Farmhouse', cursive");
         setSelectedTextColor(firstText.color || "#000000");
         
         const fs = firstText.fontSize || 48;
@@ -280,8 +291,6 @@ export const SignageProvider = ({ children }) => {
     setDragOffset,
     setIsTextHovered,
     setIsTextClicked,
-    setUseCustomSize,
-    setCustomSize,
   }), []); // Empty deps - setters from useState are always stable
 
   // Memoize functions separately
@@ -329,10 +338,6 @@ export const SignageProvider = ({ children }) => {
     currentPrice,
     configLoading,
     
-    // Custom size
-    useCustomSize,
-    customSize,
-    
     // Computed
     textSize,
     fontSize,
@@ -369,8 +374,6 @@ export const SignageProvider = ({ children }) => {
     canvasHeight,
     currentPrice,
     configLoading,
-    useCustomSize,
-    customSize,
     stableSetters,
     stableFunctions,
   ]);

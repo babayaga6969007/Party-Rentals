@@ -34,14 +34,48 @@ if (!customer?.addressLine) {
     }
 
     // Process items: for signage items without valid productId, set to null
+    // Also ensure addons and signageData are preserved
     const processedItems = items.map(item => {
+      // Create a new object preserving all fields including nested ones
+      const processed = {
+        productId: item.productId,
+        name: item.name,
+        productType: item.productType,
+        qty: item.qty,
+        unitPrice: item.unitPrice,
+        lineTotal: item.lineTotal,
+        days: item.days || 0,
+        startDate: item.startDate || "",
+        endDate: item.endDate || "",
+        image: item.image || "",
+        // Explicitly preserve addons array
+        addons: item.addons && Array.isArray(item.addons) ? item.addons.map(addon => ({
+          optionId: addon.optionId || "",
+          name: addon.name || "",
+          price: addon.price || 0,
+          signageText: addon.signageText || "",
+          vinylColor: addon.vinylColor || "",
+          vinylHex: addon.vinylHex || "",
+          shelvingData: addon.shelvingData ? {
+            tier: addon.shelvingData.tier || "",
+            size: addon.shelvingData.size || "",
+            quantity: addon.shelvingData.quantity || 0
+          } : null
+        })) : [],
+        // Explicitly preserve signageData for signage items
+        signageData: item.productType === "signage" ? (item.signageData || {
+          texts: [],
+          backgroundType: "",
+          backgroundColor: "",
+          backgroundImageUrl: ""
+        }) : null
+      };
+      
       if (item.productType === "signage" && (!item.productId || item.productId === "signage" || !mongoose.Types.ObjectId.isValid(item.productId))) {
-        return {
-          ...item,
-          productId: null, // Set to null for standalone signage items
-        };
+        processed.productId = null; // Set to null for standalone signage items
       }
-      return item;
+      
+      return processed;
     });
 
 const order = new Order({

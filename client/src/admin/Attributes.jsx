@@ -23,7 +23,7 @@ const Attributes = () => {
   const [newGroupRequired, setNewGroupRequired] = useState(false);
 
   // Add option inline (per group)
-  const [draftOption, setDraftOption] = useState({}); // { [groupId]: {label, hex, priceDelta} }
+  const [draftOption, setDraftOption] = useState({}); // { [groupId]: {label, hex, priceDelta, tier} }
 
   const headers = useMemo(
     () => ({
@@ -109,6 +109,10 @@ const Attributes = () => {
     const d = draftOption[gId] || {};
     if (!d.label?.trim()) return alert("Option label required");
 
+    // Check if this is a shelving addon
+    const isShelving = group.type === "addon" && 
+      (d.label?.toLowerCase().includes("shelving") || d.label?.toLowerCase().includes("shelf"));
+
     try {
       const res = await axios.post(
         `${API}/admin/attributes/${gId}/options`,
@@ -116,13 +120,14 @@ const Attributes = () => {
           label: d.label.trim(),
           hex: group.type === "color" ? d.hex || "#000000" : undefined,
           priceDelta: group.type === "addon" ? Number(d.priceDelta || 0) : 0,
+          tier: isShelving ? (d.tier || "A") : undefined, // Add tier for shelving addons
         },
         headers
       );
 
       // backend returns full group
       setGroups((prev) => prev.map((x) => (x._id === gId ? res.data : x)));
-      setDraft(gId, { label: "", hex: "#000000", priceDelta: "" });
+      setDraft(gId, { label: "", hex: "#000000", priceDelta: "", tier: "A" });
     } catch (e) {
       console.error(e);
       alert(e?.response?.data?.message || "Failed to add option");
@@ -252,18 +257,35 @@ const Attributes = () => {
                     )}
 
                     {group.type === "addon" && (
-                      <div className="md:col-span-3">
-                        <label className="block text-sm text-[#2D2926] mb-1">Price (USD)</label>
-                        <input
-                          type="number"
-                          value={d.priceDelta ?? ""}
-                          onChange={(e) => setDraft(group._id, { priceDelta: e.target.value })}
-                          className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
-                          placeholder="e.g. 150"
-                          min="0"
-                          step="1"
-                        />
-                      </div>
+                      <>
+                        <div className="md:col-span-3">
+                          <label className="block text-sm text-[#2D2926] mb-1">Price (USD)</label>
+                          <input
+                            type="number"
+                            value={d.priceDelta ?? ""}
+                            onChange={(e) => setDraft(group._id, { priceDelta: e.target.value })}
+                            className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
+                            placeholder="e.g. 150"
+                            min="0"
+                            step="1"
+                          />
+                        </div>
+                        {/* Tier selection for shelving addons */}
+                        {(d.label?.toLowerCase().includes("shelving") || d.label?.toLowerCase().includes("shelf")) && (
+                          <div className="md:col-span-3">
+                            <label className="block text-sm text-[#2D2926] mb-1">Tier</label>
+                            <select
+                              value={d.tier || "A"}
+                              onChange={(e) => setDraft(group._id, { tier: e.target.value })}
+                              className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
+                            >
+                              <option value="A">Tier A</option>
+                              <option value="B">Tier B</option>
+                              <option value="C">Tier C</option>
+                            </select>
+                          </div>
+                        )}
+                      </>
                     )}
 
                     <div className="md:col-span-3">
@@ -305,6 +327,11 @@ const Attributes = () => {
                               {group.type === "addon" && (
                                 <span className="text-xs text-gray-600">
                                   +${Number(opt.priceDelta || 0).toFixed(2)}
+                                  {opt.tier && (
+                                    <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">
+                                      Tier {opt.tier}
+                                    </span>
+                                  )}
                                 </span>
                               )}
                             </div>

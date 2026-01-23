@@ -33,6 +33,21 @@ const orderItemSchema = new mongoose.Schema(
       backgroundImageUrl: { type: String, default: "" },
     },
 
+    // Add-ons (for rental products)
+    addons: [{
+      optionId: { type: String },
+      name: { type: String },
+      price: { type: Number, default: 0 },
+      signageText: { type: String, default: "" },
+      vinylColor: { type: String, default: "" },
+      vinylHex: { type: String, default: "" },
+      shelvingData: {
+        tier: { type: String },
+        size: { type: String },
+        quantity: { type: Number, default: 0 },
+      },
+    }],
+
     image: { type: String, default: "" },
   },
   { _id: false }

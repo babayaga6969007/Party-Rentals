@@ -306,13 +306,24 @@ else if (updates.productSubType === "simple") {
   if ("addons" in req.body) {
   const parsedAddons = JSON.parse(req.body.addons || "[]");
 
-  updates.addons = parsedAddons.map((a) => ({
-    optionId: a.optionId,
-    overridePrice:
-      a.overridePrice === "" || a.overridePrice === null
-        ? null
-        : Number(a.overridePrice),
-  }));
+  updates.addons = parsedAddons.map((a) => {
+    const addonData = {
+      optionId: a.optionId,
+      overridePrice:
+        a.overridePrice === "" || a.overridePrice === null
+          ? null
+          : Number(a.overridePrice),
+    };
+    
+    // Include shelving configuration if present
+    if (a.shelvingTier) {
+      addonData.shelvingTier = a.shelvingTier;
+      addonData.shelvingSize = a.shelvingSize || "";
+      addonData.shelvingQuantity = a.shelvingQuantity || 1;
+    }
+    
+    return addonData;
+  });
 }
 
 
@@ -431,6 +442,7 @@ exports.getSingleProduct = async (req, res) => {
           label: o.label,
           priceDelta: o.priceDelta || 0,
           groupName: g.name,
+          tier: o.tier, // Include tier for shelving addons
         };
       });
     });
@@ -438,6 +450,12 @@ exports.getSingleProduct = async (req, res) => {
     product.addons = (product.addons || []).map((a) => ({
       ...a,
       option: optionMap[String(a.optionId)] || null,
+      // Preserve shelving data if it exists
+      shelvingData: (a.shelvingTier || a.shelvingSize || a.shelvingQuantity) ? {
+        tier: a.shelvingTier || "",
+        size: a.shelvingSize || "",
+        quantity: a.shelvingQuantity || 1,
+      } : null,
     }));
 
     res.json(product);

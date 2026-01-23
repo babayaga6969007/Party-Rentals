@@ -6,6 +6,7 @@ const AttributeOptionSchema = new mongoose.Schema(
     value: { type: String, trim: true },
     hex: { type: String, trim: true },
     priceDelta: { type: Number, default: 0 },
+    tier: { type: String, enum: ["A", "B", "C"], default: undefined }, // For shelving addons: Tier A, B, or C
     isActive: { type: Boolean, default: true },
     sortOrder: { type: Number, default: 0 },
   },

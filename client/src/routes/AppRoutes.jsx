@@ -47,6 +47,8 @@ import Inventory from "../admin/Inventory";
 import AdminCoupons from "../admin/AdminCoupons";
 import AdminSignages from "../admin/AdminSignages";
 import AdminSignageConfig from "../admin/AdminSignageConfig";
+import AdminShelvingConfig from "../admin/AdminShelvingConfig";
+import AdminShippingConfig from "../admin/AdminShippingConfig";
 
 
 const AppRoutes = () => {
@@ -110,6 +112,22 @@ const AppRoutes = () => {
   element={
     <ProtectedAdminRoute>
       <AdminSignageConfig />
+    </ProtectedAdminRoute>
+  }
+/>
+<Route
+  path="/admin/shelving-config"
+  element={
+    <ProtectedAdminRoute>
+      <AdminShelvingConfig />
+    </ProtectedAdminRoute>
+  }
+/>
+<Route
+  path="/admin/shipping-config"
+  element={
+    <ProtectedAdminRoute>
+      <AdminShippingConfig />
     </ProtectedAdminRoute>
   }
 />

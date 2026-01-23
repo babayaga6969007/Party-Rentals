@@ -71,6 +71,8 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const adminCouponRoutes = require("./routes/adminCouponRoutes");
 const couponRoutes = require("./routes/couponRoutes");
 const signageConfigRoutes = require("./routes/signageConfigRoutes");
+const shelvingConfigRoutes = require("./routes/shelvingConfigRoutes");
+const shippingConfigRoutes = require("./routes/shippingConfigRoutes");
 
 /* =========================
    DATABASE
@@ -110,6 +112,12 @@ app.use("/api/admin/attributes", attributeRoutes);
 // 🎨 Signage Config (for admin to manage fonts/sizes)
 app.use("/api/signage-config", signageConfigRoutes);
 // Note: Signage creation removed - metadata is stored directly in orders
+
+// 📦 Shelving Config (for admin to manage shelving tiers/sizes/prices)
+app.use("/api/shelving-config", shelvingConfigRoutes);
+
+// 🚚 Shipping Config (for admin to manage distance-based shipping prices)
+app.use("/api/shipping-config", shippingConfigRoutes);
 
 /* =========================
    404 HANDLER
