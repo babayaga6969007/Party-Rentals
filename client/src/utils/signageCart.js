@@ -283,36 +283,77 @@ export const createCanvasPreview = (
   
   console.log("Canvas created with size:", canvas.width, "x", canvas.height);
 
-  // Helper to draw text and call callback (waits for fonts if available)
-  const drawComplete = () => {
-    const drawAndCallback = () => {
-      // Get texts and verify they exist
-      const texts = getTextsFromContent();
-      console.log("Drawing texts in canvas preview:", texts);
-      
-      if (texts && texts.length > 0) {
-        drawTexts(ctx, getTextsFromContent);
-      } else {
-        console.warn("No texts found to draw!");
-      }
-      
-      // Use JPEG with quality 0.85 to reduce file size significantly
-      callback(canvas.toDataURL("image/jpeg", 0.85));
-    };
-    
-    // Wait for fonts to be ready if available
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(() => {
-        // Add a small delay to ensure fonts are fully loaded
-        setTimeout(drawAndCallback, 100);
-      }).catch(() => {
-        // If fonts.ready fails, draw anyway with delay
-        setTimeout(drawAndCallback, 100);
-      });
-    } else {
-      // Fallback: wait a bit for fonts to load
-      setTimeout(drawAndCallback, 150);
+  // Helper function to check if a specific font is loaded
+  const checkFontLoaded = (fontFamily) => {
+    if (!document.fonts || !document.fonts.check) {
+      return true; // Assume loaded if API not available
     }
+    
+    // Clean font family name (remove quotes, fallbacks, etc.)
+    const cleanFont = fontFamily
+      .replace(/'/g, '')
+      .replace(/,.*$/g, '') // Remove fallbacks
+      .trim();
+    
+    // Check if font is loaded with different variations
+    const fontString = `16px "${cleanFont}"`;
+    return document.fonts.check(fontString);
+  };
+
+  // Helper to wait for all fonts used in texts to be loaded
+  const waitForFonts = async (texts) => {
+    if (!texts || texts.length === 0) return;
+    
+    // Get unique font families from texts
+    const fontFamilies = [...new Set(texts.map(t => t.fontFamily || "'Farmhouse', cursive"))];
+    
+    // Wait for document.fonts.ready first
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+    
+    // Check each font and wait if needed
+    let allFontsLoaded = false;
+    let attempts = 0;
+    const maxAttempts = 50; // Wait up to 5 seconds (50 * 100ms)
+    
+    while (!allFontsLoaded && attempts < maxAttempts) {
+      allFontsLoaded = fontFamilies.every(font => checkFontLoaded(font));
+      
+      if (!allFontsLoaded) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+    }
+    
+    if (!allFontsLoaded) {
+      console.warn("Some fonts may not be fully loaded, proceeding anyway");
+    }
+    
+    // Additional delay to ensure fonts are rendered
+    await new Promise(resolve => setTimeout(resolve, 200));
+  };
+
+  // Helper to draw text and call callback (waits for fonts if available)
+  const drawComplete = async () => {
+    // Get texts first to check which fonts we need
+    const texts = getTextsFromContent();
+    console.log("Drawing texts in canvas preview:", texts);
+    
+    // Wait for fonts to be loaded
+    if (texts && texts.length > 0) {
+      await waitForFonts(texts);
+    }
+    
+    // Now draw the texts
+    if (texts && texts.length > 0) {
+      drawTexts(ctx, getTextsFromContent);
+    } else {
+      console.warn("No texts found to draw!");
+    }
+    
+    // Use JPEG with quality 0.85 to reduce file size significantly
+    callback(canvas.toDataURL("image/jpeg", 0.85));
   };
 
   // Draw background
@@ -356,49 +397,55 @@ export const createCanvasPreview = (
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     }
     // Draw text on colored background
-    drawComplete();
+    (async () => {
+      await drawComplete();
+    })();
     return;
   } else if (backgroundType === "image" && backgroundImageUrl) {
     const img = new Image();
     img.crossOrigin = "anonymous";
     
-    const drawTextAfterImage = () => {
+    const drawTextAfterImage = async () => {
       // Get texts first to verify they exist
       const texts = getTextsFromContent();
       console.log("drawTextAfterImage: Texts to draw:", texts);
       
-      const drawAndCallback = () => {
-        if (texts && texts.length > 0) {
-          console.log("drawTextAfterImage: Drawing texts on canvas...");
-          drawTexts(ctx, getTextsFromContent);
-          
-          // Verify text was drawn by checking canvas
-          const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
-          const hasNonBackgroundPixels = Array.from(imageData.data).some((pixel, index) => {
-            // Check if pixel is not background (not white/transparent)
-            if (index % 4 === 3) return false; // Skip alpha channel
-            return pixel < 250; // Not white/light background
-          });
-          console.log("drawTextAfterImage: Canvas has non-background pixels:", hasNonBackgroundPixels);
-        } else {
-          console.warn("drawTextAfterImage: No texts to draw!");
-        }
+      // Wait for fonts to be loaded before drawing
+      if (texts && texts.length > 0) {
+        await waitForFonts(texts);
+      }
+      
+      if (texts && texts.length > 0) {
+        console.log("drawTextAfterImage: Drawing texts on canvas...");
+        drawTexts(ctx, getTextsFromContent);
         
-        // Verify canvas is exactly the right size before exporting
-        console.log("Final canvas size before export:", canvas.width, "x", canvas.height);
-        console.log("Expected size:", canvasWidth, "x", canvasHeight);
-        
-        if (canvas.width !== canvasWidth || canvas.height !== canvasHeight) {
-          console.error("Canvas size mismatch! Canvas:", canvas.width, "x", canvas.height, "Expected:", canvasWidth, "x", canvasHeight);
-        }
-        
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-        console.log("drawTextAfterImage: Generated preview image, length:", dataUrl.length);
-        
-        // Verify the exported image dimensions by creating a test image
-        const testImg = new Image();
-        testImg.onload = () => {
-          console.log("Exported image actual dimensions:", testImg.width, "x", testImg.height);
+        // Verify text was drawn by checking canvas
+        const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+        const hasNonBackgroundPixels = Array.from(imageData.data).some((pixel, index) => {
+          // Check if pixel is not background (not white/transparent)
+          if (index % 4 === 3) return false; // Skip alpha channel
+          return pixel < 250; // Not white/light background
+        });
+        console.log("drawTextAfterImage: Canvas has non-background pixels:", hasNonBackgroundPixels);
+      } else {
+        console.warn("drawTextAfterImage: No texts to draw!");
+      }
+      
+      // Verify canvas is exactly the right size before exporting
+      console.log("Final canvas size before export:", canvas.width, "x", canvas.height);
+      console.log("Expected size:", canvasWidth, "x", canvasHeight);
+      
+      if (canvas.width !== canvasWidth || canvas.height !== canvasHeight) {
+        console.error("Canvas size mismatch! Canvas:", canvas.width, "x", canvas.height, "Expected:", canvasWidth, "x", canvasHeight);
+      }
+      
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      console.log("drawTextAfterImage: Generated preview image, length:", dataUrl.length);
+      
+      // Verify the exported image dimensions by creating a test image
+      const testImg = new Image();
+      testImg.onload = () => {
+        console.log("Exported image actual dimensions:", testImg.width, "x", testImg.height);
           if (testImg.width !== canvasWidth || testImg.height !== canvasHeight) {
             console.error("WARNING: Exported image size doesn't match preview size!");
           }
@@ -407,21 +454,6 @@ export const createCanvasPreview = (
         
         callback(dataUrl);
       };
-      
-      // Wait for fonts to be ready, then draw text
-      if (document.fonts && document.fonts.ready) {
-        document.fonts.ready.then(() => {
-          // Add delay to ensure fonts are fully loaded
-          setTimeout(drawAndCallback, 200);
-        }).catch(() => {
-          // If fonts.ready fails, draw anyway with delay
-          setTimeout(drawAndCallback, 200);
-        });
-      } else {
-        // Fallback: wait a bit for fonts to load
-        setTimeout(drawAndCallback, 250);
-      }
-    };
     
     img.onload = () => {
       console.log("Background image loaded, dimensions:", img.width, img.height);
@@ -505,16 +537,14 @@ export const createCanvasPreview = (
         });
       }
       // Draw text after image is loaded
-      setTimeout(() => {
-        drawTextAfterImage();
-      }, 50);
+      drawTextAfterImage();
     };
     
-    img.onerror = () => {
+    img.onerror = async () => {
       // If image fails to load, draw text on blank background
       ctx.fillStyle = "#FFFFFF";
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-      drawComplete();
+      await drawComplete();
     };
     
     // Handle both relative and absolute URLs
@@ -527,7 +557,9 @@ export const createCanvasPreview = (
     // No background - draw text on white background
     ctx.fillStyle = "#FFFFFF";
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-    drawComplete();
+    (async () => {
+      await drawComplete();
+    })();
     return;
   }
 };
@@ -552,16 +584,24 @@ const drawTexts = (context, getTextsFromContent) => {
       .replace(/'/g, '')
       .replace(/, cursive/g, '')
       .replace(/, sans-serif/g, '')
+      .replace(/, serif/g, '')
       .trim();
     
     // If font family is empty, use a default
     if (!fontFamily) {
-      fontFamily = "Arial, sans-serif";
+      fontFamily = "Arial";
     }
     
     const fontSize = text.fontSize || 48;
-    const fontString = `${fontSize}px ${fontFamily}`;
+    // Use quotes around font family to ensure proper font matching
+    const fontString = `${fontSize}px "${fontFamily}", Arial, sans-serif`;
+    
+    // Set font and verify it's applied
     context.font = fontString;
+    
+    // Double-check font is loaded by measuring text (if font not loaded, measurement will be wrong)
+    const testMeasurement = context.measureText("M");
+    console.log(`drawTexts: Font "${fontFamily}" measurement:`, testMeasurement.width);
     context.textAlign = "center";
     context.textBaseline = "middle";
     
