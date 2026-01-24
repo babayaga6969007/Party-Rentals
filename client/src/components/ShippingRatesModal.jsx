@@ -1,19 +1,21 @@
 import { useState, useEffect } from "react";
 import { api } from "../utils/api";
 
-const ShippingRatesModal = ({ isOpen, onClose }) => {
-  const [zipCode, setZipCode] = useState("");
+const ShippingRatesModal = ({ isOpen, onClose, onShippingCalculated }) => {
+  const [addressInput, setAddressInput] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
   const [detectedZone, setDetectedZone] = useState(null);
-  const [zipError, setZipError] = useState("");
+  const [addressError, setAddressError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [shippingConfig, setShippingConfig] = useState(null);
   const [configLoading, setConfigLoading] = useState(true);
 
   // Warehouse location - will be loaded from config
   const [warehouse, setWarehouse] = useState({
-    address: "2031 Via Burton Street, Suite A, USA",
-    lat: 34.0522,
-    lng: -118.2437,
+    address: "2031 Via Burton Street, Anaheim, USA",
+    lat: 33.8436,
+    lng: -117.8864,
   });
 
   // Haversine formula to calculate distance between two coordinates in miles
@@ -31,105 +33,116 @@ const ShippingRatesModal = ({ isOpen, onClose }) => {
     return R * c;
   };
 
-  // Geocode ZIP code using Nominatim (OpenStreetMap) - Free, no API key required
-  const geocodeZipCode = async (zip) => {
+  // Search addresses using Photon API (free, no API key required)
+  const searchAddress = async (query) => {
+    if (query.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
     try {
-      // Use Nominatim API to geocode the ZIP code
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?postalcode=${zip}&country=US&format=json&limit=1`,
-        {
-          headers: {
-            "User-Agent": "Party-Rentals-App", // Required by Nominatim
-          },
-        }
-      );
+      setIsSearching(true);
+      // Photon API with location bias to prioritize results near warehouse
+      const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5&lat=${warehouse.lat}&lon=${warehouse.lng}`;
+      const response = await fetch(url);
 
       if (!response.ok) {
-        throw new Error("Geocoding service unavailable");
+        throw new Error("Address search service unavailable");
       }
 
       const data = await response.json();
 
-      if (!data || data.length === 0) {
-        throw new Error("ZIP code not found");
+      if (!data.features || data.features.length === 0) {
+        setSuggestions([]);
+        return;
       }
 
-      const location = data[0];
-      return {
-        lat: parseFloat(location.lat),
-        lon: parseFloat(location.lon),
-        displayName: location.display_name,
-      };
+      // Map Photon results to our format
+      const mappedSuggestions = data.features.map((f) => {
+        const parts = [
+          f.properties.name,
+          f.properties.city,
+          f.properties.state,
+          f.properties.postcode,
+        ].filter(Boolean);
+
+        return {
+          label: parts.join(", "),
+          lat: f.geometry.coordinates[1], // Photon returns [lng, lat]
+          lon: f.geometry.coordinates[0],
+          fullAddress: parts.join(", "),
+        };
+      });
+
+      setSuggestions(mappedSuggestions);
     } catch (error) {
-      console.error("Geocoding error:", error);
-      throw error;
+      console.error("Address search error:", error);
+      setSuggestions([]);
+    } finally {
+      setIsSearching(false);
     }
   };
-
-  // Alternative: Geocode using Google Maps API (if API key is available)
-  const geocodeZipCodeGoogle = async (zip) => {
-    const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-    
-    if (!GOOGLE_API_KEY) {
-      throw new Error("Google Maps API key not configured");
-    }
-
+  // Get road distance using OSRM API (driving distance, not straight-line)
+  const getRoadDistance = async (warehouseLat, warehouseLng, destLat, destLng) => {
     try {
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${zip}&key=${GOOGLE_API_KEY}`
-      );
+      // OSRM API format: /route/v1/driving/{lng1},{lat1};{lng2},{lat2}?overview=false
+      // Note: OSRM uses longitude first, then latitude
+      // Don't include custom headers to avoid CORS issues
+      const url = `https://router.project-osrm.org/route/v1/driving/${warehouseLng},${warehouseLat};${destLng},${destLat}?overview=false`;
+      
+      const response = await fetch(url);
 
       if (!response.ok) {
-        throw new Error("Google Geocoding service unavailable");
+        throw new Error("OSRM routing service unavailable");
       }
 
       const data = await response.json();
 
-      if (data.status !== "OK" || !data.results || data.results.length === 0) {
-        throw new Error("ZIP code not found");
+      if (data.code !== "Ok" || !data.routes || data.routes.length === 0) {
+        throw new Error("No route found");
       }
 
-      const location = data.results[0].geometry.location;
-      return {
-        lat: location.lat,
-        lon: location.lng,
-        displayName: data.results[0].formatted_address,
-      };
+      // Distance is returned in meters
+      const distanceInMeters = data.routes[0].distance;
+      
+      // Convert meters to miles (1 meter = 0.000621371 miles)
+      const distanceInMiles = distanceInMeters * 0.000621371;
+      
+      return Math.round(distanceInMiles);
     } catch (error) {
-      console.error("Google Geocoding error:", error);
+      console.error("OSRM routing error:", error);
       throw error;
     }
   };
 
-  // Calculate distance from ZIP code using geocoding
-  const calculateDistanceFromZip = async (zip) => {
+  // Calculate distance from selected address coordinates
+  const calculateDistanceFromAddress = async (selectedAddress) => {
     try {
-      // Try Google Maps first if API key is available, otherwise use Nominatim
-      const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-      let destinationCoords;
-
-      if (GOOGLE_API_KEY) {
-        try {
-          destinationCoords = await geocodeZipCodeGoogle(zip);
-        } catch (error) {
-          // Fallback to Nominatim if Google fails
-          console.warn("Google geocoding failed, falling back to Nominatim:", error);
-          destinationCoords = await geocodeZipCode(zip);
-        }
-      } else {
-        destinationCoords = await geocodeZipCode(zip);
+      // Try to get actual driving distance using OSRM
+      let distanceInMiles;
+      try {
+        distanceInMiles = await getRoadDistance(
+          warehouse.lat,
+          warehouse.lng,
+          selectedAddress.lat,
+          selectedAddress.lon
+        );
+      } catch (osrmError) {
+        // Fallback to Haversine (straight-line) distance if OSRM fails
+        console.warn("OSRM routing failed, falling back to straight-line distance:", osrmError);
+        distanceInMiles = Math.round(
+          calculateDistance(
+            warehouse.lat,
+            warehouse.lng,
+            selectedAddress.lat,
+            selectedAddress.lon
+          )
+        );
       }
 
-      const distanceInMiles = calculateDistance(
-        warehouse.lat,
-        warehouse.lng,
-        destinationCoords.lat,
-        destinationCoords.lon
-      );
-
       return {
-        distance: Math.round(distanceInMiles),
-        address: destinationCoords.displayName,
+        distance: distanceInMiles,
+        address: selectedAddress.fullAddress || selectedAddress.label,
       };
     } catch (error) {
       console.error("Distance calculation error:", error);
@@ -146,9 +159,9 @@ const ShippingRatesModal = ({ isOpen, onClose }) => {
           setShippingConfig(res.config);
           if (res.config.warehouse) {
             setWarehouse({
-              address: res.config.warehouse.address || "2031 Via Burton Street, Suite A, USA",
-              lat: res.config.warehouse.lat || 34.0522,
-              lng: res.config.warehouse.lng || -118.2437,
+              address: res.config.warehouse.address || "2031 Via Burton Street, Anaheim, USA",
+              lat: res.config.warehouse.lat || 33.8436,
+              lng: res.config.warehouse.lng || -117.8864,
             });
           }
         }
@@ -162,7 +175,6 @@ const ShippingRatesModal = ({ isOpen, onClose }) => {
     if (isOpen) {
       fetchShippingConfig();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   // Calculate shipping price based on distance using admin-configured prices
@@ -201,27 +213,34 @@ const ShippingRatesModal = ({ isOpen, onClose }) => {
     };
   };
 
-  // Detect zone and calculate distance/pricing from ZIP
-  const detectZoneFromZip = async (zip) => {
+  // Handle address selection from dropdown
+  const handleAddressSelect = async (selectedAddress) => {
+    setAddressInput(selectedAddress.label);
+    setSuggestions([]);
+    setAddressError("");
+    setDetectedZone(null);
     setIsLoading(true);
-    setZipError("");
-    
+
     try {
-      const { distance: distanceInMiles, address } = await calculateDistanceFromZip(zip);
+      const { distance: distanceInMiles, address } = await calculateDistanceFromAddress(selectedAddress);
       
       const pricing = calculateShippingPrice(distanceInMiles);
       
-      return {
+      const result = {
         distance: distanceInMiles,
         address: address,
         distanceRange: pricing.distanceRange,
         price: pricing.price,
       };
+      
+      setDetectedZone(result);
+      
+      // Don't auto-call callback - let user review and click "Apply" button
     } catch (error) {
-      setZipError(
+      setAddressError(
         error.message || "Unable to calculate distance. Please try again or contact support."
       );
-      throw error;
+      setDetectedZone(null);
     } finally {
       setIsLoading(false);
     }
@@ -230,75 +249,90 @@ const ShippingRatesModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4">
-      <div className="bg-white max-w-3xl w-full rounded-xl shadow-lg p-6 relative">
-        {/* CLOSE */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-black"
-        >
-          ✕
-        </button>
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4 py-4 overflow-y-auto">
+      <div className="bg-white max-w-3xl w-full rounded-xl shadow-lg relative my-auto max-h-[90vh] flex flex-col">
+        {/* STICKY HEADER */}
+        <div className="sticky top-0 bg-white rounded-t-xl z-10 p-6 pb-4 border-b border-gray-200">
+          {/* CLOSE */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-500 hover:text-black"
+          >
+            ✕
+          </button>
 
-        {/* HEADER */}
-        <h2 className="text-2xl font-semibold text-[#2D2926]">
-          Shipping Rates
-        </h2>
+          {/* HEADER */}
+          <h2 className="text-2xl font-semibold text-[#2D2926] pr-8">
+            Shipping Rates
+          </h2>
 
-        <p className="mt-2 text-sm text-gray-600">
-          All deliveries are dispatched from our warehouse at:
-          <br />
-          <strong>{warehouse.address}</strong>
-        </p>
+          <p className="mt-2 text-sm text-gray-600">
+            All deliveries are dispatched from our warehouse at:
+            <br />
+            <strong>{warehouse.address}</strong>
+          </p>
+        </div>
 
-        {/* ZIP CODE CHECK */}
+        {/* SCROLLABLE CONTENT */}
+        <div className="overflow-y-auto flex-1 p-6 pt-4">
+          {/* ADDRESS SEARCH */}
         <div className="mt-5 bg-[#FAF7F5] p-4 rounded-lg border">
           <h4 className="font-semibold text-[#2D2926] mb-2">
-            Check Delivery Availability by ZIP Code
+            Check Delivery Availability by Address
           </h4>
 
-          <div className="flex gap-3 flex-col sm:flex-row">
+          <div className="relative z-20">
             <input
               type="text"
-              value={zipCode}
-              maxLength={5}
-              placeholder="Enter ZIP code"
-              className="flex-1 p-3 border rounded-lg"
+              value={addressInput}
+              placeholder="Enter address, city, or ZIP code"
+              className="w-full p-3 border rounded-lg"
               onChange={(e) => {
-                setZipCode(e.target.value);
-                setZipError("");
+                const value = e.target.value;
+                setAddressInput(value);
+                setAddressError("");
                 setDetectedZone(null);
+                searchAddress(value);
+              }}
+              onBlur={() => {
+                // Delay hiding suggestions to allow click
+                setTimeout(() => setSuggestions([]), 200);
+              }}
+              onFocus={() => {
+                if (addressInput.length >= 3) {
+                  searchAddress(addressInput);
+                }
               }}
             />
 
-            <button
-              type="button"
-              onClick={async () => {
-                if (!/^\d{5}$/.test(zipCode)) {
-                  setZipError("Please enter a valid 5-digit ZIP code");
-                  return;
-                }
-
-                setZipError("");
-                setDetectedZone(null);
-                
-                try {
-                  const result = await detectZoneFromZip(zipCode);
-                  setDetectedZone(result);
-                } catch {
-                  // Error is already handled in detectZoneFromZip
-                  setDetectedZone(null);
-                }
-              }}
-              disabled={isLoading}
-              className="px-5 py-3 rounded-lg bg-black text-white hover:bg-[#222] disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? "Calculating..." : "Check"}
-            </button>
+            {/* Autocomplete Suggestions Dropdown */}
+            {suggestions.length > 0 && (
+              <div className="absolute z-30 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                {isSearching && (
+                  <div className="p-3 text-sm text-gray-500 text-center">
+                    Searching...
+                  </div>
+                )}
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    className="w-full text-left px-4 py-3 hover:bg-gray-100 border-b border-gray-100 last:border-b-0 transition-colors"
+                    onClick={() => handleAddressSelect(suggestion)}
+                  >
+                    <div className="text-sm text-[#2D2926]">{suggestion.label}</div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {zipError && (
-            <p className="mt-2 text-sm text-red-600">{zipError}</p>
+          {addressError && (
+            <p className="mt-2 text-sm text-red-600">{addressError}</p>
+          )}
+
+          {isLoading && (
+            <p className="mt-2 text-sm text-gray-600">Calculating distance...</p>
           )}
 
           {detectedZone && (
@@ -316,9 +350,28 @@ const ShippingRatesModal = ({ isOpen, onClose }) => {
               </p>
 
               {detectedZone.price !== null && detectedZone.price !== undefined ? (
-                <p className="mt-1">
-                  <strong>Shipping Price:</strong> $ {detectedZone.price}
-                </p>
+                <>
+                  <p className="mt-1">
+                    <strong>Shipping Price:</strong> $ {detectedZone.price}
+                  </p>
+                  {onShippingCalculated && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onShippingCalculated({
+                          distance: detectedZone.distance,
+                          address: detectedZone.address,
+                          distanceRange: detectedZone.distanceRange,
+                          price: detectedZone.price,
+                        });
+                        onClose();
+                      }}
+                      className="mt-3 w-full px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
+                    >
+                      Apply Shipping Cost
+                    </button>
+                  )}
+                </>
               ) : (
                 <p className="mt-2 text-orange-600 font-medium">
                   Custom shipping quote required
@@ -367,6 +420,7 @@ const ShippingRatesModal = ({ isOpen, onClose }) => {
           * Shipping charges are indicative. Final cost may vary based on access,
           timing, and handling requirements.
         </p>
+        </div>
       </div>
     </div>
   );

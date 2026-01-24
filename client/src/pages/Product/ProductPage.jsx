@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { api } from "../../utils/api";
 import AddToCartModal from "../../components/cart/AddToCartModal";
 import ShippingRatesModal from "../../components/ShippingRatesModal";
+import PricingChartModal from "../../components/PricingChartModal";
 import { useCart } from "../../context/CartContext";
 
 
@@ -238,9 +239,25 @@ const ProductPage = () => {
   // ====================
   //  FINAL TOTAL PRICE
   // ====================
-  const totalPrice =
-    totalRentalDays *
-    (effectivePricePerDay * productQty + relatedTotal + selectedAddonTotal);
+  // Calculate rental price using formula: Day 1 = 1x, each additional day = 0.5x
+  const calculateRentalPrice = (numDays, basePrice) => {
+    if (numDays <= 0) return 0;
+    if (numDays === 1) return basePrice;
+    // First day: 1x, each additional day: 0.5x
+    return basePrice + (numDays - 1) * (basePrice * 0.5);
+  };
+
+  // Base price for main product (per unit)
+  const baseProductPrice = effectivePricePerDay * productQty;
+  
+  // Calculate rental price for main product using the formula
+  const mainProductRentalPrice = calculateRentalPrice(totalRentalDays, baseProductPrice);
+  
+  // Related products are still calculated per day (they follow their own pricing)
+  const relatedProductsPrice = totalRentalDays * relatedTotal;
+  
+  // Addons are one-time fees, not per day
+  const totalPrice = mainProductRentalPrice + relatedProductsPrice + selectedAddonTotal;
 
 
 
@@ -1733,66 +1750,17 @@ const ProductPage = () => {
 
 
 
-      {/* PRICING CHART MODAL */}
-      {openPricingChart && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4">
-
-          <div className="bg-white max-w-3xl w-full rounded-xl shadow-lg p-6 relative">
-
-            {/* CLOSE */}
-            <button
-              onClick={() => setOpenPricingChart(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-black"
-            >
-              ✕
-            </button>
-
-            {/* HEADER */}
-            <h2 className="text-2xl font-semibold text-[#2D2926]">
-              Pricing Chart
-            </h2>
-
-            <p className="mt-2 text-sm text-gray-600">
-              We provide flexible rental options ranging from <strong>1 day to 90 days</strong>.
-              Longer rentals cost you less per day.
-            </p>
-
-            {/* TABLE */}
-            <div className="mt-6 overflow-x-auto">
-              <table className="w-full border border-gray-200 rounded-lg text-sm">
-                <thead className="bg-[#FAF7F5]">
-                  <tr>
-                    <th className="px-4 py-3 text-left">Rental Period</th>
-                    <th className="px-4 py-3 text-left">Rental Price</th>
-                    <th className="px-4 py-3 text-left">Price / Day (approx)</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {pricingTableData.map((row) => (
-                    <tr key={row.days} className="border-t">
-                      <td className="px-4 py-3">
-                        {row.days} day{row.days > 1 ? "s" : ""}
-                      </td>
-                      <td className="px-4 py-3 font-medium">
-                        $ {row.finalPrice}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        $ {row.approxPerDay} / day
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-          </div>
-        </div>
-      )}
       {/* SHIPPING RATES MODAL */}
       <ShippingRatesModal
         isOpen={openShippingModal}
         onClose={() => setOpenShippingModal(false)}
+      />
+
+      {/* PRICING CHART MODAL */}
+      <PricingChartModal
+        isOpen={openPricingChart}
+        onClose={() => setOpenPricingChart(false)}
+        basePrice={product?.pricePerDay || product?.price || 100}
       />
 
 
