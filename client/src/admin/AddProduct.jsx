@@ -254,73 +254,47 @@ const AddProduct = () => {
         setDimensions(data.dimensions || "");
 
         setAvailabilityCount(data.availabilityCount || 1);
-       setProductType(data.productType);
-setProductSubType(data.productSubType || "simple");
+        setProductType(data.productType);
+        setProductSubType(data.productSubType || "simple");
 
-<<<<<<< HEAD
-// ✅ FIX: use data.productSubType (NOT state)
-if (data.productType === "rental" && data.productSubType === "variable") {
-  // Normalize variations for edit UI
-  const normalizedVariations = (data.variations || []).map((v) => ({
-    attributes: (v.attributes || []).map((a) => ({
-      groupId: String(a.groupId?._id || a.groupId),
-      optionId: String(a.optionId?._id || a.optionId),
-    })),
-    price: v.price ?? "",
-    salePrice: v.salePrice ?? "",
-    stock: v.stock ?? "",
-    dimension: v.dimension ?? "",
-    image: v.image?.url || v.image || null,
-  }));
+        // ✅ FIX: use data.productSubType (NOT state)
+        if (data.productType === "rental" && data.productSubType === "variable") {
+          // Normalize variations for edit UI
+          const normalizedVariations = (data.variations || []).map((v) => ({
+            attributes: (v.attributes || []).map((a) => ({
+              groupId: String(a.groupId?._id || a.groupId),
+              optionId: String(a.optionId?._id || a.optionId),
+            })),
+            price: v.price ?? "",
+            salePrice: v.salePrice ?? "",
+            stock: v.stock ?? "",
+            dimension: v.dimension ?? "",
+            image: v.image?.url || v.image || null,
+          }));
 
-  setVariations(normalizedVariations);
+          setVariations(normalizedVariations);
 
-  // Infer which attribute groups are used for variations
-  const groupSet = new Set();
-  normalizedVariations.forEach((v) => {
-    v.attributes.forEach((a) => {
-      groupSet.add(String(a.groupId));
-    });
-  });
-  setVariationAttrGroupIds([...groupSet]);
-
-  // Pre-select options in UI
-  const nextSelected = {};
-  normalizedVariations.forEach((v) => {
-    v.attributes.forEach((a) => {
-      if (!nextSelected[a.groupId]) nextSelected[a.groupId] = [];
-      if (!nextSelected[a.groupId].includes(a.optionId)) {
-        nextSelected[a.groupId].push(a.optionId);
-      }
-    });
-  });
-  setSelectedAttrs(nextSelected);
-}
-=======
-        // If variable product, load variations and infer variation groups
-        if (data.productType === "rental" && productSubType === "variable") {
-          setVariations(data.variations || []);
-
+          // Infer which attribute groups are used for variations
           const groupSet = new Set();
-          (data.variations || []).forEach((v) => {
-            (v.attributes || []).forEach((a) => {
-              groupSet.add(String(a.groupId?._id || a.groupId));
+          normalizedVariations.forEach((v) => {
+            v.attributes.forEach((a) => {
+              groupSet.add(String(a.groupId));
             });
           });
           setVariationAttrGroupIds([...groupSet]);
 
-          // Also pre-select attribute options in UI for those groups (optional but very useful)
-          const nextSelected = { ...(selectedAttrs || {}) };
-          (data.variations || []).forEach((v) => {
-            (v.attributes || []).forEach((a) => {
-              const gid = String(a.groupId?._id || a.groupId);
-              const oid = String(a.optionId?._id || a.optionId);
-              nextSelected[gid] = Array.from(new Set([...(nextSelected[gid] || []), oid]));
+          // Pre-select options in UI
+          const nextSelected = {};
+          normalizedVariations.forEach((v) => {
+            v.attributes.forEach((a) => {
+              if (!nextSelected[a.groupId]) nextSelected[a.groupId] = [];
+              if (!nextSelected[a.groupId].includes(a.optionId)) {
+                nextSelected[a.groupId].push(a.optionId);
+              }
             });
           });
           setSelectedAttrs(nextSelected);
         }
->>>>>>> 3496ca15430263ed23ae21ce6e95e11f050ccfcb
 
 
         setPricePerDay(data.pricePerDay || "");
@@ -507,11 +481,17 @@ formData.append("isEditMode", String(isEditMode));
             salePrice: v.salePrice === "" ? null : Number(v.salePrice),
             stock: v.stock === "" ? 0 : Number(v.stock),
             dimension: v.dimension || "",
+            image:
+              typeof v.image === "string"
+                ? v.image
+                : v.image?.url
+                ? v.image
+                : null,
           }))
         )
       );
 
-      // append variation images separately
+      // append variation images separately (only for new File uploads)
       variations.forEach((v, idx) => {
         if (v.image instanceof File) {
           formData.append(`variationImages_${idx}`, v.image);
@@ -527,38 +507,6 @@ formData.append("isEditMode", String(isEditMode));
       alert("Upload at least one image");
       return;
     }
-<<<<<<< HEAD
-  }
-
-formData.append(
-  "variations",
-  JSON.stringify(
-    variations.map((v) => ({
-      attributes: v.attributes,
-      price: Number(v.price),
-      salePrice: v.salePrice === "" ? null : Number(v.salePrice),
-      stock: v.stock === "" ? 0 : Number(v.stock),
-      dimension: v.dimension || "",
-image:
-  typeof v.image === "string"
-    ? v.image
-    : v.image?.url
-    ? v.image
-    : null,
-    }))
-  )
-);
-
-// append variation images separately
-variations.forEach((v, idx) => {
-  if (v.image instanceof File) {
-    formData.append(`variationImages_${idx}`, v.image);
-  }
-});
-
-}
-=======
->>>>>>> 3496ca15430263ed23ae21ce6e95e11f050ccfcb
 
 
     images.forEach((img) => formData.append("images", img));

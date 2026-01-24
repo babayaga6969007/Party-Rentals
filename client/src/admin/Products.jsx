@@ -88,16 +88,10 @@ const getAdminProductPrice = (product) => {
 };
 
 
-
-<<<<<<< HEAD
-  const handleDelete = async (id) => {
-  if (!confirm("Are you sure you want to delete this product?")) return;
-=======
   
   const handleDeleteClick = (id) => {
     setDeleteConfirm({ isOpen: true, productId: id });
   };
->>>>>>> 3496ca15430263ed23ae21ce6e95e11f050ccfcb
 
   const handleDeleteConfirm = async () => {
     const productId = deleteConfirm.productId;
