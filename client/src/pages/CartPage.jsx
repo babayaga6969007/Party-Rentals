@@ -3,6 +3,8 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CheckoutSteps from "../components/cart/CheckoutSteps";
 import { api } from "../utils/api";
+import ShippingRatesModal from "../components/ShippingRatesModal";
+import { FiAlertCircle } from "react-icons/fi";
 
 
 
@@ -24,11 +26,16 @@ const [appliedCoupon, setAppliedCoupon] = useState(null);
 const [couponError, setCouponError] = useState("");
 const discount = Number(appliedCoupon?.discount || 0);
 
+// Shipping cost state
+const [shippingCost, setShippingCost] = useState(0);
+const [shippingAddress, setShippingAddress] = useState("");
+const [openShippingModal, setOpenShippingModal] = useState(false);
+
 
 
 
 const total = Math.max(
-  safeSubtotal - discount,
+  safeSubtotal - discount + shippingCost,
   0
 );
 
@@ -79,6 +86,7 @@ const handleProceed = () => {
       pricing: {
         subtotal: cartSubtotal,
         discount,
+        shipping: shippingCost,
         total,
       },
      coupon: appliedCoupon
@@ -89,6 +97,10 @@ const handleProceed = () => {
       discountValue: appliedCoupon.discountValue,
     }
   : null,
+     shipping: shippingCost > 0 ? {
+       cost: shippingCost,
+       address: shippingAddress,
+     } : null,
 
     },
   });
@@ -213,6 +225,41 @@ onClick={() => removeItem(item.cartKey)}
               <span className="text-gray-500">Subtotal</span>
 <span className="font-medium">${cartSubtotal.toFixed(2)}</span>
             </div>
+
+            {/* SHIPPING */}
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gray-500 text-sm">Shipping</span>
+                {shippingCost > 0 ? (
+                  <span className="font-medium">${shippingCost.toFixed(2)}</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setOpenShippingModal(true)}
+                    className="text-xs text-blue-600 hover:text-blue-700 underline"
+                  >
+                    Calculate
+                  </button>
+                )}
+              </div>
+              {shippingAddress && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {shippingAddress}
+                </p>
+              )}
+              {shippingCost > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShippingCost(0);
+                    setShippingAddress("");
+                  }}
+                  className="text-xs text-red-600 hover:text-red-700 mt-1"
+                >
+                  Remove shipping
+                </button>
+              )}
+            </div>
             
           
             {/* COUPON CODE */}
@@ -260,6 +307,14 @@ onClick={() => removeItem(item.cartKey)}
   </div>
 )}
 
+{shippingCost === 0 && (
+  <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-start gap-2">
+    <FiAlertCircle className="text-orange-600 mt-0.5 flex-shrink-0" size={16} />
+    <p className="text-xs text-orange-700">
+      Shipping cost not included in total. Click "Calculate" above to add shipping.
+    </p>
+  </div>
+)}
 
           </div>
 
@@ -282,6 +337,19 @@ onClick={() => removeItem(item.cartKey)}
 
         </div>
       </div>
+
+      {/* SHIPPING RATES MODAL */}
+      <ShippingRatesModal
+        isOpen={openShippingModal}
+        onClose={() => setOpenShippingModal(false)}
+        onShippingCalculated={(result) => {
+          if (result && result.price !== null && result.price !== undefined) {
+            setShippingCost(result.price);
+            setShippingAddress(result.address || "");
+            setOpenShippingModal(false);
+          }
+        }}
+      />
     </div>
   );
 }
