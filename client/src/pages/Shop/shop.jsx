@@ -476,39 +476,39 @@ width: `${((priceRange[1] - priceRange[0]) / PRICE_MAX) * 100}%`,
       "
     >
       {/* IMAGE */}
-      <div className="h-32 rounded-t-xl overflow-hidden bg-gradient-to-br from-[#8B5C42] to-[#704A36] flex items-center justify-center">
+      <div className="h-40 rounded-t-xl overflow-hidden bg-gradient-to-br from-[#8B5C42] to-[#704A36] flex items-center justify-center">
         <div className="text-center text-white">
           <svg 
-            className="w-10 h-10 mx-auto mb-1" 
+            className="w-12 h-12 mx-auto mb-1" 
             fill="currentColor" 
             viewBox="0 0 24 24"
           >
             <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
           </svg>
-          <p className="text-[10px] font-semibold">Custom Signage</p>
+          <p className="text-xs font-semibold">Custom Signage</p>
         </div>
       </div>
 
       {/* CONTENT */}
-      <div className="p-3">
+      <div className="p-4">
         {/* NAME */}
-        <h3 className="font-bold text-sm text-[#2D2926]">
+        <h3 className="font-bold text-base text-[#2D2926]">
           Custom Signage Design
         </h3>
 
         {/* DESCRIPTION */}
-        <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+        <p className="text-sm text-gray-600 mt-2 line-clamp-2">
           Create personalized signage with custom text, fonts, colors, and backgrounds for your events.
         </p>
 
         {/* BUTTON */}
-        <div className="mt-2 
+        <div className="mt-3 
              opacity-100 md:opacity-0 
              md:group-hover:opacity-100 
              transition-opacity duration-300">
           <button 
             onClick={() => navigate("/signage")}
-            className="w-full bg-[#8B5C42] text-white px-3 py-1.5 rounded-lg text-xs shadow-md hover:bg-[#704A36] transition"
+            className="w-full bg-[#8B5C42] text-white px-4 py-2 rounded-lg text-sm shadow-md hover:bg-[#704A36] transition"
           >
             Create Signage
           </button>
@@ -538,7 +538,7 @@ href={`/buyproducts/${product._id}`}
       >
 
         {/* IMAGE — NOW FULL WIDTH, NO PADDING */}
-        <div className="h-32 rounded-t-xl overflow-hidden">
+        <div className="h-40 rounded-t-xl overflow-hidden">
           <img
 src={product.images?.[0]?.url || hero1}
             alt={product.name}
@@ -547,15 +547,15 @@ src={product.images?.[0]?.url || hero1}
         </div>
 
         {/* CONTENT */}
-        <div className="p-3">
+        <div className="p-4">
 
           {/* NAME */}
-          <h3 className="font-bold text-sm text-[#2D2926] line-clamp-2">
+          <h3 className="font-bold text-base text-[#2D2926] line-clamp-2">
             {product.title}
           </h3>
 
           {/* PRICE SECTION */}
-<div className="mt-1 flex items-center gap-2">
+<div className="mt-2 flex items-center gap-2">
   {product.salePrice ? (
     <>
       {/* Original price */}
@@ -564,12 +564,12 @@ src={product.images?.[0]?.url || hero1}
       </span>
 
       {/* Sale price */}
-      <span className="text-red-600 font-bold text-sm">
+      <span className="text-red-600 font-bold text-base">
         $ {product.salePrice}
       </span>
     </>
   ) : (
-    <span className="text-black font-semibold text-sm">
+    <span className="text-black font-semibold text-base">
       $ {product.pricePerDay}
     </span>
   )}
@@ -577,18 +577,18 @@ src={product.images?.[0]?.url || hero1}
 
 
           {/* CATEGORY */}
-          <p className="text-[10px] text-gray-600 mt-0.5">
+          <p className="text-xs text-gray-600 mt-1">
   Category: {getCategoryNameById(product.category)}
 </p>
 
 
 
           {/* BUTTON */}
-<div className="mt-2 
+<div className="mt-3 
      opacity-100 md:opacity-0 
      md:group-hover:opacity-100 
      transition-opacity duration-300">
-            <button className="w-full bg-black text-white px-3 py-1 rounded-lg text-xs shadow-md hover:bg-[#222222] transition">
+            <button className="w-full bg-black text-white px-4 py-2 rounded-lg text-sm shadow-md hover:bg-[#222222] transition">
               View Product
             </button>
           </div>
