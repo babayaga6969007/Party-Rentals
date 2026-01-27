@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../utils/api";
 
 const ShippingRatesModal = ({ isOpen, onClose, onShippingCalculated }) => {
@@ -349,7 +350,20 @@ const ShippingRatesModal = ({ isOpen, onClose, onShippingCalculated }) => {
                 <strong>Distance Range:</strong> {detectedZone.distanceRange}
               </p>
 
-              {detectedZone.price !== null && detectedZone.price !== undefined ? (
+              {detectedZone.distance > 75 ? (
+                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-amber-800 font-medium">
+                    For this distance you need to contact us for confirmation.
+                  </p>
+                  <Link
+                    to="/contact"
+                    onClick={onClose}
+                    className="mt-3 inline-flex items-center justify-center w-full px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium"
+                  >
+                    Go to Contact Page
+                  </Link>
+                </div>
+              ) : detectedZone.price !== null && detectedZone.price !== undefined ? (
                 <>
                   <p className="mt-1">
                     <strong>Shipping Price:</strong> $ {detectedZone.price}
@@ -373,9 +387,18 @@ const ShippingRatesModal = ({ isOpen, onClose, onShippingCalculated }) => {
                   )}
                 </>
               ) : (
-                <p className="mt-2 text-orange-600 font-medium">
-                  Custom shipping quote required
-                </p>
+                <div className="mt-3">
+                  <p className="text-orange-600 font-medium">
+                    Custom shipping quote required
+                  </p>
+                  <Link
+                    to="/contact"
+                    onClick={onClose}
+                    className="mt-2 inline-flex items-center justify-center w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+                  >
+                    Contact us for a quote
+                  </Link>
+                </div>
               )}
             </div>
           )}

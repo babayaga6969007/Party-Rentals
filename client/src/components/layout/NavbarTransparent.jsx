@@ -9,6 +9,7 @@ const NavbarTransparent = () => {
   const pageTitleMap = {
   "/": "Home",
   "/category": "Rental Products",
+  "/gallery": "Visual Showcase",
   "/about": "About",
   "/contact": "Contact",
   "/faqs": "FAQs",
@@ -94,6 +95,7 @@ const iconHoverClass =
           {[
             { to: "/", label: "Home" },
             { to: "/category", label: "Rental Products" },
+            { to: "/gallery", label: "Visual Showcase" },
             { to: "/about", label: "About" },
             { to: "/contact", label: "Contact" },
             { to: "/faqs", label: "FAQs" },
@@ -200,6 +202,7 @@ const iconHoverClass =
       {[
         { to: "/", label: "Home" },
         { to: "/category", label: "Rental Products" },
+        { to: "/gallery", label: "Visual Showcase" },
         { to: "/shop", label: "Shop" },
         { to: "/about", label: "About" },
         { to: "/contact", label: "Contact" },

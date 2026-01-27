@@ -133,20 +133,10 @@ const Sidebar = () => {
       )}
 
       {/* Gallery */}
-      <button
-        onClick={() => toggle("gallery")}
-        className={parentButtonClass(false)}
-      >
+      <NavLink to="/admin/gallery" className={linkClass}>
         <FiImage className="inline mr-2" />
-        Gallery
-      </button>
-
-      {open === "gallery" && (
-        <div className="ml-6 space-y-1">
-          <div className={placeholderClass}>Media Library</div>
-          <div className={placeholderClass}>Upload Media</div>
-        </div>
-      )}
+        Visual Showcase
+      </NavLink>
 
    {/* Reports */}
 <NavLink to="/admin/reports/sales" className={linkClass}>
