@@ -2,6 +2,12 @@ const express = require("express");
 const router = express.Router();
 const Stripe = require("stripe");
 const Order = require("../models/Order");
+const { sendEmail } = require("../utils/sendEmail");
+const {
+  customerOrderEmail,
+  ownerOrderEmail,
+} = require("../utils/orderEmailTemplates");
+
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -58,6 +64,22 @@ router.post(
       await order.save();
 
       console.log("✅ Order marked as PAID:", order._id);
+      // 📧 Send customer confirmation email
+await sendEmail({
+  to: order.customer.email,
+  subject: "Your order is confirmed 🎉",
+  html: customerOrderEmail(order),
+});
+
+// 📧 Send owner notification email
+await sendEmail({
+  to: process.env.OWNER_EMAIL,
+  subject: `New order received (${order._id})`,
+  html: ownerOrderEmail(order),
+});
+
+console.log("📧 Order emails sent successfully");
+
     }
 
     res.json({ received: true });
