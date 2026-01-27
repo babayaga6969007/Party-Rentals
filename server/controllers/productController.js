@@ -11,16 +11,6 @@ exports.addProduct = async (req, res) => {
     // 1️⃣ Upload images
 // 🔹 Separate base images and variation images (upload.fields())
 const baseImages = req.files?.images || [];
-const variationImageMap = {}; // index → uploaded image
-
-Object.keys(req.files || {}).forEach((field) => {
-  if (field.startsWith("variationImages_")) {
-    const idx = Number(field.split("_")[1]);
-    if (!Number.isNaN(idx) && req.files[field]?.[0]) {
-      variationImageMap[idx] = req.files[field][0];
-    }
-  }
-});
 
 // Upload base images (simple product images)
 const uploadedImages = await uploadImagesToCloudinary(baseImages);
@@ -41,19 +31,8 @@ const uploadedImages = await uploadImagesToCloudinary(baseImages);
         message: "Invalid attributes or addons format",
       });
     }
-const productSubType = req.body.productSubType || "simple";
+const productSubType = "simple"; // force simple only
 
-
-let variations = [];
-if (productSubType === "variable") {
-  try {
-    variations = req.body.variations
-      ? JSON.parse(req.body.variations)
-      : [];
-  } catch (err) {
-    return res.status(400).json({ message: "Invalid variations format" });
-  }
-}
 
     // 3️⃣ Server-side validation for REQUIRED attributes
     if (attributes.length > 0) {
@@ -109,29 +88,9 @@ const basePayload = {
   addons,
   images: uploadedImages,
 };
+basePayload.pricePerDay = pricePerDay;
+basePayload.salePrice = salePrice;
 
-if (productSubType === "simple") {
-  basePayload.pricePerDay = pricePerDay;
-  basePayload.salePrice = salePrice;
-} else {
-  basePayload.variations = variations;
-}
-// ===============================
-// HANDLE VARIATION IMAGES (ADD PRODUCT)
-// ===============================
-if (productSubType === "variable" && Array.isArray(basePayload.variations)) {
-  for (let i = 0; i < basePayload.variations.length; i++) {
-    const file = variationImageMap[i];
-
-    if (!file) continue;
-
-    const uploaded = await uploadImagesToCloudinary([file]);
-
-    if (uploaded && uploaded[0]) {
-      basePayload.variations[i].image = uploaded[0];
-    }
-  }
-}
 
 const product = await Product.create(basePayload);
 
@@ -186,8 +145,9 @@ if (req.body.description !== undefined)
 if (req.body.dimensions !== undefined)
   updates.dimensions = req.body.dimensions; // ✅
 if (req.body.category !== undefined) updates.category = req.body.category;
-if (req.body.productSubType !== undefined)
-  updates.productSubType = req.body.productSubType;
+updates.productSubType = "simple";
+updates.variations = [];
+
 
     if (req.body.productType !== undefined)
       updates.productType = req.body.productType;
@@ -213,75 +173,7 @@ if (updates.productType === "sale") {
 
     if (req.body.salePrice !== undefined)
       updates.salePrice = Number(req.body.salePrice);
-// -------- VARIABLE PRODUCT HANDLING --------
-if (updates.productSubType === "variable") {
-  if (!req.body.variations) {
-    return res
-      .status(400)
-      .json({ message: "Variations required for variable product" });
-  }
 
-  const incomingVariations = JSON.parse(req.body.variations);
-
-
-if (updates.productSubType === "variable") {
-  if (!req.body.variations) {
-    return res
-      .status(400)
-      .json({ message: "Variations required for variable product" });
-  }
-
-  const incomingVariations = JSON.parse(req.body.variations);
-
-  // 🔑 Build map of existing variation images using attribute signature
-  const existingImageMap = new Map();
-
-  (existingProduct.variations || []).forEach((v) => {
-    const key = (v.attributes || [])
-      .map((a) => `${a.groupId.toString()}_${a.optionId.toString()}`)
-      .sort()
-      .join("|");
-
-    if (v.image?.url) {
-      existingImageMap.set(key, v.image); // FULL object
-    }
-  });
-
-  // ✅ Rebuild variations while PRESERVING images
-  updates.variations = incomingVariations.map((v) => {
-    const key = (v.attributes || [])
-      .map((a) => `${String(a.groupId)}_${String(a.optionId)}`)
-      .sort()
-      .join("|");
-
-    // If frontend sent image object → keep it
-    if (v.image && typeof v.image === "object") {
-      return v;
-    }
-
-    // If frontend sent image URL → normalize to object
-    if (typeof v.image === "string") {
-      return { ...v, image: { url: v.image } };
-    }
-
-    // Otherwise preserve existing image if found
-    if (existingImageMap.has(key)) {
-      return { ...v, image: existingImageMap.get(key) };
-    }
-
-    return v; // brand new variation
-  });
-
-  // Clear simple pricing fields
-  updates.pricePerDay = undefined;
-  updates.salePrice = undefined;
-}
-
-
-  // Clear simple pricing fields
-  updates.pricePerDay = undefined;
-  updates.salePrice = undefined;
-}
 else if (updates.productSubType === "simple") {
   // Clear variations if switching back to simple
   updates.variations = [];
@@ -345,23 +237,7 @@ else if (updates.productSubType === "simple") {
       : uploaded;
   }
 
-  // Upload variation images deterministically
-  if (updates.variations && updates.variations.length > 0) {
-    Object.keys(req.files).forEach(async (field) => {
-      if (!field.startsWith("variationImages_")) return;
 
-      const idx = Number(field.split("_")[1]);
-      if (Number.isNaN(idx)) return;
-
-      const file = req.files[field]?.[0];
-      if (!file) return;
-
-      const uploaded = await uploadImagesToCloudinary([file]);
-      if (uploaded?.[0] && updates.variations[idx]) {
-        updates.variations[idx].image = uploaded[0];
-      }
-    });
-  }
 }
 
 

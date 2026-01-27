@@ -27,14 +27,7 @@ const AddProduct = () => {
 
   // Product core
   const [productType, setProductType] = useState("rental");
-  // NEW: Simple vs Variable (WooCommerce style)
-  const [productSubType, setProductSubType] = useState("simple"); // "simple" | "variable"
 
-  // NEW: which attribute groups are used to create variations
-  const [variationAttrGroupIds, setVariationAttrGroupIds] = useState([]); // array of groupId strings
-
-  // NEW: generated variations list
-  const [variations, setVariations] = useState([]);
 
   // Featured (only for rental)
   const [isFeatured, setIsFeatured] = useState(false);
@@ -255,46 +248,8 @@ const AddProduct = () => {
 
         setAvailabilityCount(data.availabilityCount || 1);
        setProductType(data.productType);
-setProductSubType(data.productSubType || "simple");
 
-// ✅ FIX: use data.productSubType (NOT state)
-if (data.productType === "rental" && data.productSubType === "variable") {
-  // Normalize variations for edit UI
-  const normalizedVariations = (data.variations || []).map((v) => ({
-    attributes: (v.attributes || []).map((a) => ({
-      groupId: String(a.groupId?._id || a.groupId),
-      optionId: String(a.optionId?._id || a.optionId),
-    })),
-    price: v.price ?? "",
-    salePrice: v.salePrice ?? "",
-    stock: v.stock ?? "",
-    dimension: v.dimension ?? "",
-    image: v.image?.url || v.image || null,
-  }));
 
-  setVariations(normalizedVariations);
-
-  // Infer which attribute groups are used for variations
-  const groupSet = new Set();
-  normalizedVariations.forEach((v) => {
-    v.attributes.forEach((a) => {
-      groupSet.add(String(a.groupId));
-    });
-  });
-  setVariationAttrGroupIds([...groupSet]);
-
-  // Pre-select options in UI
-  const nextSelected = {};
-  normalizedVariations.forEach((v) => {
-    v.attributes.forEach((a) => {
-      if (!nextSelected[a.groupId]) nextSelected[a.groupId] = [];
-      if (!nextSelected[a.groupId].includes(a.optionId)) {
-        nextSelected[a.groupId].push(a.optionId);
-      }
-    });
-  });
-  setSelectedAttrs(nextSelected);
-}
 
 
         setPricePerDay(data.pricePerDay || "");
@@ -359,11 +314,7 @@ if (data.productType === "rental" && data.productSubType === "variable") {
     const requiredGroups = attributeGroups.filter(
       (g) => g.required && g.type !== "addon"
     );
-    // 🚫 Selling products cannot have variations (hard guard)
-    if (productType === "sale" && productSubType === "variable") {
-      toast.error("Selling products cannot have variations.");
-      return;
-    }
+  
 
     for (const g of requiredGroups) {
       const sel = selectedAttrs[String(g._id)] || [];
@@ -432,7 +383,6 @@ formData.append("isEditMode", String(isEditMode));
     }
 
     formData.append("productType", productType);
-    formData.append("productSubType", productSubType);
 
     formData.append("availabilityCount", availabilityCount);
     formData.append("featured", productType === "rental" ? String(isFeatured) : "false");
@@ -444,63 +394,23 @@ formData.append("isEditMode", String(isEditMode));
 
     // Regular price
     // ===============================
-    // PRICING SUBMISSION (SIMPLE vs VARIABLE)
+// PRICING SUBMISSION
     // ===============================
 
-    if (productSubType === "simple") {
-      // ✅ SIMPLE PRODUCT (your existing behavior)
+  formData.append("pricePerDay", pricePerDay);
 
-      formData.append("pricePerDay", pricePerDay);
-
-      if (salePrice !== "" && salePrice !== null) {
-        formData.append("salePrice", salePrice);
-      }
-
-    } else {
-      // ✅ VARIABLE PRODUCT (WooCommerce style)
-
-      if (!variations || variations.length === 0) {
-        toast.error("Please generate variations and set pricing before submitting.");
-        return;
-      }
-
-      // Validate each variation
-      for (const v of variations) {
-        if (v.price === "" || v.price === null) {
-          toast.error("Each variation must have a price.");
-          return;
-        }
-      }
-
-      formData.append(
-        "variations",
-        JSON.stringify(
-          variations.map((v) => ({
-            attributes: v.attributes,
-            price: Number(v.price),
-            salePrice: v.salePrice === "" ? null : Number(v.salePrice),
-            stock: v.stock === "" ? 0 : Number(v.stock),
-            dimension: v.dimension || "",
-          }))
-        )
-      );
-
-      // append variation images separately
-      variations.forEach((v, idx) => {
-        if (v.image instanceof File) {
-          formData.append(`variationImages_${idx}`, v.image);
-        }
-      });
-
-    }
+if (salePrice !== "" && salePrice !== null) {
+  formData.append("salePrice", salePrice);
+}
 
 
-    if (isEditMode) {
-      formData.append("existingImages", JSON.stringify(existingImages));
-    } else if (productSubType === "simple" && images.length === 0) {
-      alert("Upload at least one image");
-      return;
-    }
+
+   if (isEditMode) {
+  formData.append("existingImages", JSON.stringify(existingImages));
+} else if (!isEditMode && images.length === 0) {
+  alert("Upload at least one image");
+  return;
+}
 
 
     images.forEach((img) => formData.append("images", img));
@@ -531,63 +441,7 @@ formData.append("isEditMode", String(isEditMode));
     window.location.href = "/admin/products";
   };
 
-  const buildVariationKey = (attrs) =>
-    attrs
-      .map((a) => `${String(a.groupId)}:${String(a.optionId)}`)
-      .sort()
-      .join("|");
 
-  const cartesian = (arrays) =>
-    arrays.reduce(
-      (acc, curr) => acc.flatMap((x) => curr.map((y) => [...x, y])),
-      [[]]
-    );
-
-  const generateVariations = () => {
-    // Only groups marked for variations
-    const groups = variationAttrGroupIds;
-
-    // Each group must have selections
-    for (const gid of groups) {
-      const sel = selectedAttrs[gid] || [];
-      if (sel.length === 0) {
-        toast.error(`Select at least one option for variation group: ${getGroupName(gid)}`);
-        return;
-      }
-    }
-
-    const sources = groups.map((gid) =>
-      (selectedAttrs[gid] || []).map((oid) => ({ groupId: gid, optionId: oid }))
-    );
-
-    const combos = cartesian(sources);
-
-    // Reuse existing variation values when regenerating
-    const existingMap = new Map(
-      variations.map((v) => [buildVariationKey(v.attributes), v])
-    );
-
-    const next = combos.map((combo) => {
-      const attrs = combo.map((x) => ({
-        groupId: String(x.groupId),
-        optionId: String(x.optionId),
-      }));
-
-      const key = buildVariationKey(attrs);
-      const old = existingMap.get(key);
-      return {
-        attributes: attrs,
-        price: old?.price ?? "",
-        salePrice: old?.salePrice ?? "",
-        stock: old?.stock ?? "",
-        dimension: old?.dimension ?? "",
-        image: old?.image ?? null,
-      };
-
-    });
-
-    setVariations(next);
-  };
 
 
   return (
@@ -616,13 +470,7 @@ formData.append("isEditMode", String(isEditMode));
                   setCategory("");
                   setIsFeatured(false);
 
-                  // 🚫 Selling products cannot have variations
-                  if (type === "sale") {
-                    setProductSubType("simple");
-                    setVariationAttrGroupIds([]);
-                    setVariations([]);
-                  }
-
+                
                 }}
 
 
@@ -638,40 +486,7 @@ formData.append("isEditMode", String(isEditMode));
             ))}
           </div>
         </div>
-        {/* PRODUCT STRUCTURE (Simple / Variable) */}
-        <div>
-          <label className="font-medium">Product Structure</label>
-          <div className="flex gap-4 mt-2">
-            {["simple", "variable"]
-              .filter((t) => productType !== "sale" || t === "simple")
-              .map((t) => (
-                <button
-                  type="button"
-                  key={t}
-                  onClick={() => {
-                    if (isEditMode) return;
-
-                    setProductSubType(t);
-
-                    // when switching modes, reset variation-only state
-                    if (t === "simple") {
-                      setVariationAttrGroupIds([]);
-                      setVariations([]);
-                    }
-                  }}
-                  className={`px-6 py-2 rounded-full border border-gray-400 transition
-          ${productSubType === t ? "bg-black text-white" : "bg-white hover:bg-gray-100"}
-        `}
-                >
-                  {t === "simple" ? "Simple Product" : "Variable Product"}
-                </button>
-              ))}
-          </div>
-
-          <p className="text-xs text-gray-500 mt-2">
-            Simple = one price/stock. Variable = price/stock differs by size/color like WooCommerce.
-          </p>
-        </div>
+        
 
         {/* BASIC INFO */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -710,58 +525,31 @@ formData.append("isEditMode", String(isEditMode));
         {/* PRICING */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-          {/* SIMPLE PRODUCT PRICING */}
-          {productSubType === "simple" && (
-            <>
-              {productType === "rental" ? (
-                <div>
-                  <label>Price Per Day</label>
-                  <input
-                    type="number"
-                    className="w-full p-3 border border-gray-400 rounded-lg"
-                    value={pricePerDay}
-                    onChange={(e) => setPricePerDay(e.target.value)}
-                    required
-                  />
-                </div>
-              ) : (
-                <div>
-                  <label>Selling Price</label>
-                  <input
-                    type="number"
-                    className="w-full p-3 border border-gray-400 rounded-lg"
-                    value={pricePerDay}
-                    onChange={(e) => setPricePerDay(e.target.value)}
-                    required
-                  />
-                </div>
-              )}
+      <div>
+  <label>Price Per Day</label>
+  <input
+    type="number"
+    className="w-full p-3 border border-gray-400 rounded-lg"
+    value={pricePerDay}
+    onChange={(e) => setPricePerDay(e.target.value)}
+    required
+  />
+</div>
 
-              <div>
-                <label className="flex items-center gap-2">
-                  Sale Price
-                  <span className="text-xs text-gray-500">(optional)</span>
-                </label>
-                <input
-                  type="number"
-                  className="w-full p-3 border border-gray-300 rounded-lg"
-                  value={salePrice}
-                  onChange={(e) => setSalePrice(e.target.value)}
-                  placeholder="Leave empty if no discount"
-                />
-              </div>
-            </>
-          )}
+{/* Sale Price (optional) */}
+<div>
+  <label>Sale Price</label>
+  <input
+    type="number"
+    className="w-full p-3 border border-gray-400 rounded-lg"
+    value={salePrice}
+    onChange={(e) => setSalePrice(e.target.value)}
+    placeholder="Optional discounted price"
+    min="0"
+  />
+</div>
 
-          {/* VARIABLE PRODUCT NOTICE */}
-          {productSubType === "variable" && (
-            <div className="md:col-span-2 p-4 border border-gray-300 rounded-lg bg-gray-50">
-              <div className="font-medium">Variable product pricing is set per-variation.</div>
-              <div className="text-sm text-gray-600 mt-1">
-                Select attributes → generate variations → set price/stock for each variation below.
-              </div>
-            </div>
-          )}
+        
 
           {/* Availability still shown (we can later decide how to use it for variable) */}
           <div>
@@ -819,11 +607,6 @@ formData.append("isEditMode", String(isEditMode));
       const isAddon = g.type === "addon";
       const groupIdStr = String(g._id);
 
-const isVariationGroup =
-  productType === "rental" && productSubType === "variable" &&
-  !isAddon &&
-  variationAttrGroupIds.includes(groupIdStr);
-
       const isSingle = g.type === "select"; // single-select
       const isColor = g.type === "color";
       const required = !!g.required;
@@ -837,9 +620,7 @@ const current = selectedAttrs[String(g._id)] || [];
 const key = String(g._id);
 const prevList = prev[key] || [];
           let nextList = prevList;
-const forceMultiForVariations = isVariationGroup; // <--- NEW
-
-if (isSingle && !forceMultiForVariations) {
+if (isSingle) {
   nextList = prevList.includes(optionId) ? [] : [optionId];
 } else {
   nextList = prevList.includes(optionId)
@@ -858,22 +639,7 @@ return { ...prev, [key]: nextList };
             <label className="font-medium">
               {g.name} {required && <span className="text-red-600">*</span>}
             </label>
-            {productType === "rental" && productSubType === "variable" && !isAddon && (
-  <label className="flex items-center gap-2 text-sm mt-2">
-    <input
-      type="checkbox"
-      checked={variationAttrGroupIds.includes(groupIdStr)}
-      onChange={(e) => {
-        setVariationAttrGroupIds((prev) =>
-          e.target.checked
-            ? [...prev, groupIdStr]
-            : prev.filter((x) => x !== groupIdStr)
-        );
-      }}
-    />
-    Used for variations
-  </label>
-)}
+            
 
             <span className="text-xs text-gray-500">
               {g.type === "multi" && "Multi-select"}
@@ -1196,136 +962,8 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
   )}
         </div>
 
-        {/* VARIABLE PRODUCT: VARIATIONS */}
-        {productSubType === "variable" && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Variations</h2>
-
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={generateVariations}
-                className="px-4 py-2 rounded-lg bg-black text-white"
-              >
-                Generate Variations
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setVariations([])}
-                className="px-4 py-2 rounded-lg border border-gray-300"
-              >
-                Clear
-              </button>
-
-              <div className="text-sm text-gray-600 flex items-center">
-                Total: <span className="font-medium ml-1">{variations.length}</span>
-              </div>
-            </div>
-
-            {variations.length > 0 && (
-              <div className="overflow-x-auto border border-gray-300 rounded-xl">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left p-3 border-b">Variation</th>
-                      <th className="text-left p-3 border-b">
-                        {productType === "rental" ? "Price / Day" : "Price"}
-                      </th>
-                      <th className="text-left p-3 border-b">Sale</th>
-                      <th className="text-left p-3 border-b">Stock</th>
-                      <th className="text-left p-3 border-b">Dimension</th>
-                      <th className="text-left p-3 border-b">Image</th>
-                    </tr>
-                  </thead>
-
-
-                  <tbody>
-                    {variations.map((v, idx) => {
-                      const label = v.attributes
-                        .map((a) => `${getGroupName(a.groupId)}: ${getOptionLabel(a.optionId)}`)
-                        .join(" / ");
-
-                      const update = (field, value) => {
-                        setVariations((prev) => {
-                          const next = [...prev];
-                          next[idx] = { ...next[idx], [field]: value };
-                          return next;
-                        });
-                      };
-
-                      return (
-                        <tr key={buildVariationKey(v.attributes)} className="border-b">
-                          <td className="p-3">{label}</td>
-
-                          <td className="p-3">
-                            <input
-                              type="number"
-                              className="w-32 p-2 border border-gray-300 rounded-lg"
-                              value={v.price}
-                              onChange={(e) => update("price", e.target.value)}
-                              required
-                            />
-                          </td>
-
-                          <td className="p-3">
-                            <input
-                              type="number"
-                              className="w-32 p-2 border border-gray-300 rounded-lg"
-                              value={v.salePrice}
-                              onChange={(e) => update("salePrice", e.target.value)}
-                              placeholder="optional"
-                            />
-                          </td>
-
-                          <td className="p-3">
-                            <input
-                              type="number"
-                              className="w-24 p-2 border border-gray-300 rounded-lg"
-                              value={v.stock}
-                              onChange={(e) => update("stock", e.target.value)}
-                              placeholder="0"
-                            />
-                          </td>
-
-                          <td className="p-3">
-                            <input
-                              type="text"
-                              className="w-40 p-2 border border-gray-300 rounded-lg"
-                              value={v.dimension || ""}
-                              onChange={(e) => update("dimension", e.target.value)}
-                              placeholder="e.g. 6ft x 3ft"
-                            />
-                          </td>
-                          <td className="p-3">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files[0];
-                                if (!file) return;
-                                update("image", file);
-                              }}
-                            />
-
-                            {v.image && typeof v.image === "string" && (
-                              <img
-                                src={v.image}
-                                alt="preview"
-                                className="mt-2 w-16 h-16 object-cover rounded border"
-                              />
-                            )}
-                          </td>
-
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
+      
+      
 
         {/* DIMENSIONS (OPTIONAL) */}
         <div>
