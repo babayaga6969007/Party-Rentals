@@ -1,6 +1,11 @@
 const mongoose = require("mongoose");
 const Order = require("../models/Order");
 const Product = require("../models/Product");
+const transporter = require("../utils/mailer");
+const { customerOrderEmail } = require("../utils/orderCustomer");
+const { adminOrderEmail } = require("../utils/orderAdmin");
+
+
 const { getDateStringsBetween } = require("../utils/dateRange");
 const { incrementCouponUsage } =
   require("../controllers/couponController");
@@ -90,6 +95,27 @@ const order = new Order({
 });
 
 await order.save();
+try {
+  // Email to customer
+  if (order.customer?.email) {
+    await transporter.sendMail({
+      from: `"Your Brand" <${process.env.EMAIL_USER}>`,
+      to: order.customer.email,
+      ...customerOrderEmail(order),
+    });
+  }
+
+  // Email to admin
+  await transporter.sendMail({
+    from: `"Order Alert" <${process.env.EMAIL_USER}>`,
+    to: process.env.ADMIN_EMAIL,
+    ...adminOrderEmail(order),
+  });
+
+} catch (emailError) {
+  console.error("❌ Email sending failed:", emailError);
+}
+
 
 if (order.coupon?.code) {
   await incrementCouponUsage(order.coupon.code);
@@ -233,6 +259,28 @@ product.availabilityCount -= item.qty;
     }
 
     await order.save();
+// 📧 SEND EMAILS ON ORDER PLACEMENT ONLY
+try {
+  // Email to customer
+  if (order.customer?.email) {
+    await transporter.sendMail({
+      from: `"Your Brand" <${process.env.EMAIL_USER}>`,
+      to: order.customer.email,
+      ...customerOrderEmail(order),
+    });
+  }
+
+  // Email to admin
+  await transporter.sendMail({
+    from: `"Order Alert" <${process.env.EMAIL_USER}>`,
+    to: process.env.ADMIN_EMAIL,
+    ...adminOrderEmail(order),
+  });
+
+} catch (emailError) {
+  console.error("❌ Email sending failed:", emailError);
+}
+
 
     return res.json({ order });
   } catch (err) {
