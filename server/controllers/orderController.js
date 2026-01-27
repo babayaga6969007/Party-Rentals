@@ -95,10 +95,7 @@ if (order.coupon?.code) {
   await incrementCouponUsage(order.coupon.code);
 }
 
-return res.status(201).json({
-  order,
-  orderId: order._id,   
-});
+    return res.status(201).json({ order });
   } catch (err) {
     console.error("CREATE ORDER ERROR:", err);
     return res.status(500).json({ message: "Failed to create order" });

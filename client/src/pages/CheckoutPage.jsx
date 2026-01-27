@@ -36,11 +36,7 @@ const addDays = (dateStr, days) => {
   return d.toISOString().split("T")[0];
 };
 
-export default function CheckoutPage({
-  paymentMode,
-  setPaymentMode,
-  setOrderId, 
-}) {
+export default function CheckoutPage({ paymentMode, setPaymentMode }) {
   const location = useLocation();
   const appliedCoupon = location.state?.coupon || null;
 
@@ -126,41 +122,6 @@ const extraFees =
   deliveryTimeFee +
   pickupTimeFee;
   const finalTotal = pricing.total + extraFees;
-const createOrder = async (mode) => {
-  const response = await api("/orders", {
-    method: "POST",
-    body: JSON.stringify({
-      customer,
-      items,
-      pricing: {
-        ...pricing,
-        extraFees,
-        finalTotal,
-        discount: appliedCoupon?.discount || 0,
-      },
-      coupon: appliedCoupon
-        ? { code: appliedCoupon.code, discount: appliedCoupon.discount }
-        : null,
-      delivery: {
-        deliveryDate,
-        pickupDate,
-        deliveryTime,
-        pickupTime,
-        services: {
-          stairs: stairsFee,
-          setup: setupFee,
-        },
-      },
-      paymentMethod: "Stripe",
-      paymentType: mode === "PARTIAL" ? "PARTIAL_60" : "FULL",
-      amountPaid: 0,
-      amountDue: finalTotal,
-      stripePayment: {},
-    }),
-  });
-
-  return response.orderId; // ⭐ CRITICAL
-};
 
   const handlePlaceOrder = async (mode = "FULL") => {
     // 🚫 Must agree to Terms & Conditions
@@ -196,10 +157,6 @@ if (!agreeToTerms) {
       setIsPaying(true);
       setPaymentMode(mode);
 
-const orderId = await createOrder(mode);
-setOrderId(orderId);
-
-
       const result = await stripe.confirmPayment({
         elements,
         confirmParams: {
@@ -217,7 +174,51 @@ setOrderId(orderId);
 
 
 
-      
+      try {
+        await api("/orders", {
+          method: "POST",
+          body: JSON.stringify({
+            customer,
+            items,
+            pricing: {
+              ...pricing,
+              extraFees,
+              finalTotal,
+              discount: appliedCoupon?.discount || 0,
+            },
+            coupon: appliedCoupon
+              ? {
+                code: appliedCoupon.code,
+                discount: appliedCoupon.discount,
+              }
+              : null,
+            delivery: {
+              deliveryDate,
+              pickupDate,
+              deliveryTime,
+              pickupTime,
+              services: {
+                stairs: stairsFee,
+                setup: setupFee,
+              },
+            },
+            paymentMethod: "Stripe",
+            paymentType: mode === "PARTIAL" ? "PARTIAL_60" : "FULL",
+            amountPaid: mode === "PARTIAL" ? finalTotal * 0.6 : finalTotal,
+            amountDue: mode === "PARTIAL" ? finalTotal * 0.4 : 0,
+
+            stripePayment: {
+              paymentIntentId: result.paymentIntent?.id,
+              status: result.paymentIntent?.status,
+            },
+          }),
+        });
+
+
+      } catch (err) {
+        console.error("Failed to save order:", err);
+        // optional: show toast / alert
+      }
 
 
       // ✅ Payment success — NOW it is safe to clear cart

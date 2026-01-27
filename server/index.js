@@ -18,8 +18,7 @@ const allowedOrigins = [
   "https://party-rentals-ochre.vercel.app", // old prod (can keep)
   "https://party-rentals.vercel.app",       // old prod (can keep)
   "https://newprojectdesigns.com",           // NEW prod
-  "https://www.newprojectdesigns.com",        // NEW prod (www)
-  "http://localhost:4173",
+  "https://www.newprojectdesigns.com"        // NEW prod (www)
 ];
 
 
@@ -42,10 +41,6 @@ app.use(
 );
 
 app.options(/.*/, cors());
-// 🔔 Stripe Webhook (MUST be before express.json)
-const stripeWebhookRoutes = require("./routes/stripeWebhookRoutes");
-app.use("/api/stripe/webhook", stripeWebhookRoutes);
-
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 

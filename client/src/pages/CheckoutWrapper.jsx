@@ -10,8 +10,6 @@ export default function CheckoutWrapper() {
   const { cartItems } = useCart();
   const [clientSecret, setClientSecret] = useState("");
   const [paymentMode, setPaymentMode] = useState("FULL"); 
-  const [orderId, setOrderId] = useState(null);
-
 // FULL = 100% payment
 // PARTIAL = 60% upfront payment
 
@@ -21,7 +19,7 @@ export default function CheckoutWrapper() {
 useEffect(() => {
   const init = async () => {
     try {
-if (!cartItems || cartItems.length === 0 || !orderId) return;
+      if (!cartItems || cartItems.length === 0) return;
 
       const data = await api("/payments/create-payment-intent", {
         method: "POST",
@@ -32,8 +30,7 @@ if (!cartItems || cartItems.length === 0 || !orderId) return;
             lineTotal: i.lineTotal,
           })),
           extraFees: 0,
-          paymentMode,
-          orderId,
+          paymentMode, // 👈 FULL or PARTIAL
         }),
       });
 
@@ -44,7 +41,7 @@ if (!cartItems || cartItems.length === 0 || !orderId) return;
   };
 
   init();
-}, [cartItems, paymentMode, orderId]);
+}, [cartItems, paymentMode]);
 
 
 
@@ -64,9 +61,7 @@ if (!cartItems || cartItems.length === 0 || !orderId) return;
 <CheckoutPage
   paymentMode={paymentMode}
   setPaymentMode={setPaymentMode}
-  setOrderId={setOrderId}
 />
-
     </Elements>
   );
 }
