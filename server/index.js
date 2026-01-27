@@ -18,7 +18,8 @@ const allowedOrigins = [
   "https://party-rentals-ochre.vercel.app", // old prod (can keep)
   "https://party-rentals.vercel.app",       // old prod (can keep)
   "https://newprojectdesigns.com",           // NEW prod
-  "https://www.newprojectdesigns.com"        // NEW prod (www)
+  "https://www.newprojectdesigns.com",        // NEW prod (www)
+  "http://localhost:4173",
 ];
 
 

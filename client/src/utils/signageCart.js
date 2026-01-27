@@ -1,4 +1,5 @@
 import { DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT } from "../context/SignageContext";
+import { waitForFonts as waitForFontsUtil, preloadFontsWithFontFace } from "./fontLoader";
 
 /**
  * Captures a snapshot of the preview element and converts it to an image
@@ -28,236 +29,39 @@ export const capturePreviewSnapshot = async (previewElement, callback, fallbackD
     return;
   }
 
-  // Use html2canvas to capture the actual rendered preview (screenshot of what's displayed)
-  try {
-    console.log("Capturing preview screenshot with html2canvas...");
-    
-    // Wait a bit to ensure all text is rendered
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    // Import html2canvas - it uses default export
-    const html2canvasModule = await import('html2canvas');
-    const html2canvas = html2canvasModule.default;
-    
-    if (typeof html2canvas !== 'function') {
-      throw new Error("html2canvas.default is not a function");
-    }
-    
-    console.log("html2canvas loaded, capturing preview element...");
-    
-    // Get the exact dimensions from the preview element's style
-    const computedStyle = window.getComputedStyle(previewElement);
-    const styleWidth = parseFloat(computedStyle.width) || previewElement.offsetWidth;
-    const styleHeight = parseFloat(computedStyle.height) || previewElement.offsetHeight;
-    
-    const captureWidth = Math.round(styleWidth);
-    const captureHeight = Math.round(styleHeight);
-    
-    console.log("Preview container dimensions:", captureWidth, "x", captureHeight);
-    
-    // Create a temporary container with EXACT dimensions to capture
-    // This ensures we only capture what's in the preview, nothing more
-    const tempContainer = document.createElement('div');
-    tempContainer.style.position = 'fixed';
-    tempContainer.style.left = '-9999px';
-    tempContainer.style.top = '0';
-    tempContainer.style.width = `${captureWidth}px`;
-    tempContainer.style.height = `${captureHeight}px`;
-    tempContainer.style.overflow = 'hidden';
-    tempContainer.style.position = 'relative';
-    tempContainer.style.boxSizing = 'border-box';
-    tempContainer.style.backgroundColor = previewElement.style.backgroundColor || 'transparent';
-    
-    // Clone the preview element's content
-    const clonedPreview = previewElement.cloneNode(true);
-    clonedPreview.style.width = `${captureWidth}px`;
-    clonedPreview.style.height = `${captureHeight}px`;
-    clonedPreview.style.overflow = 'hidden';
-    clonedPreview.style.position = 'relative';
-    clonedPreview.style.margin = '0';
-    clonedPreview.style.padding = '0';
-    clonedPreview.style.border = 'none';
-    
-    // Ensure background image is exactly the container size
-    const bgImage = clonedPreview.querySelector('img');
-    if (bgImage) {
-      bgImage.style.width = `${captureWidth}px`;
-      bgImage.style.height = `${captureHeight}px`;
-      bgImage.style.objectFit = 'cover';
-      bgImage.style.objectPosition = 'center';
-      bgImage.style.position = 'absolute';
-      bgImage.style.top = '0';
-      bgImage.style.left = '0';
-      bgImage.style.zIndex = '1';
-      bgImage.style.maxWidth = 'none';
-      bgImage.style.maxHeight = 'none';
-    }
-    
-    // Ensure text elements are positioned correctly
-    const textElements = clonedPreview.querySelectorAll('[style*="absolute"]');
-    textElements.forEach((textEl) => {
-      textEl.style.position = 'absolute';
-      textEl.style.zIndex = '999';
-    });
-    
-    // Append to body temporarily
-    tempContainer.appendChild(clonedPreview);
-    document.body.appendChild(tempContainer);
-    
-    // Wait for it to render
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    console.log("Capturing temporary container with exact dimensions:", captureWidth, "x", captureHeight);
-    
-    // Capture the temporary container (which has exact dimensions)
-    const canvas = await html2canvas(tempContainer, {
-      backgroundColor: null,
-      scale: 1,
-      useCORS: true,
-      logging: false,
-      allowTaint: true,
-      foreignObjectRendering: false,
-      width: captureWidth,
-      height: captureHeight,
-      x: 0,
-      y: 0,
-      scrollX: 0,
-      scrollY: 0,
-      onclone: (clonedDoc, element) => {
-        // Ensure fonts are loaded and text is visible in the cloned document
-        console.log("=== html2canvas onclone callback ===");
-        
-        // Find the cloned container
-        const clonedContainer = clonedDoc.body.firstElementChild;
-        if (clonedContainer) {
-          clonedContainer.style.width = `${captureWidth}px`;
-          clonedContainer.style.height = `${captureHeight}px`;
-          clonedContainer.style.overflow = 'hidden';
-          
-          // Find the cloned preview inside
-          const clonedPreview = clonedContainer.firstElementChild;
-          if (clonedPreview) {
-            clonedPreview.style.width = `${captureWidth}px`;
-            clonedPreview.style.height = `${captureHeight}px`;
-            clonedPreview.style.overflow = 'hidden';
-            
-            // Ensure background image is exactly the preview size
-            const bgImage = clonedPreview.querySelector('img');
-            if (bgImage) {
-              bgImage.style.width = `${captureWidth}px`;
-              bgImage.style.height = `${captureHeight}px`;
-              bgImage.style.objectFit = 'cover';
-              bgImage.style.objectPosition = 'center';
-            }
-            
-            // Fix text transforms
-            const clonedTexts = clonedPreview.querySelectorAll('div[style*="absolute"]');
-            clonedTexts.forEach((textEl) => {
-              if (textEl.style.transform && textEl.style.transform.includes('translate(-50%, -50%)')) {
-                const leftMatch = textEl.style.left.match(/(\d+)px/);
-                const topMatch = textEl.style.top.match(/(\d+)px/);
-                if (leftMatch && topMatch) {
-                  const leftPx = parseFloat(leftMatch[1]);
-                  const topPx = parseFloat(topMatch[1]);
-                  const fontSize = parseFloat(textEl.style.fontSize) || 48;
-                  const textWidth = textEl.textContent.length * (fontSize * 0.6);
-                  const textHeight = fontSize;
-                  textEl.style.transform = 'none';
-                  textEl.style.left = `${leftPx - textWidth / 2}px`;
-                  textEl.style.top = `${topPx - textHeight / 2}px`;
-                }
-              }
-              textEl.style.zIndex = '999';
-            });
-          }
-        }
-      }
-    });
-    
-    console.log("html2canvas capture successful!");
-    console.log("Canvas size:", canvas.width, "x", canvas.height);
-    console.log("Expected preview size:", captureWidth, "x", captureHeight);
-    
-    // ALWAYS crop to exact preview dimensions - this ensures we only get the preview, not the whole image
-    const targetWidth = captureWidth;
-    const targetHeight = captureHeight;
-    
-    console.log("Canvas before crop:", canvas.width, "x", canvas.height);
-    console.log("Target preview size:", targetWidth, "x", targetHeight);
-    
-    // Create a new canvas with exact preview dimensions
-    const croppedCanvas = document.createElement('canvas');
-    croppedCanvas.width = targetWidth;
-    croppedCanvas.height = targetHeight;
-    const croppedCtx = croppedCanvas.getContext('2d');
-    
-    // Fill with white background first (in case of transparency)
-    croppedCtx.fillStyle = '#FFFFFF';
-    croppedCtx.fillRect(0, 0, targetWidth, targetHeight);
-    
-    // Calculate how to crop: take the center portion if canvas is larger, or scale if smaller
-    let sourceX = 0;
-    let sourceY = 0;
-    let sourceWidth = Math.min(targetWidth, canvas.width);
-    let sourceHeight = Math.min(targetHeight, canvas.height);
-    
-    // If canvas is larger than target, take from top-left corner
-    if (canvas.width > targetWidth) {
-      sourceWidth = targetWidth;
-    }
-    if (canvas.height > targetHeight) {
-      sourceHeight = targetHeight;
-    }
-    
-    console.log("Cropping from canvas:", {
-      sourceX, sourceY, sourceWidth, sourceHeight,
-      targetWidth, targetHeight
-    });
-    
-    // Draw only the portion we need - this crops out any extra image
-    croppedCtx.drawImage(
-      canvas,
-      sourceX, sourceY, // Source x, y (start from top-left)
-      sourceWidth, sourceHeight, // Source width/height (crop to preview size)
-      0, 0, // Destination x, y
-      targetWidth, targetHeight // Destination size (exact preview dimensions)
-    );
-    
-    console.log("Canvas cropped to:", croppedCanvas.width, "x", croppedCanvas.height);
-    
-    // Remove temporary container from DOM
-    document.body.removeChild(tempContainer);
-    
-    // Convert to data URL (JPEG with quality 0.9)
-    const dataUrl = croppedCanvas.toDataURL("image/jpeg", 0.9);
-    console.log("Preview image generated, data URL length:", dataUrl.length);
-    
-    callback(dataUrl);
-    return;
-  } catch (error) {
-    console.error("Error capturing preview with html2canvas:", error);
-    console.error("Error details:", error.message, error.stack);
-    console.log("Falling back to canvas method (which will crop the image)");
-    // Fall through to fallback method
-  }
-
-  // Fallback: use legacy method (this crops the image to canvas size)
-  if (fallbackData) {
-    console.log("Using fallback canvas method with dimensions:", fallbackData.canvasWidth, "x", fallbackData.canvasHeight);
-    createCanvasPreview(
-      fallbackData.backgroundType,
-      fallbackData.backgroundColor,
-      fallbackData.backgroundGradient,
-      fallbackData.backgroundImageUrl,
-      fallbackData.getTextsFromContent,
-      callback,
-      fallbackData.canvasWidth,
-      fallbackData.canvasHeight
-    );
-  } else {
-    console.error("No fallback data available!");
+  // Use canvas method directly - it's more reliable for text rendering
+  // html2canvas has issues with custom fonts in production environments
+  console.log("Using canvas method for preview generation (more reliable for text)...");
+  
+  if (!fallbackData) {
+    console.error("No fallback data provided - cannot generate preview");
     callback(null);
+    return;
   }
+  
+  // Preload fonts before generating canvas
+  console.log("Preloading fonts with FontFace API...");
+  await preloadFontsWithFontFace();
+  
+  // Wait for fonts to be loaded
+  if (document.fonts && document.fonts.ready) {
+    await document.fonts.ready;
+  }
+  
+  // Additional wait to ensure fonts are fully loaded
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  // Use canvas method directly (skips html2canvas entirely)
+  createCanvasPreview(
+    fallbackData.backgroundType,
+    fallbackData.backgroundColor,
+    fallbackData.backgroundGradient,
+    fallbackData.backgroundImageUrl,
+    fallbackData.getTextsFromContent,
+    callback,
+    fallbackData.canvasWidth,
+    fallbackData.canvasHeight
+  );
 };
 
 /**
@@ -283,55 +87,80 @@ export const createCanvasPreview = (
   
   console.log("Canvas created with size:", canvas.width, "x", canvas.height);
 
+  // Helper function to preload a font by creating a hidden element
+  const preloadFont = (fontFamily) => {
+    const cleanFont = fontFamily
+      .replace(/'/g, '')
+      .replace(/,.*$/g, '')
+      .trim();
+    
+    // Create a hidden element with the font to force loading
+    const testElement = document.createElement('span');
+    testElement.style.fontFamily = `"${cleanFont}", Arial, sans-serif`;
+    testElement.style.position = 'absolute';
+    testElement.style.visibility = 'hidden';
+    testElement.style.fontSize = '16px';
+    testElement.textContent = 'M'; // Use a character that will show font differences
+    document.body.appendChild(testElement);
+    
+    // Force font loading by measuring
+    const width1 = testElement.offsetWidth;
+    testElement.style.fontFamily = 'Arial, sans-serif';
+    const width2 = testElement.offsetWidth;
+    
+    // Remove test element
+    document.body.removeChild(testElement);
+    
+    // If widths are different, font is likely loaded
+    return width1 !== width2;
+  };
+
   // Helper function to check if a specific font is loaded
   const checkFontLoaded = (fontFamily) => {
-    if (!document.fonts || !document.fonts.check) {
-      return true; // Assume loaded if API not available
-    }
-    
     // Clean font family name (remove quotes, fallbacks, etc.)
     const cleanFont = fontFamily
       .replace(/'/g, '')
       .replace(/,.*$/g, '') // Remove fallbacks
       .trim();
     
-    // Check if font is loaded with different variations
-    const fontString = `16px "${cleanFont}"`;
-    return document.fonts.check(fontString);
+    // Method 1: Use document.fonts.check if available
+    if (document.fonts && document.fonts.check) {
+      const fontString = `16px "${cleanFont}"`;
+      if (document.fonts.check(fontString)) {
+        return true;
+      }
+    }
+    
+    // Method 2: Preload and measure (more reliable for production)
+    try {
+      return preloadFont(cleanFont);
+    } catch (e) {
+      console.warn(`Font check failed for ${cleanFont}:`, e);
+      return false;
+    }
   };
 
   // Helper to wait for all fonts used in texts to be loaded
-  const waitForFonts = async (texts) => {
+  const waitForFontsLocal = async (texts) => {
     if (!texts || texts.length === 0) return;
     
     // Get unique font families from texts
     const fontFamilies = [...new Set(texts.map(t => t.fontFamily || "'Farmhouse', cursive"))];
     
-    // Wait for document.fonts.ready first
-    if (document.fonts && document.fonts.ready) {
-      await document.fonts.ready;
-    }
+    console.log("waitForFontsLocal: Waiting for fonts:", fontFamilies);
     
-    // Check each font and wait if needed
-    let allFontsLoaded = false;
-    let attempts = 0;
-    const maxAttempts = 50; // Wait up to 5 seconds (50 * 100ms)
-    
-    while (!allFontsLoaded && attempts < maxAttempts) {
-      allFontsLoaded = fontFamilies.every(font => checkFontLoaded(font));
+    // Use the utility function for better font loading
+    try {
+      await waitForFontsUtil(fontFamilies, 10000);
+    } catch (e) {
+      console.warn("Font loading utility failed, using fallback:", e);
       
-      if (!allFontsLoaded) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
+      // Fallback: wait for document.fonts.ready
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
       }
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
-    
-    if (!allFontsLoaded) {
-      console.warn("Some fonts may not be fully loaded, proceeding anyway");
-    }
-    
-    // Additional delay to ensure fonts are rendered
-    await new Promise(resolve => setTimeout(resolve, 200));
   };
 
   // Helper to draw text and call callback (waits for fonts if available)
@@ -342,7 +171,7 @@ export const createCanvasPreview = (
     
     // Wait for fonts to be loaded
     if (texts && texts.length > 0) {
-      await waitForFonts(texts);
+      await waitForFontsLocal(texts);
     }
     
     // Now draw the texts
@@ -412,7 +241,7 @@ export const createCanvasPreview = (
       
       // Wait for fonts to be loaded before drawing
       if (texts && texts.length > 0) {
-        await waitForFonts(texts);
+        await waitForFontsLocal(texts);
       }
       
       if (texts && texts.length > 0) {
@@ -599,9 +428,24 @@ const drawTexts = (context, getTextsFromContent) => {
     // Set font and verify it's applied
     context.font = fontString;
     
-    // Double-check font is loaded by measuring text (if font not loaded, measurement will be wrong)
-    const testMeasurement = context.measureText("M");
-    console.log(`drawTexts: Font "${fontFamily}" measurement:`, testMeasurement.width);
+    // Verify font is actually being used by comparing measurements
+    const testText = "M";
+    const testMeasurement = context.measureText(testText);
+    
+    // Try with fallback font to compare
+    context.font = `${fontSize}px Arial, sans-serif`;
+    const fallbackMeasurement = context.measureText(testText);
+    
+    // Set font back
+    context.font = fontString;
+    
+    // Log comparison
+    const isUsingCustomFont = Math.abs(testMeasurement.width - fallbackMeasurement.width) > 0.1;
+    console.log(`drawTexts: Font "${fontFamily}" - Custom: ${testMeasurement.width.toFixed(2)}px, Fallback: ${fallbackMeasurement.width.toFixed(2)}px, Using custom: ${isUsingCustomFont}`);
+    
+    if (!isUsingCustomFont) {
+      console.warn(`WARNING: Font "${fontFamily}" may not be loaded, using fallback`);
+    }
     context.textAlign = "center";
     context.textBaseline = "middle";
     

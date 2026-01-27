@@ -465,80 +465,7 @@ width: `${((priceRange[1] - priceRange[0]) / PRICE_MAX) * 100}%`,
 
          <main>
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
-
-    {filteredProducts.map((product) => (
-      <a
-href={`/buyproducts/${product._id}`}
-        className="
-          block border border-gray-300 hover:border-gray-500
-          rounded-xl shadow 
-          transition-all duration-300 
-          group hover:shadow-lg hover:scale-[1.02]
-        "
-      >
-
-        {/* IMAGE — NOW FULL WIDTH, NO PADDING */}
-        <div className="h-48 rounded-t-xl overflow-hidden">
-          <img
-src={product.images?.[0]?.url || hero1}
-            alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        </div>
-
-        {/* CONTENT */}
-        <div className="p-5">
-
-          {/* NAME */}
-          <h3 className="font-bold text-lg text-[#2D2926]">
-            {product.title}
-          </h3>
-
-          {/* PRICE SECTION */}
-          {/* PRICE SECTION */}
-<div className="mt-1 flex items-center gap-2">
-  {product.salePrice ? (
-    <>
-      {/* Original price */}
-      <span className="text-gray-500 line-through text-sm">
-        $ {product.pricePerDay}
-      </span>
-
-      {/* Sale price */}
-      <span className="text-red-600 font-bold text-lg">
-        $ {product.salePrice}
-      </span>
-    </>
-  ) : (
-    <span className="text-black font-semibold text-lg">
-      $ {product.pricePerDay}
-    </span>
-  )}
-</div>
-
-
-          {/* CATEGORY */}
-          <p className="text-sm text-gray-600 mt-1">
-  Category: {getCategoryNameById(product.category)}
-</p>
-
-
-
-          {/* BUTTON */}
-<div className="mt-4 
-     opacity-100 md:opacity-0 
-     md:group-hover:opacity-100 
-     transition-opacity duration-300">
-            <button className="w-full bg-black text-white px-6 py-2 rounded-lg text-sm shadow-md hover:bg-[#222222] transition">
-              View Product
-            </button>
-          </div>
-
-        </div>
-      </a>
-    ))}
-
-    {/* Static Signage Card - Moved to end and made smaller */}
+    {/* Custom Signage Design Card - First Position */}
     <div
       className="
         block border-2 border-[#8B5C42] 
@@ -549,7 +476,7 @@ src={product.images?.[0]?.url || hero1}
       "
     >
       {/* IMAGE */}
-      <div className="h-32 rounded-t-xl overflow-hidden bg-gradient-to-br from-[#8B5C42] to-[#704A36] flex items-center justify-center">
+      <div className="h-40 rounded-t-xl overflow-hidden bg-gradient-to-br from-[#8B5C42] to-[#704A36] flex items-center justify-center">
         <div className="text-center text-white">
           <svg 
             className="w-12 h-12 mx-auto mb-1" 
@@ -563,23 +490,16 @@ src={product.images?.[0]?.url || hero1}
       </div>
 
       {/* CONTENT */}
-      <div className="p-3">
+      <div className="p-4">
         {/* NAME */}
         <h3 className="font-bold text-base text-[#2D2926]">
           Custom Signage Design
         </h3>
 
         {/* DESCRIPTION */}
-        <p className="text-xs text-gray-600 mt-1">
+        <p className="text-sm text-gray-600 mt-2 line-clamp-2">
           Create personalized signage with custom text, fonts, colors, and backgrounds for your events.
         </p>
-
-        {/* FEATURES */}
-        <div className="mt-2 space-y-0.5">
-          <p className="text-[10px] text-gray-500">✓ Custom fonts & sizes</p>
-          <p className="text-[10px] text-gray-500">✓ Multiple color options</p>
-          <p className="text-[10px] text-gray-500">✓ Background customization</p>
-        </div>
 
         {/* BUTTON */}
         <div className="mt-3 
@@ -588,13 +508,96 @@ src={product.images?.[0]?.url || hero1}
              transition-opacity duration-300">
           <button 
             onClick={() => navigate("/signage")}
-            className="w-full bg-[#8B5C42] text-white px-4 py-1.5 rounded-lg text-xs shadow-md hover:bg-[#704A36] transition"
+            className="w-full bg-[#8B5C42] text-white px-4 py-2 rounded-lg text-sm shadow-md hover:bg-[#704A36] transition"
           >
             Create Signage
           </button>
         </div>
       </div>
     </div>
+
+    {/* Loading State */}
+    {loadingProducts ? (
+      <div className="col-span-full flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B5C42] mb-4"></div>
+          <p className="text-gray-600">Loading products...</p>
+        </div>
+      </div>
+    ) : (
+      <>
+        {filteredProducts.map((product) => (
+      <a
+href={`/buyproducts/${product._id}`}
+        className="
+          block border border-gray-300 hover:border-gray-500
+          rounded-xl shadow 
+          transition-all duration-300 
+          group hover:shadow-lg hover:scale-[1.02]
+        "
+      >
+
+        {/* IMAGE — NOW FULL WIDTH, NO PADDING */}
+        <div className="h-40 rounded-t-xl overflow-hidden">
+          <img
+src={product.images?.[0]?.url || hero1}
+            alt={product.name}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        </div>
+
+        {/* CONTENT */}
+        <div className="p-4">
+
+          {/* NAME */}
+          <h3 className="font-bold text-base text-[#2D2926] line-clamp-2">
+            {product.title}
+          </h3>
+
+          {/* PRICE SECTION */}
+<div className="mt-2 flex items-center gap-2">
+  {product.salePrice ? (
+    <>
+      {/* Original price */}
+      <span className="text-gray-500 line-through text-xs">
+        $ {product.pricePerDay}
+      </span>
+
+      {/* Sale price */}
+      <span className="text-red-600 font-bold text-base">
+        $ {product.salePrice}
+      </span>
+    </>
+  ) : (
+    <span className="text-black font-semibold text-base">
+      $ {product.pricePerDay}
+    </span>
+  )}
+</div>
+
+
+          {/* CATEGORY */}
+          <p className="text-xs text-gray-600 mt-1">
+  Category: {getCategoryNameById(product.category)}
+</p>
+
+
+
+          {/* BUTTON */}
+<div className="mt-3 
+     opacity-100 md:opacity-0 
+     md:group-hover:opacity-100 
+     transition-opacity duration-300">
+            <button className="w-full bg-black text-white px-4 py-2 rounded-lg text-sm shadow-md hover:bg-[#222222] transition">
+              View Product
+            </button>
+          </div>
+
+        </div>
+      </a>
+    ))}
+      </>
+    )}
 
   </div>
 </main>

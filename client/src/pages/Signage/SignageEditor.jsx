@@ -10,6 +10,7 @@ import SignageHeader from "../../components/signage/SignageHeader";
 import SignageControls from "../../components/signage/SignageControls";
 import BackgroundImageOptions from "../../components/signage/BackgroundImageOptions";
 import { capturePreviewSnapshot } from "../../utils/signageCart";
+import { waitForFonts, preloadFontsWithFontFace } from "../../utils/fontLoader";
 
 const SignageEditorContent = () => {
   const { id: productId, token } = useParams();
@@ -269,12 +270,46 @@ const SignageEditorContent = () => {
         });
       });
       
-      // Wait for fonts to load and ensure everything is rendered
-      if (document.fonts && document.fonts.ready) {
-        await document.fonts.ready;
-      }
-      await new Promise(resolve => setTimeout(resolve, 300));
+    // Wait for fonts to load and ensure everything is rendered
+    // Use FontFace API for more reliable font loading in production
+    if (texts && texts.length > 0) {
+      const fontFamilies = [...new Set(texts.map(t => t.fontFamily || "'Farmhouse', cursive"))];
+      console.log("Waiting for fonts:", fontFamilies);
+      
+      // Preload all fonts using FontFace API first
+      await preloadFontsWithFontFace();
+      
+      // Then wait for specific fonts used in the text
+      await waitForFonts(fontFamilies, 10000);
+    } else {
+      // Preload all fonts even if no text (for fallback)
+      await preloadFontsWithFontFace();
+    }
+    
+    // Additional wait to ensure fonts are fully rendered
+    await new Promise(resolve => setTimeout(resolve, 500));
 
+      // DEBUG: Log text elements before capture
+      const textElementsDebug = previewElement.querySelectorAll('div[data-text-id]');
+      console.log("=== DEBUG: Text elements in preview ===");
+      textElementsDebug.forEach((el, idx) => {
+        const style = window.getComputedStyle(el);
+        console.log(`Text ${idx}:`, {
+          content: el.textContent,
+          fontFamily: style.fontFamily,
+          fontSize: style.fontSize,
+          color: style.color,
+          visibility: style.visibility,
+          display: style.display,
+          opacity: style.opacity,
+          zIndex: style.zIndex,
+          position: style.position,
+          left: style.left,
+          top: style.top,
+          transform: style.transform
+        });
+      });
+      
       // Capture snapshot of the actual preview element
       // Use the ACTUAL visible dimensions of the preview element, not context dimensions
       // Provide fallback data in case html2canvas isn't available
