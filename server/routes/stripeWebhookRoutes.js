@@ -85,3 +85,4 @@ console.log("📧 Order emails sent successfully");
     res.json({ received: true });
   }
 );
+module.exports = router;
