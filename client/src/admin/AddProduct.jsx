@@ -257,7 +257,6 @@ const AddProduct = () => {
        setProductType(data.productType);
 setProductSubType(data.productSubType || "simple");
 
-<<<<<<< HEAD
 // ✅ FIX: use data.productSubType (NOT state)
 if (data.productType === "rental" && data.productSubType === "variable") {
   // Normalize variations for edit UI
@@ -296,31 +295,6 @@ if (data.productType === "rental" && data.productSubType === "variable") {
   });
   setSelectedAttrs(nextSelected);
 }
-=======
-        // If variable product, load variations and infer variation groups
-        if (data.productType === "rental" && productSubType === "variable") {
-          setVariations(data.variations || []);
-
-          const groupSet = new Set();
-          (data.variations || []).forEach((v) => {
-            (v.attributes || []).forEach((a) => {
-              groupSet.add(String(a.groupId?._id || a.groupId));
-            });
-          });
-          setVariationAttrGroupIds([...groupSet]);
-
-          // Also pre-select attribute options in UI for those groups (optional but very useful)
-          const nextSelected = { ...(selectedAttrs || {}) };
-          (data.variations || []).forEach((v) => {
-            (v.attributes || []).forEach((a) => {
-              const gid = String(a.groupId?._id || a.groupId);
-              const oid = String(a.optionId?._id || a.optionId);
-              nextSelected[gid] = Array.from(new Set([...(nextSelected[gid] || []), oid]));
-            });
-          });
-          setSelectedAttrs(nextSelected);
-        }
->>>>>>> 3496ca15430263ed23ae21ce6e95e11f050ccfcb
 
 
         setPricePerDay(data.pricePerDay || "");
@@ -527,38 +501,6 @@ formData.append("isEditMode", String(isEditMode));
       alert("Upload at least one image");
       return;
     }
-<<<<<<< HEAD
-  }
-
-formData.append(
-  "variations",
-  JSON.stringify(
-    variations.map((v) => ({
-      attributes: v.attributes,
-      price: Number(v.price),
-      salePrice: v.salePrice === "" ? null : Number(v.salePrice),
-      stock: v.stock === "" ? 0 : Number(v.stock),
-      dimension: v.dimension || "",
-image:
-  typeof v.image === "string"
-    ? v.image
-    : v.image?.url
-    ? v.image
-    : null,
-    }))
-  )
-);
-
-// append variation images separately
-variations.forEach((v, idx) => {
-  if (v.image instanceof File) {
-    formData.append(`variationImages_${idx}`, v.image);
-  }
-});
-
-}
-=======
->>>>>>> 3496ca15430263ed23ae21ce6e95e11f050ccfcb
 
 
     images.forEach((img) => formData.append("images", img));

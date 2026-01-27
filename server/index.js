@@ -41,6 +41,9 @@ app.use(
 );
 
 app.options(/.*/, cors());
+// 🔔 Stripe Webhook (MUST be before express.json)
+app.use("/api/stripe/webhook", require("./routes/stripeWebhookRoutes"));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 

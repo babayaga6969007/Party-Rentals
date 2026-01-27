@@ -1,3 +1,4 @@
+
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
@@ -20,18 +21,15 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 const uploadFields = upload.fields([
-  { name: "images", maxCount: 10 },           // product images
-  { name: "variationImages_0", maxCount: 1 },
-  { name: "variationImages_1", maxCount: 1 },
-  { name: "variationImages_2", maxCount: 1 },
-  { name: "variationImages_3", maxCount: 1 },
-  { name: "variationImages_4", maxCount: 1 },
-  { name: "variationImages_5", maxCount: 1 },
-  { name: "variationImages_6", maxCount: 1 },
-  { name: "variationImages_7", maxCount: 1 },
-  { name: "variationImages_8", maxCount: 1 },
-  { name: "variationImages_9", maxCount: 1 },
+  { name: "images", maxCount: 10 },
+
+  // ✅ allow up to 50 variation images safely
+  ...Array.from({ length: 50 }).map((_, i) => ({
+    name: `variationImages_${i}`,
+    maxCount: 1,
+  })),
 ]);
+
 
 
 // ============ ADMIN ROUTES ============
