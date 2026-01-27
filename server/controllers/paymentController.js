@@ -34,7 +34,7 @@ const calculateOrderAmount = ({
 
 exports.createPaymentIntent = async (req, res) => {
   try {
-const { items, extraFees, paymentMode } = req.body;
+const { items, extraFees, paymentMode, orderId } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
@@ -49,15 +49,16 @@ const amount = calculateOrderAmount({
 });
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount,
-      currency: "usd", // test currency (works in Nepal)
-      automatic_payment_methods: { enabled: true },
-      metadata: {
-  source: "checkout",
-  paymentMode: paymentMode || "FULL",
-},
+  amount,
+  currency: "usd",
+  automatic_payment_methods: { enabled: true },
+  metadata: {
+    orderId: orderId,              // ⭐ CRITICAL
+    source: "checkout",
+    paymentMode: paymentMode || "FULL",
+  },
+});
 
-    });
 
     return res.json({
       clientSecret: paymentIntent.client_secret,

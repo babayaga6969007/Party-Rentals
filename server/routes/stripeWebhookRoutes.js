@@ -37,9 +37,14 @@ router.post(
       console.log("✅ Stripe Event Received:", event.type);
       console.log("🔎 PaymentIntent ID:", paymentIntent.id);
 
-      const order = await Order.findOne({
-        "stripePayment.paymentIntentId": paymentIntent.id,
-      });
+    const orderId = paymentIntent.metadata.orderId;
+
+if (!orderId) {
+  console.warn("⚠️ No orderId in Stripe metadata");
+  return res.json({ received: true });
+}
+
+const order = await Order.findById(orderId);
 
       if (!order) {
         console.warn("⚠️ No order found for PaymentIntent:", paymentIntent.id);
