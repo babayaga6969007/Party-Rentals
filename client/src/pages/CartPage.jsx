@@ -328,11 +328,17 @@ onClick={() => removeItem(item.cartKey)}
          <button
   type="button"
   onClick={handleProceed}
-  disabled={items.length === 0}
+  disabled={items.length === 0 || shippingCost === 0}
   className="mt-5 w-full py-3 rounded-full bg-black text-white text-sm font-semibold hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+  title={shippingCost === 0 ? "Calculate shipping first to proceed" : undefined}
 >
   Go to Checkout
 </button>
+{shippingCost === 0 && items.length > 0 && (
+  <p className="mt-2 text-xs text-gray-500 text-center">
+    Calculate shipping above to enable checkout.
+  </p>
+)}
 
 
         </div>

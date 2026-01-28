@@ -31,6 +31,7 @@ import CategoryPage from "../pages/Category/CategoryPage";
 import Shop from "../pages/Shop/shop";
 import SecondHProducts from "../pages/SecondHProducts/buyproducts";
 import SignageEditor from "../pages/Signage/SignageEditor";
+import Gallery from "../pages/Gallery/Gallery";
 
 // 🛒 NEW Checkout Flow Pages
 import CartPage from "../pages/CartPage";
@@ -49,6 +50,7 @@ import AdminSignages from "../admin/AdminSignages";
 import AdminSignageConfig from "../admin/AdminSignageConfig";
 import AdminShelvingConfig from "../admin/AdminShelvingConfig";
 import AdminShippingConfig from "../admin/AdminShippingConfig";
+import GalleryAdmin from "../admin/Gallery";
 
 
 const AppRoutes = () => {
@@ -63,6 +65,7 @@ const AppRoutes = () => {
           <Route path="/faqs" element={<FAQ />} />  
           <Route path="/contact" element={<Contact />} />
           <Route path="/about" element={<About />} />
+          <Route path="/gallery" element={<Gallery />} />
  
           <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/product/demo" element={<UpdatedProductPage />} />
@@ -128,6 +131,14 @@ const AppRoutes = () => {
   element={
     <ProtectedAdminRoute>
       <AdminShippingConfig />
+    </ProtectedAdminRoute>
+  }
+/>
+<Route
+  path="/admin/gallery"
+  element={
+    <ProtectedAdminRoute>
+      <GalleryAdmin />
     </ProtectedAdminRoute>
   }
 />
