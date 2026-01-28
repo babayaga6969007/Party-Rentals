@@ -146,32 +146,29 @@ dimensions: {
       default: "rental",
       required: true,
     },
-productSubType: {
-  type: String,
-  enum: ["simple", "variable"],
-  default: "simple",
-},
 
     /* PRICING */
-    pricePerDay: {
+pricePerDay: {
   type: Number,
   required: function () {
-    return (
-      this.productType === "rental" &&
-      this.productSubType === "simple"
-    );
+    return this.productType === "rental";
   },
 },
 
-   salePrice: {
+price: {
   type: Number,
   required: function () {
-    return (
-      this.productType === "sale" &&
-      this.productSubType === "simple"
-    );
+    return this.productType === "sale";
   },
+  min: 0,
 },
+
+salePrice: {
+  type: Number,
+  default: null,
+  min: 0,
+},
+
 
 variations: {
   type: [ProductVariationSchema],
@@ -241,27 +238,5 @@ featuredAt: {
   { timestamps: true }
 );
 
-/* =========================
-   SCHEMA-LEVEL SAFETY GUARDS
-========================= */
-
-productSchema.pre("validate", function (next) {
-  // 🚫 Selling products cannot be variable
-  if (this.productType === "sale" && this.productSubType === "variable") {
-    return next(new Error("Selling products cannot have variations."));
-  }
-
-  // 🚫 Variable products must have variations
-  if (
-    this.productSubType === "variable" &&
-    (!this.variations || this.variations.length === 0)
-  ) {
-    return next(
-      new Error("Variable products must have at least one variation.")
-    );
-  }
-
-  next();
-});
 
 module.exports = mongoose.model("Product", productSchema);

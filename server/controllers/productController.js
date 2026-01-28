@@ -64,10 +64,11 @@ const productSubType = "simple"; // force simple only
 const {
   title,
   description,
-  dimensions,   // ✅ ADD THIS
+  dimensions,
   category,
   productType,
   pricePerDay,
+  price,        
   salePrice,
   availabilityCount,
   tags,
@@ -88,8 +89,14 @@ const basePayload = {
   addons,
   images: uploadedImages,
 };
-basePayload.pricePerDay = pricePerDay;
-basePayload.salePrice = salePrice;
+if (productType === "rental") {
+  basePayload.pricePerDay = Number(pricePerDay);
+}
+
+if (productType === "sale") {
+  basePayload.price = Number(price);      // ✅ THIS WAS MISSING
+  basePayload.salePrice = salePrice ? Number(salePrice) : null;
+}
 
 
 const product = await Product.create(basePayload);

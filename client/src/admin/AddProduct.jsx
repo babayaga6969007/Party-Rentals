@@ -397,10 +397,16 @@ formData.append("isEditMode", String(isEditMode));
 // PRICING SUBMISSION
     // ===============================
 
+if (productType === "rental") {
   formData.append("pricePerDay", pricePerDay);
+}
 
-if (salePrice !== "" && salePrice !== null) {
-  formData.append("salePrice", salePrice);
+if (productType === "sale") {
+  formData.append("price", pricePerDay); 
+
+  if (salePrice !== "" && salePrice !== null) {
+    formData.append("salePrice", salePrice);
+  }
 }
 
 
