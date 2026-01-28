@@ -27,10 +27,11 @@ const AddProduct = () => {
 
   // Product core
   const [productType, setProductType] = useState("rental");
+const [rentalSubType, setRentalSubType] = useState("simple"); 
+// "simple" | "variable"
 
-
-  // Featured (only for rental)
-  const [isFeatured, setIsFeatured] = useState(false);
+const [variationCount, setVariationCount] = useState(0);
+const [variations, setVariations] = useState([]);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -254,7 +255,6 @@ const AddProduct = () => {
 
         setPricePerDay(data.pricePerDay || "");
         setSalePrice(data.salePrice || "");
-        setIsFeatured(!!data.featured);
 
 
         const attrSelections = {};
@@ -310,6 +310,31 @@ const AddProduct = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+console.log("✅ SUBMIT CLICKED");
+    const formData = new FormData();
+
+
+    if (productType === "rental" && rentalSubType === "variable") {
+  formData.append("variations", JSON.stringify(
+    variations.map(v => ({
+      dimension: v.dimension,
+      pricePerDay: v.pricePerDay,
+      salePrice: v.salePrice || null,
+      stock: v.stock,
+    }))
+  ));
+
+  variations.forEach((v, i) => {
+    if (v.image) {
+      formData.append(`variationImages_${i}`, v.image);
+    }
+  });
+}
+console.log("📦 VARIATIONS APPENDED:", variations.length);
+
+formData.append("productSubType", rentalSubType);
+
+   
 
     const requiredGroups = attributeGroups.filter(
       (g) => g.required && g.type !== "addon"
@@ -368,7 +393,6 @@ const AddProduct = () => {
 
 
 
-    const formData = new FormData();
 // ✅ REQUIRED: identify product for update
 if (isEditMode) {
   formData.append("_id", id);
@@ -385,7 +409,6 @@ formData.append("isEditMode", String(isEditMode));
     formData.append("productType", productType);
 
     formData.append("availabilityCount", availabilityCount);
-    formData.append("featured", productType === "rental" ? String(isFeatured) : "false");
 
     formData.append("attributes", JSON.stringify(attributesPayload));
     if (addonsPayload.length > 0) {
@@ -397,7 +420,7 @@ formData.append("isEditMode", String(isEditMode));
 // PRICING SUBMISSION
     // ===============================
 
-if (productType === "rental") {
+if (productType === "rental" && rentalSubType === "simple") {
   formData.append("pricePerDay", pricePerDay);
 }
 
@@ -411,11 +434,26 @@ if (productType === "sale") {
 
 
 
-   if (isEditMode) {
+// 🔒 IMAGE VALIDATION & EXISTING IMAGES HANDLING
+if (isEditMode) {
   formData.append("existingImages", JSON.stringify(existingImages));
-} else if (!isEditMode && images.length === 0) {
-  alert("Upload at least one image");
-  return;
+} else {
+  // CREATE MODE
+  if (productType === "rental" && rentalSubType === "variable") {
+    // Each variation must have its own image
+    const missingImage = variations.some(v => !v.image);
+
+    if (missingImage) {
+      alert("Each variation must have an image");
+      return;
+    }
+  } else {
+    // Simple rental or sale → base images required
+    if (images.length === 0) {
+      alert("Upload at least one image");
+      return;
+    }
+  }
 }
 
 
@@ -427,6 +465,7 @@ if (productType === "sale") {
       : "/products/admin/add";
 
     const token = localStorage.getItem("admin_token");
+console.log("🚀 SENDING API REQUEST TO:", endpoint);
 
     // 5️⃣ Submit
     await api(endpoint, {
@@ -436,6 +475,8 @@ if (productType === "sale") {
       },
       body: formData,
     });
+    console.log("✅ API RESPONSE RECEIVED");
+
 
     if (isEditMode) {
       // Store success message in sessionStorage for Products page to show toast
@@ -461,6 +502,33 @@ if (productType === "sale") {
         className="bg-white rounded-2xl p-8 shadow max-w-5xl space-y-8"
       >
         {/* PRODUCT TYPE */}
+        {/* RENTAL SUB TYPE */}
+{productType === "rental" && (
+  <div>
+    <label className="font-medium">Rental Type</label>
+    <div className="flex gap-4 mt-2">
+      {["simple", "variable"].map((type) => (
+        <button
+          key={type}
+          type="button"
+          onClick={() => {
+            setRentalSubType(type);
+            setVariationCount(0);
+            setVariations([]);
+          }}
+          className={`px-6 py-2 rounded-full border ${
+            rentalSubType === type
+              ? "bg-[#8B5C42] text-white"
+              : "bg-white hover:bg-gray-100"
+          }`}
+        >
+          {type === "simple" ? "Simple Rental" : "Variable Rental"}
+        </button>
+      ))}
+    </div>
+  </div>
+)}
+
         <div>
           <label className="font-medium">Product Type</label>
           <div className="flex gap-4 mt-2">
@@ -474,7 +542,6 @@ if (productType === "sale") {
 
                   setProductType(type);
                   setCategory("");
-                  setIsFeatured(false);
 
                 
                 }}
@@ -526,78 +593,159 @@ if (productType === "sale") {
 
             </select>
           </div>
+          {productType === "rental" && rentalSubType === "variable" && (
+  <div className="bg-[#FAF7F5] p-6 rounded-xl border">
+    <label className="font-medium">
+      How many variations do you want?
+    </label>
+    <input
+      type="number"
+      min="1"
+      max="20"
+      className="mt-2 w-40 p-3 border rounded-lg"
+      value={variationCount}
+      onChange={(e) => {
+        const count = Number(e.target.value);
+        setVariationCount(count);
+
+        setVariations(
+          Array.from({ length: count }, (_, i) => ({
+            id: i,
+            dimension: "",
+            pricePerDay: "",
+            salePrice: "",
+            stock: 1,
+            image: null,
+            preview: null,
+          }))
+        );
+      }}
+    />
+  </div>
+  
+)}
+{productType === "rental" &&
+  rentalSubType === "variable" &&
+  variations.map((v, index) => (
+    <div
+      key={index}
+      className="border rounded-xl p-6 bg-white space-y-4"
+    >
+      <h3 className="font-semibold text-lg">
+        Variation {index + 1}
+      </h3>
+
+      <input
+        placeholder="Dimension (e.g. 10×10)"
+        className="w-full p-3 border rounded-lg"
+        value={v.dimension}
+        onChange={(e) => {
+          const copy = [...variations];
+          copy[index].dimension = e.target.value;
+          setVariations(copy);
+        }}
+      />
+
+      <input
+        type="number"
+        placeholder="Price per day"
+        className="w-full p-3 border rounded-lg"
+        value={v.pricePerDay}
+        onChange={(e) => {
+          const copy = [...variations];
+          copy[index].pricePerDay = e.target.value;
+          setVariations(copy);
+        }}
+      />
+
+      <input
+        type="number"
+        placeholder="Sale price (optional)"
+        className="w-full p-3 border rounded-lg"
+        value={v.salePrice}
+        onChange={(e) => {
+          const copy = [...variations];
+          copy[index].salePrice = e.target.value;
+          setVariations(copy);
+        }}
+      />
+
+      <input
+        type="number"
+        placeholder="Stock"
+        className="w-full p-3 border rounded-lg"
+        value={v.stock}
+        onChange={(e) => {
+          const copy = [...variations];
+          copy[index].stock = e.target.value;
+          setVariations(copy);
+        }}
+      />
+
+      {/* Single Image */}
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => {
+          const file = e.target.files[0];
+          const copy = [...variations];
+          copy[index].image = file;
+          copy[index].preview = URL.createObjectURL(file);
+          setVariations(copy);
+        }}
+      />
+
+      {v.preview && (
+        <img
+          src={v.preview}
+          className="w-32 h-32 object-cover rounded-lg"
+        />
+      )}
+    </div>
+  ))}
+
         </div>
 
-        {/* PRICING */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* PRICING — hidden for variable rentals */}
+{!(productType === "rental" && rentalSubType === "variable") && (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-      <div>
-  <label>Price Per Day</label>
-  <input
-    type="number"
-    className="w-full p-3 border border-gray-400 rounded-lg"
-    value={pricePerDay}
-    onChange={(e) => setPricePerDay(e.target.value)}
-    required
-  />
-</div>
+    <div>
+      <label>Price Per Day</label>
+      <input
+        type="number"
+        className="w-full p-3 border border-gray-400 rounded-lg"
+        value={pricePerDay}
+        onChange={(e) => setPricePerDay(e.target.value)}
+        required
+      />
+    </div>
 
-{/* Sale Price (optional) */}
-<div>
-  <label>Sale Price</label>
-  <input
-    type="number"
-    className="w-full p-3 border border-gray-400 rounded-lg"
-    value={salePrice}
-    onChange={(e) => setSalePrice(e.target.value)}
-    placeholder="Optional discounted price"
-    min="0"
-  />
-</div>
+    <div>
+      <label>Sale Price</label>
+      <input
+        type="number"
+        className="w-full p-3 border border-gray-400 rounded-lg"
+        value={salePrice}
+        onChange={(e) => setSalePrice(e.target.value)}
+        placeholder="Optional discounted price"
+        min="0"
+      />
+    </div>
 
-        
+    <div>
+      <label>Stock / Availability</label>
+      <input
+        type="number"
+        className="w-full p-3 border border-gray-400 rounded-lg"
+        value={availabilityCount}
+        onChange={(e) => setAvailabilityCount(e.target.value)}
+        min="1"
+      />
+    </div>
+  </div>
+)}
 
-          {/* Availability still shown (we can later decide how to use it for variable) */}
-          <div>
-            <label>Stock / Availability</label>
-            <input
-              type="number"
-              className="w-full p-3 border border-gray-400 rounded-lg"
-              value={availabilityCount}
-              onChange={(e) => setAvailabilityCount(e.target.value)}
-              min="1"
-            />
-          </div>
-
-          {productType === "rental" && (
-            <div className="mt-2">
-              <label className="font-medium">Show on Homepage Featured?</label>
-              <div className="flex items-center gap-3 mt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsFeatured(true)}
-                  className={`px-4 py-2 rounded-lg border ${isFeatured ? "bg-[#8B5C42] text-white border-[#8B5C42]" : "bg-white border-gray-300"
-                    }`}
-                >
-                  Yes
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsFeatured(false)}
-                  className={`px-4 py-2 rounded-lg border ${!isFeatured ? "bg-black text-white border-black" : "bg-white border-gray-300"
-                    }`}
-                >
-                  No
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Note: Only rental products can be featured. Max 8 items are shown on homepage.
-              </p>
-            </div>
-          )}
-
-        </div>
 
         {/* DYNAMIC ATTRIBUTES */}
         <div className="space-y-6">
@@ -971,21 +1119,23 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
       
       
 
-        {/* DIMENSIONS (OPTIONAL) */}
-        <div>
-          <label className="flex items-center gap-2">
-            Dimensions
-            <span className="text-xs text-gray-500">(optional)</span>
-          </label>
+       {/* DIMENSIONS — hidden for variable rentals */}
+{!(productType === "rental" && rentalSubType === "variable") && (
+  <div>
+    <label className="flex items-center gap-2">
+      Dimensions
+      <span className="text-xs text-gray-500">(optional)</span>
+    </label>
 
-          <input
-            type="text"
-            className="w-full p-3 border border-gray-300 rounded-lg"
-            value={dimensions}
-            onChange={(e) => setDimensions(e.target.value)}
-            placeholder="e.g. 6ft (H) × 4ft (W) × 2ft (D)"
-          />
-        </div>
+    <input
+      type="text"
+      className="w-full p-3 border border-gray-300 rounded-lg"
+      value={dimensions}
+      onChange={(e) => setDimensions(e.target.value)}
+      placeholder="e.g. 6ft (H) × 4ft (W) × 2ft (D)"
+    />
+  </div>
+)}
 
         {/* DESCRIPTION */}
         <div>
@@ -1003,6 +1153,8 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
         {/* IMAGES */}
         {/* IMAGES */}
         {/* IMAGES */}
+        {!(productType === "rental" && rentalSubType === "variable") && (
+
         <div>
           <label className="font-medium mb-2 block">
             Product Images <span className="text-sm text-gray-500">(max 8)</span>
@@ -1107,6 +1259,7 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
             </>
           )}
         </div>
+)}
 
 
 

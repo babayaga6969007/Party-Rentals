@@ -7,13 +7,15 @@ const cloudinary = require("../config/cloudinary");
 // Add Product (Admin Only)
 // ----------------------------------------------
 exports.addProduct = async (req, res) => {
+
+
   try {
     // 1️⃣ Upload images
 // 🔹 Separate base images and variation images (upload.fields())
 const baseImages = req.files?.images || [];
+// 1️⃣ Upload base images (ONLY for simple products)
+let uploadedImages = [];
 
-// Upload base images (simple product images)
-const uploadedImages = await uploadImagesToCloudinary(baseImages);
 
     // 2️⃣ Parse attributes & addons (from FormData JSON strings)
     let attributes = [];
@@ -31,7 +33,7 @@ const uploadedImages = await uploadImagesToCloudinary(baseImages);
         message: "Invalid attributes or addons format",
       });
     }
-const productSubType = "simple"; // force simple only
+
 
 
     // 3️⃣ Server-side validation for REQUIRED attributes
@@ -73,31 +75,103 @@ const {
   availabilityCount,
   tags,
 } = req.body;
+if (
+  productType === "rental" &&
+  !req.body.variations
+) {
+  const baseImages = req.files?.images || [];
+  uploadedImages = await uploadImagesToCloudinary(baseImages);
+}
+
+if (productType === "sale") {
+  const baseImages = req.files?.images || [];
+  uploadedImages = await uploadImagesToCloudinary(baseImages);
+}
+
+// 🔹 Determine subtype
+const productSubType =
+  productType === "rental" && req.body.variations
+    ? "variable"
+    : "simple";
+    
+if (productSubType === "variable") {
+  req.body.featured = false;
+}
+
+if (productSubType === "variable") {
+  req.body.pricePerDay = undefined;
+  req.body.availabilityCount = 0;
+}
+
+// 🔹 Parse variations
+let parsedVariations = [];
+
+if (productSubType === "variable") {
+  try {
+    parsedVariations = JSON.parse(req.body.variations || "[]");
+  } catch {
+    return res.status(400).json({ message: "Invalid variations format" });
+  }
+
+  if (parsedVariations.length === 0) {
+    return res.status(400).json({
+      message: "Variable rental must have at least one variation",
+    });
+  }
+}
+// ✅ FIX 1: Upload variation images (1 image per variation)
+const variationImagesMap = {};
+
+if (productSubType === "variable") {
+  for (let i = 0; i < parsedVariations.length; i++) {
+    const files = req.files?.[`variationImages_${i}`] || [];
+
+    // Your UI allows a single image per variation, so we take [0]
+    if (files.length > 0) {
+      const uploaded = await uploadImagesToCloudinary(files);
+      variationImagesMap[i] = uploaded[0]; // { public_id, url }
+    }
+  }
+}
+
+const finalVariations =
+  productSubType === "variable"
+    ? parsedVariations.map((v, i) => ({
+        dimension: v.dimension,
+        pricePerDay: Number(v.pricePerDay),
+        salePrice: v.salePrice ? Number(v.salePrice) : null,
+        stock: Number(v.stock),
+        image: variationImagesMap[i] || null,
+      }))
+    : [];
 
 const basePayload = {
   title,
   description,
-  dimensions: dimensions || "",
   category,
   productType,
   productSubType,
-  availabilityCount,
   tags,
-  featured: featuredFlag,
-  featuredAt: featuredFlag ? new Date() : null,
   attributes,
   addons,
-  images: uploadedImages,
+
+  dimensions: productSubType === "simple" ? dimensions : "",
+  availabilityCount:
+    productSubType === "simple" ? Number(availabilityCount) : 0,
+
+  images: productSubType === "simple" ? uploadedImages : [],
+  variations: finalVariations,
 };
-if (productType === "rental") {
+
+
+if (productType === "rental" && productSubType === "simple") {
   basePayload.pricePerDay = Number(pricePerDay);
 }
 
 if (productType === "sale") {
-  basePayload.price = Number(price);      // ✅ THIS WAS MISSING
+  basePayload.price = Number(price);
   basePayload.salePrice = salePrice ? Number(salePrice) : null;
 }
-
 
 const product = await Product.create(basePayload);
 
@@ -376,11 +450,31 @@ exports.getProducts = async (req, res) => {
   if (category) query.category = category;
 
   // Price Range (rental products)
-  if (minPrice || maxPrice) {
-    query.pricePerDay = {};
-    if (minPrice) query.pricePerDay.$gte = Number(minPrice);
-    if (maxPrice) query.pricePerDay.$lte = Number(maxPrice);
-  }
+  // Price Range (rental products)
+if (minPrice || maxPrice) {
+  query.$or = [
+    // Simple rental
+    {
+      productSubType: "simple",
+      pricePerDay: {
+        ...(minPrice && { $gte: Number(minPrice) }),
+        ...(maxPrice && { $lte: Number(maxPrice) }),
+      },
+    },
+    // Variable rental (check variations)
+    {
+      productSubType: "variable",
+      variations: {
+        $elemMatch: {
+          pricePerDay: {
+            ...(minPrice && { $gte: Number(minPrice) }),
+            ...(maxPrice && { $lte: Number(maxPrice) }),
+          },
+        },
+      },
+    },
+  ];
+}
 
   // Tags
   if (tags) {

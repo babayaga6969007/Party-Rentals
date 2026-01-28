@@ -74,7 +74,7 @@ const ProductVariationSchema = new mongoose.Schema(
     ],
 
     // Pricing (required)
-    price: {
+    pricePerDay: {
       type: Number,
       required: true,
       min: 0,
@@ -146,12 +146,21 @@ dimensions: {
       default: "rental",
       required: true,
     },
+    productSubType: {
+  type: String,
+  enum: ["simple", "variable"],
+  default: "simple",
+},
+
 
     /* PRICING */
 pricePerDay: {
   type: Number,
   required: function () {
-    return this.productType === "rental";
+    return (
+      this.productType === "rental" &&
+      this.productSubType === "simple"
+    );
   },
 },
 

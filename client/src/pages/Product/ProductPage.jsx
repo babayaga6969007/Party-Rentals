@@ -30,6 +30,10 @@ const ProductPage = () => {
   //  PRODUCT DATA (BACKEND)
   // ====================
   const { id } = useParams();
+// ====================
+// DIMENSION-BASED VARIATION (Rental Variable)
+// ====================
+const [selectedVariationIndex, setSelectedVariationIndex] = useState(0);
 
   const [openPricingChart, setOpenPricingChart] = useState(false);
   const [openShippingModal, setOpenShippingModal] = useState(false); // ✅ ADD THIS
@@ -288,26 +292,28 @@ const ProductPage = () => {
   }, [id]);
   // Auto-select first options for each group (only for variable rental)
   // ✅ Auto-select lowest priced variation (image + price + stock)
-  useEffect(() => {
-    if (!isVariableRental || !product?.variations?.length) {
-      setSelectedVariation(null);
-      setSelectedVarOptions({});
-      return;
-    }
+ useEffect(() => {
+  if (!isVariableRental || !product?.variations?.length) {
+    setSelectedVariation(null);
+    return;
+  }
 
-    const lowest = getLowestPriceVariation(product.variations);
-    if (!lowest) return;
+  const lowest = getLowestPriceVariation(product.variations);
+  const index = product.variations.findIndex(
+    (v) => v._id === lowest._id
+  );
 
-    // Build selectedVarOptions from that variation
-    const defaults = {};
-    (lowest.attributes || []).forEach((a) => {
-      defaults[String(a.groupId?._id || a.groupId)] =
-        String(a.optionId?._id || a.optionId);
-    });
+  setSelectedVariationIndex(index >= 0 ? index : 0);
+  setSelectedVariation(lowest);
+}, [isVariableRental, product]);
 
-    setSelectedVarOptions(defaults);
-    setSelectedVariation(lowest);
-  }, [isVariableRental, product]);
+// 🔄 Sync selectedVariation when index changes (dimension click)
+useEffect(() => {
+  if (!isVariableRental) return;
+
+  const vars = product?.variations || [];
+  setSelectedVariation(vars[selectedVariationIndex] || null);
+}, [selectedVariationIndex, product, isVariableRental]);
 
   // Find matching variation whenever selection changes
   useEffect(() => {
@@ -886,12 +892,37 @@ const ProductPage = () => {
             {product?.title || "—"}
           </h1>
 
-          {/* 📐 Variation Dimension (if exists) */}
-          {isVariableRental && selectedVariation?.dimension && (
-            <p className="text-sm text-gray-600 mb-3">
-              Dimension: <span className="font-medium">{selectedVariation.dimension}</span>
-            </p>
-          )}
+         {/* 📐 Dimension Selection (Variable Rental) */}
+{isVariableRental && product?.variations?.length > 0 && (
+  <div className="mt-4">
+    <p className="text-sm font-medium text-gray-700 mb-2">
+      Choose Dimension
+    </p>
+
+    <div className="flex flex-wrap gap-2">
+      {product.variations.map((v, i) => {
+        const selected = i === selectedVariationIndex;
+
+        return (
+          <button
+            key={v._id || i}
+            type="button"
+            onClick={() => setSelectedVariationIndex(i)}
+            className={`px-4 py-2 rounded-lg border text-sm transition
+              ${
+                selected
+                  ? "bg-black text-white border-black"
+                  : "bg-white border-gray-300 hover:bg-gray-50"
+              }
+            `}
+          >
+            {v.dimension}
+          </button>
+        );
+      })}
+    </div>
+  </div>
+)}
 
 
           {/* PRICE + STOCK (Responsive layout) */}
