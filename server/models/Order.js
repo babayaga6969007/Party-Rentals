@@ -41,6 +41,7 @@ const orderItemSchema = new mongoose.Schema(
       signageText: { type: String, default: "" },
       vinylColor: { type: String, default: "" },
       vinylHex: { type: String, default: "" },
+      vinylImageUrl: { type: String, default: "" },
       shelvingData: {
         tier: { type: String },
         size: { type: String },

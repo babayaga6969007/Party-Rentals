@@ -65,7 +65,7 @@ const BackgroundOptions = memo(({ onImageUpload }) => {
             value="color"
             checked={backgroundType === "color"}
             onChange={() => setBackgroundType("color")}
-            className="w-4 h-4 text-[#8B5C42]"
+            className="w-4 h-4 text-black"
           />
           <span className="text-sm text-gray-700">Color</span>
         </label>
@@ -76,7 +76,7 @@ const BackgroundOptions = memo(({ onImageUpload }) => {
             value="image"
             checked={backgroundType === "image"}
             onChange={() => setBackgroundType("image")}
-            className="w-4 h-4 text-[#8B5C42]"
+            className="w-4 h-4 text-black"
           />
           <span className="text-sm text-gray-700">Image</span>
         </label>
@@ -101,7 +101,7 @@ const BackgroundOptions = memo(({ onImageUpload }) => {
                   }}
                   className={`w-full h-10 rounded-lg border-2 transition overflow-hidden ${
                     backgroundGradient === gradient.value
-                      ? "border-[#8B5C42] ring-2 ring-[#8B5C42] ring-offset-1"
+                      ? "border-black ring-2 ring-black ring-offset-1"
                       : "border-gray-300 hover:border-gray-400"
                   }`}
                   style={{ background: gradient.value }}
@@ -157,8 +157,8 @@ const BackgroundOptions = memo(({ onImageUpload }) => {
                     onClick={() => handleDefaultImageSelect(img.path)}
                     className={`relative w-full h-20 rounded-lg overflow-hidden border-2 transition-all ${
                       isSelected
-                        ? "border-[#8B5C42] ring-2 ring-[#8B5C42] ring-offset-1"
-                        : "border-gray-300 hover:border-[#8B5C42]"
+                        ? "border-black ring-2 ring-black ring-offset-1"
+                        : "border-gray-300 hover:border-black"
                     }`}
                     title={img.name}
                   >
@@ -168,8 +168,8 @@ const BackgroundOptions = memo(({ onImageUpload }) => {
                       className="w-full h-full object-cover"
                     />
                     {isSelected && (
-                      <div className="absolute inset-0 bg-[#8B5C42]/30 flex items-center justify-center">
-                        <div className="bg-[#8B5C42] text-white rounded-full p-1">
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                        <div className="bg-black text-white rounded-full p-1">
                           <svg
                             className="w-4 h-4"
                             fill="currentColor"

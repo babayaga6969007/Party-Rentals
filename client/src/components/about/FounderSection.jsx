@@ -40,8 +40,8 @@ Elisamarie and Eddie
           />
 
           {/* Decorative Corners */}
-          <div className="absolute top-4 left-4 w-10 h-10 border-t-4 border-l-4 border-[#8B5C42] rounded-tl-lg"></div>
-          <div className="absolute bottom-4 right-4 w-10 h-10 border-b-4 border-r-4 border-[#8B5C42] rounded-br-lg"></div>
+          <div className="absolute top-4 left-4 w-10 h-10 border-t-4 border-l-4 border-black rounded-tl-lg"></div>
+          <div className="absolute bottom-4 right-4 w-10 h-10 border-b-4 border-r-4 border-black rounded-br-lg"></div>
         </div>
       </div>
     </section>

@@ -21,10 +21,12 @@ const Footer = () => {
             unforgettable experiences with style and convenience.
           </p>
 
-          <p className="mt-5 text-[#8B5C42] font-medium">
-          hello@newprojectdesigns.com
-
-          </p>
+          <a
+            href="mailto:hello@newprojectdesigns.com"
+            className="mt-5 block text-black font-medium hover:opacity-80"
+          >
+            hello@newprojectdesigns.com
+          </a>
 
           {/* Social Icons */}
           <div className="flex gap-4 mt-6 text-[#2D2926]">
@@ -44,10 +46,10 @@ const Footer = () => {
           </h3>
 
           <ul className="space-y-3 text-[#2D2926]/80">
-            <li className="hover:text-[#8B5C42] cursor-pointer">Backdrops</li>
-            <li className="hover:text-[#8B5C42] cursor-pointer">Lighting</li>
-            <li className="hover:text-[#8B5C42] cursor-pointer">Table Décor</li>
-            <li className="hover:text-[#8B5C42] cursor-pointer">Seating & Props</li>
+            <li className="hover:text-black cursor-pointer">Backdrops</li>
+            <li className="hover:text-black cursor-pointer">Lighting</li>
+            <li className="hover:text-black cursor-pointer">Table Décor</li>
+            <li className="hover:text-black cursor-pointer">Seating & Props</li>
           
           </ul>
         </div>
@@ -62,11 +64,11 @@ const Footer = () => {
           </h3>
 
           <ul className="space-y-3 text-[#2D2926]/80">
-            <li className="hover:text-[#8B5C42] cursor-pointer">About Us</li>
-            <li className="hover:text-[#8B5C42] cursor-pointer">FAQs</li>
-            <li className="hover:text-[#8B5C42] cursor-pointer">Contact Us</li>
+            <li className="hover:text-black cursor-pointer">About Us</li>
+            <li className="hover:text-black cursor-pointer">FAQs</li>
+            <li className="hover:text-black cursor-pointer">Contact Us</li>
             
-            <li className="hover:text-[#8B5C42] cursor-pointer">Terms & Policies</li>
+            <li className="hover:text-black cursor-pointer">Terms & Policies</li>
           </ul>
         </div>
 

@@ -2,11 +2,16 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 const CartContext = createContext(null);
 
-// 🔑 rental items must be uniquely identified by dates + addons
+// 🔑 rental items must be uniquely identified by dates + addons (including vinyl color vs image)
 const buildCartKey = (item) => {
   if (item.productType === "rental") {
     const addonKey = Array.isArray(item.addons)
-      ? item.addons.map((a) => a.optionId || a.name).join("|")
+      ? item.addons
+          .map(
+            (a) =>
+              `${a.optionId || a.name}:${a.vinylColor || ""}:${a.vinylImageUrl || ""}`
+          )
+          .join("|")
       : "";
     return `${item.productId}__${item.startDate}__${item.endDate}__${addonKey}`;
   }

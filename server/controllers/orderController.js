@@ -61,6 +61,7 @@ if (!customer?.addressLine) {
           signageText: addon.signageText || "",
           vinylColor: addon.vinylColor || "",
           vinylHex: addon.vinylHex || "",
+          vinylImageUrl: addon.vinylImageUrl || "",
           shelvingData: addon.shelvingData ? {
             tier: addon.shelvingData.tier || "",
             size: addon.shelvingData.size || "",

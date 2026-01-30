@@ -72,6 +72,10 @@ const [selectedVariationIndex, setSelectedVariationIndex] = useState(0);
   const [vinylColor, setVinylColor] = useState(""); // e.g. "red" OR "custom"
   const [vinylHex, setVinylHex] = useState("");     // only when custom
   const [vinylError, setVinylError] = useState("");
+  const [vinylImageFile, setVinylImageFile] = useState(null);
+  const [vinylImagePreview, setVinylImagePreview] = useState("");
+  const [vinylImageUrl, setVinylImageUrl] = useState(""); // Cloudinary URL after upload
+  const [vinylImageUploading, setVinylImageUploading] = useState(false);
 
   const [selectedAddons, setSelectedAddons] = useState({});
   // shape: { [optionId]: { name, price } }
@@ -641,6 +645,9 @@ useEffect(() => {
       setVinylColor("");
       setVinylHex("");
       setVinylError("");
+      setVinylImageFile(null);
+      setVinylImagePreview("");
+      setVinylImageUrl("");
     }
   }, [isVinylSelected]);
 
@@ -1346,6 +1353,9 @@ useEffect(() => {
                                 setVinylColor(c.id);
                                 setVinylHex("");
                                 setVinylError("");
+                                setVinylImageFile(null);
+                                setVinylImagePreview("");
+                                setVinylImageUrl("");
                               }}
                               title={c.label}
                               className={`w-9 h-9 rounded-full transition border border-black
@@ -1370,6 +1380,9 @@ useEffect(() => {
                             onClick={() => {
                               setVinylColor("custom");
                               setVinylError("");
+                              setVinylImageFile(null);
+                              setVinylImagePreview("");
+                              setVinylImageUrl("");
                             }}
                             className={`h-9 px-3 rounded-lg border text-sm font-medium transition
             ${vinylColor === "custom" ? "border-black ring-2 ring-black" : "border-gray-300"}
@@ -1407,6 +1420,56 @@ useEffect(() => {
                           </p>
                         </div>
                       )}
+
+                      {/* Or upload your own image */}
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <p className="text-sm font-medium text-gray-700 mb-2">
+                          Or upload your own design
+                        </p>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:font-medium file:text-gray-700 hover:file:bg-gray-200"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setVinylImageFile(file);
+                              setVinylImagePreview(URL.createObjectURL(file));
+                              setVinylImageUrl("");
+                              setVinylColor("");
+                              setVinylHex("");
+                              setVinylError("");
+                            } else {
+                              setVinylImageFile(null);
+                              setVinylImagePreview("");
+                              setVinylImageUrl("");
+                            }
+                          }}
+                        />
+                        {vinylImagePreview && (
+                          <div className="mt-3 flex items-center gap-3">
+                            <img
+                              src={vinylImagePreview}
+                              alt="Vinyl design preview"
+                              className="w-20 h-20 object-cover rounded border"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setVinylImageFile(null);
+                                setVinylImagePreview("");
+                                setVinylImageUrl("");
+                              }}
+                              className="text-sm text-red-600 hover:text-red-700"
+                            >
+                              Remove image
+                            </button>
+                          </div>
+                        )}
+                        <p className="mt-1 text-xs text-gray-500">
+                          Image is stored securely and used for your vinyl wrap only.
+                        </p>
+                      </div>
                     </div>
                   )}
 
@@ -1513,8 +1576,8 @@ useEffect(() => {
           {/* CONFIRM BOOKING BUTTON */}
           <button
             type="button"
-            disabled={!startDate || !endDate}
-            onClick={() => {
+            disabled={!startDate || !endDate || vinylImageUploading}
+            onClick={async () => {
               if (!startDate || !endDate) return;
               // 🚫 Variable rental must have a valid variation selected
               if (isVariableRental && !selectedVariation) {
@@ -1529,19 +1592,42 @@ useEffect(() => {
               }
               // ===== VINYL WRAP VALIDATION =====
               if (isVinylSelected) {
-                if (!vinylColor) {
-                  setVinylError("Please select a vinyl color.");
+                const hasColor = vinylColor && (vinylColor !== "custom" || /^#([0-9A-Fa-f]{6})$/.test(vinylHex.trim()));
+                const hasImage = vinylImageFile || vinylImageUrl;
+                if (!hasColor && !hasImage) {
+                  setVinylError("Please select a vinyl color or upload your own design.");
                   return;
                 }
-
                 if (vinylColor === "custom") {
                   const hex = vinylHex.trim();
                   const isValidHex = /^#([0-9A-Fa-f]{6})$/.test(hex);
-
-                  if (!isValidHex) {
+                  if (vinylColor && !isValidHex) {
                     setVinylError("Please enter a valid HEX code like #FF5733.");
                     return;
                   }
+                }
+              }
+
+              // ===== UPLOAD VINYL IMAGE IF SELECTED =====
+              let resolvedVinylImageUrl = vinylImageUrl;
+              if (isVinylSelected && vinylImageFile) {
+                try {
+                  setVinylImageUploading(true);
+                  setVinylError("");
+                  const formData = new FormData();
+                  formData.append("image", vinylImageFile);
+                  const res = await api("/upload/vinyl-image", {
+                    method: "POST",
+                    body: formData,
+                  });
+                  resolvedVinylImageUrl = res?.url || "";
+                  if (!resolvedVinylImageUrl) throw new Error("Upload did not return URL");
+                } catch (err) {
+                  setVinylError(err.message || "Failed to upload image. Please try again.");
+                  setVinylImageUploading(false);
+                  return;
+                } finally {
+                  setVinylImageUploading(false);
                 }
               }
 
@@ -1618,6 +1704,8 @@ useEffect(() => {
                     optionId === vinylOptionId ? vinylColor : "",
                   vinylHex:
                     optionId === vinylOptionId ? vinylHex : "",
+                  vinylImageUrl:
+                    optionId === vinylOptionId ? (resolvedVinylImageUrl || vinylImageUrl || "") : "",
                   shelvingData:
                     optionId === shelvingOptionId && a.shelvingData ? a.shelvingData : null,
                 })),
@@ -1646,7 +1734,9 @@ useEffect(() => {
               }
   `}
           >
-            {!startDate || !endDate
+            {vinylImageUploading
+              ? "Uploading image..."
+              : !startDate || !endDate
               ? "Select Event Dates to Continue"
               : "Confirm Booking"}
           </button>

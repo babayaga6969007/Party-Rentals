@@ -74,6 +74,7 @@ const signageConfigRoutes = require("./routes/signageConfigRoutes");
 const shelvingConfigRoutes = require("./routes/shelvingConfigRoutes");
 const shippingConfigRoutes = require("./routes/shippingConfigRoutes");
 const galleryRoutes = require("./routes/galleryRoutes");
+const uploadRoutes = require("./routes/uploadRoutes");
 
 /* =========================
    DATABASE
@@ -122,6 +123,9 @@ app.use("/api/shipping-config", shippingConfigRoutes);
 
 // 🖼️ Gallery (for signage and vinyl wraps images)
 app.use("/api/gallery", galleryRoutes);
+
+// 📤 Upload (vinyl image for cart)
+app.use("/api/upload", uploadRoutes);
 
 /* =========================
    404 HANDLER

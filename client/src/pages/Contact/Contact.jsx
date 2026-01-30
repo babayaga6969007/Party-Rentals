@@ -181,7 +181,7 @@ Suite A                <br />
         </div>
 
         {/* RIGHT SIDE — Contact Form */}
-<div className="p-8 bg-[#FAF7F5] border border-[#D9C7BE] rounded-2xl shadow-sm">
+<div className="p-8 bg-gray-50 border border-gray-200 rounded-2xl shadow-sm">
   
 
 <form className="space-y-6" onSubmit={handleSubmit}>
@@ -200,8 +200,8 @@ Suite A                <br />
       <label className="block mb-2 text-[#2D2926]">Your Name</label>
       <input
         name="name" type="text"
-        className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
-        focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
+        className="w-full p-3 rounded-lg border border-gray-300 bg-white 
+        focus:outline-none focus:ring-1 focus:ring-black/50"
         placeholder="Enter your name"
       />
     </div>
@@ -214,8 +214,8 @@ Suite A                <br />
   required
   value={email}
   onChange={(e) => setEmail(e.target.value)}
-  className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white 
-  focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50"
+  className="w-full p-3 rounded-lg border border-gray-300 bg-white 
+  focus:outline-none focus:ring-1 focus:ring-black/50"
   placeholder="Enter your email"
 />
 
@@ -232,7 +232,7 @@ Suite A                <br />
           focus:outline-none focus:ring-1
           ${email && confirmEmail && email !== confirmEmail
             ? "border-red-400 focus:ring-red-400/50"
-            : "border-[#D9C7BE] focus:ring-[#8B5C42]/50"}`}
+            : "border-gray-300 focus:ring-black/50"}`}
           placeholder="Re-enter your email"
         />
         {email && confirmEmail && email !== confirmEmail && (
@@ -250,7 +250,7 @@ Suite A                <br />
       <input
   name="title"
   type="text"
-  className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white"
+  className="w-full p-3 rounded-lg border border-gray-300 bg-white"
   placeholder="Enter message title"
 />
 
@@ -262,7 +262,7 @@ Suite A                <br />
       <textarea
   name="message"
   rows="4"
-  className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white"
+  className="w-full p-3 rounded-lg border border-gray-300 bg-white"
   placeholder="Write your message..."
 ></textarea>
 
@@ -293,7 +293,7 @@ Suite A                <br />
           Find Us on the Map
         </h2>
 
-        <div className="w-full h-[350px] rounded-xl overflow-hidden shadow-md border border-[#D9C7BE]">
+        <div className="w-full h-[350px] rounded-xl overflow-hidden shadow-md border border-gray-200">
           <iframe
             title="Google Map"
           src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3302.104085378176!2d-118.322553!3d34.1341157!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x80c2bf0caa18b9d9%3A0xe85dfb0c1dbd2f8b!2sHollywood%20Sign!5e0!3m2!1sen!2sus!4v1707733344444"
@@ -397,8 +397,8 @@ Suite A                <br />
         {/* Submit */}
         <button
           type="submit"
-          className="w-full bg-[#8B5C42] text-white py-3 rounded-lg
-          hover:bg-[#704A36] transition"
+          className="w-full bg-black text-white py-3 rounded-lg
+          hover:bg-gray-800 transition"
         >
           Send
         </button>

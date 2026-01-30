@@ -56,8 +56,8 @@ const BackgroundImageOptions = memo(({ cartItems }) => {
                   onClick={() => handleImageSelect(item.imageUrl)}
                   className={`relative w-16 h-16 rounded-full overflow-hidden border-2 transition-all ${
                     isSelected
-                      ? "border-[#8B5C42] ring-2 ring-[#8B5C42] ring-offset-1 scale-110"
-                      : "border-gray-300 hover:border-[#8B5C42] hover:scale-105"
+                      ? "border-black ring-2 ring-black ring-offset-1 scale-110"
+                      : "border-gray-300 hover:border-black hover:scale-105"
                   }`}
                   title={item.name}
                 >
@@ -67,8 +67,8 @@ const BackgroundImageOptions = memo(({ cartItems }) => {
                     className="w-full h-full object-cover"
                   />
                   {isSelected && (
-                    <div className="absolute inset-0 bg-[#8B5C42]/30 flex items-center justify-center">
-                      <div className="bg-[#8B5C42] text-white rounded-full p-1">
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                      <div className="bg-black text-white rounded-full p-1">
                         <svg
                           className="w-4 h-4"
                           fill="currentColor"

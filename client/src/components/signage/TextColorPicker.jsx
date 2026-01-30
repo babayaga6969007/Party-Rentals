@@ -41,7 +41,7 @@ const TextColorPicker = memo(() => {
               onClick={() => setSelectedTextColor(color.value)}
               className={`w-full h-10 rounded-lg border-2 transition ${
                 selectedTextColor.toUpperCase() === color.value.toUpperCase()
-                  ? "border-[#8B5C42] ring-2 ring-[#8B5C42] ring-offset-1"
+                  ? "border-black ring-2 ring-black ring-offset-1"
                   : "border-gray-300 hover:border-gray-400"
               }`}
               style={{ backgroundColor: color.value }}
