@@ -3,7 +3,7 @@ import NavbarTransparent from "../../components/layout/NavbarTransparent";
 import Hero from "../../components/home/Hero";
 import Partners from "../../components/home/Partners";
 import VideoSlider from "../../components/home/VideoSlider";
-import FeaturedProducts from "../../components/home/FeaturedProducts";
+
 
 
 
@@ -20,7 +20,7 @@ const Home = () => {
       {/* PARTNERS SECTION */}
       
       <Partners />
-      <FeaturedProducts />
+      
       <VideoSlider />
       
 
