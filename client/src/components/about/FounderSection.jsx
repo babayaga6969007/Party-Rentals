@@ -1,6 +1,6 @@
 const FounderSection = () => {
   return (
-    <section className="py-20 bg-[#FFF]">
+<section className="pt-0 pb-20 bg-[#FFF]">
       <div className="max-w-7xl mx-auto px-6 md:px-12 grid md:grid-cols-2 gap-12 items-center">
 
         {/* LEFT CONTENT */}
