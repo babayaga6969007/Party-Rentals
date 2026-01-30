@@ -39,11 +39,11 @@ const Testimonials = () => {
   const prev = () => setActive((prev) => (prev - 1 + testimonials.length) % testimonials.length);
 
   return (
-    <section className="py-20 bg-[#FFF7F0]">
+    <section className="py-20 bg-gray-50">
       
       {/* Heading */}
       <div className="text-center mb-12 px-4">
-        <p className="text-sm tracking-widest text-[#8B5C42] font-semibold">
+        <p className="text-sm tracking-widest text-black font-semibold">
           OUR CUSTOMERS
         </p>
         <h2
@@ -68,7 +68,7 @@ const Testimonials = () => {
             onClick={() => setActive(i)}
             className={`w-16 h-16 rounded-full object-cover cursor-pointer
               transition-all duration-300 border-2
-              ${active === i ? "border-[#8B5C42] scale-110" : "border-transparent opacity-60 hover:opacity-100"}`}
+              ${active === i ? "border-black scale-110" : "border-transparent opacity-60 hover:opacity-100"}`}
           />
         ))}
       </div>
@@ -79,21 +79,21 @@ const Testimonials = () => {
         {/* Arrows */}
         <button
           onClick={prev}
-          className="absolute -left-20 ml-4 top-1/2 -translate-y-1/2 bg-white shadow-md p-3 rounded-full text-[#8B5C42] hidden md:flex hover:bg-[#f5e9df]"
+          className="absolute -left-20 ml-4 top-1/2 -translate-y-1/2 bg-white shadow-md p-3 rounded-full text-black hidden md:flex hover:bg-gray-100"
         >
           <FiChevronLeft size={22} />
         </button>
 
         <button
           onClick={next}
-        className="absolute -right-20 mr-4 top-1/2 -translate-y-1/2 bg-white shadow-md p-3 rounded-full text-[#8B5C42] hidden md:flex hover:bg-[#f5e9df]"
+        className="absolute -right-20 mr-4 top-1/2 -translate-y-1/2 bg-white shadow-md p-3 rounded-full text-black hidden md:flex hover:bg-gray-100"
         >
           <FiChevronRight size={22} />
         </button>
 
         <div
           key={active}
-          className="bg-white rounded-2xl p-8 shadow-lg border border-[#EAD9C7] transition-all duration-500 animate-fadeIn"
+          className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200 transition-all duration-500 animate-fadeIn"
         >
           <div className="flex items-center gap-4 mb-4">
             <img

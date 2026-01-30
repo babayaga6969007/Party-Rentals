@@ -109,8 +109,8 @@ const FAQ = () => {
             }}
             className={`text-lg pb-2 transition-all ${
               activeTab === tab
-                ? "border-b-2 border-[#8B5C42] text-[#8B5C42]"
-                : "text-gray-500 hover:text-[#8B5C42]"
+                ? "border-b-2 border-black text-black"
+                : "text-gray-500 hover:text-black"
             }`}
           >
             {tab}
@@ -123,8 +123,7 @@ const FAQ = () => {
         {faqData[activeTab].map((item, i) => (
           <div
             key={i}
-            className="border rounded-xl p-5 cursor-pointer shadow-sm hover:shadow-md transition"
-            style={{ borderColor: "#E5D5C2" }}
+            className="border border-gray-200 rounded-xl p-5 cursor-pointer shadow-sm hover:shadow-md transition hover:border-gray-300"
             onClick={() => toggle(i)}
           >
             {/* Question row */}
@@ -134,9 +133,9 @@ const FAQ = () => {
               </h3>
 
               {openIndex === i ? (
-                <FiMinus className="text-[#8B5C42]" />
+                <FiMinus className="text-black" />
               ) : (
-                <FiPlus className="text-[#8B5C42]" />
+                <FiPlus className="text-black" />
               )}
             </div>
 
@@ -150,7 +149,7 @@ const FAQ = () => {
         ))}
       </div>
       {/* Bottom CTA */}
-<div className="mt-16 bg-[#F3E9DF] py-12 rounded-xl max-w-3xl mx-auto text-center">
+<div className="mt-16 bg-gray-100 py-12 rounded-xl max-w-3xl mx-auto text-center">
   <h3 className="text-2xl font-semibold text-[#2D2926]"
       style={{ fontFamily: '"Cormorant Garamond", serif' }}>
     Still need assistance?

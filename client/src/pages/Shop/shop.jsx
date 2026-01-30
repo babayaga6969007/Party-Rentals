@@ -261,7 +261,7 @@ const inTags =
         <div className="md:hidden mb-4">
           <button
             onClick={() => setMobileFiltersOpen((prev) => !prev)}
-            className="w-full py-3 bg-[#8B5C42] text-white rounded-lg font-medium"
+            className="w-full py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800"
           >
             {mobileFiltersOpen ? "Hide Filters" : "Show Filters"}
           </button>
@@ -276,7 +276,7 @@ const inTags =
 
           <aside
             className={`
-              bg-white rounded-2xl shadow-sm border border-[#EAD9C7] p-6
+              bg-white rounded-2xl shadow-sm border border-gray-200 p-6
               transition-all duration-300 overflow-hidden
               ${mobileFiltersOpen ? "max-h-[1400px] opacity-100 mb-4" : "max-h-0 opacity-0 mb-0"}
               md:max-h-none md:opacity-100 md:overflow-visible md:mb-0 md:sticky md:top-28
@@ -303,11 +303,11 @@ const inTags =
       )
     }
     className={`
-      px-3 py-1 rounded-full border text-sm transition
+      px-3 py-1 rounded-full border-2 text-sm transition
       ${
         selectedCategories.includes(String(cat._id))
-          ? "bg-[#8B5C42] text-white border-[#8B5C42]"
-          : "bg-white text-[#2D2926] border-gray-300"
+          ? "bg-black text-white border-black"
+          : "bg-white text-[#2D2926] border-gray-300 hover:border-gray-400"
       }
     `}
   >
@@ -430,11 +430,11 @@ width: `${((priceRange[1] - priceRange[0]) / PRICE_MAX) * 100}%`,
             key={opt._id}
             onClick={() => toggleTag(tag)}
             className={`
-              px-3 py-1 rounded-full border text-sm transition
+              px-3 py-1 rounded-full border-2 text-sm transition
               ${
                 selectedTags.includes(tag)
-                  ? "bg-[#8B5C42] text-white border-[#8B5C42]"
-                  : "bg-white text-[#2D2926] border-gray-300"
+                  ? "bg-black text-white border-black"
+                  : "bg-white text-[#2D2926] border-gray-300 hover:border-gray-400"
               }
             `}
           >
@@ -468,15 +468,15 @@ width: `${((priceRange[1] - priceRange[0]) / PRICE_MAX) * 100}%`,
     {/* Custom Signage Design Card - First Position */}
     <div
       className="
-        block border-2 border-[#8B5C42] 
+        block border-2 border-black
         rounded-xl shadow-lg
         transition-all duration-300 
         group hover:shadow-xl hover:scale-[1.02]
-        bg-gradient-to-br from-[#FFF7F0] to-[#FFE5D9]
+        bg-gradient-to-br from-gray-50 to-gray-100
       "
     >
       {/* IMAGE */}
-      <div className="h-40 rounded-t-xl overflow-hidden bg-gradient-to-br from-[#8B5C42] to-[#704A36] flex items-center justify-center">
+      <div className="h-40 rounded-t-xl overflow-hidden bg-gradient-to-br from-black to-gray-800 flex items-center justify-center">
         <div className="text-center text-white">
           <svg 
             className="w-12 h-12 mx-auto mb-1" 
@@ -508,7 +508,7 @@ width: `${((priceRange[1] - priceRange[0]) / PRICE_MAX) * 100}%`,
              transition-opacity duration-300">
           <button 
             onClick={() => navigate("/signage")}
-            className="w-full bg-[#8B5C42] text-white px-4 py-2 rounded-lg text-sm shadow-md hover:bg-[#704A36] transition"
+            className="w-full bg-black text-white px-4 py-2 rounded-lg text-sm shadow-md hover:bg-gray-800 transition"
           >
             Create Signage
           </button>
@@ -520,7 +520,7 @@ width: `${((priceRange[1] - priceRange[0]) / PRICE_MAX) * 100}%`,
     {loadingProducts ? (
       <div className="col-span-full flex items-center justify-center py-20">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B5C42] mb-4"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-black mb-4"></div>
           <p className="text-gray-600">Loading products...</p>
         </div>
       </div>

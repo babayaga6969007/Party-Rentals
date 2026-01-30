@@ -47,7 +47,7 @@ const TextSizeSelector = memo(() => {
             onClick={() => setSelectedSize(size.key)}
             className={`flex-1 px-3 py-2 rounded-lg border-2 transition text-sm ${
               selectedSize === size.key
-                ? "border-[#8B5C42] bg-[#FFF7F0] text-[#8B5C42] font-semibold"
+                ? "border-black bg-gray-100 text-black font-semibold"
                 : "border-gray-300 hover:border-gray-400"
             }`}
           >
@@ -55,7 +55,7 @@ const TextSizeSelector = memo(() => {
               <span>{size.label}</span>
               <span className={`text-xs mt-0.5 ${
                 selectedSize === size.key
-                  ? "text-[#8B5C42]"
+                  ? "text-black"
                   : "text-gray-500"
               }`}>
                 ${size.price || 0}

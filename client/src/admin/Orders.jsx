@@ -696,20 +696,50 @@ const Orders = () => {
                                     )}
 
                                     {/* Vinyl Wrap */}
-                                    {(addon.vinylColor || addon.vinylHex) && (
+                                    {(addon.vinylColor || addon.vinylHex || addon.vinylImageUrl) && (
                                       <div className="mt-2 text-xs">
-                                        <span className="font-medium text-gray-700">Vinyl Color:</span>
-                                        <div className="flex items-center gap-2 mt-1">
-                                          {addon.vinylHex && (
-                                            <span
-                                              className="inline-block w-5 h-5 rounded border border-gray-400"
-                                              style={{ backgroundColor: addon.vinylHex }}
-                                            ></span>
-                                          )}
-                                          <span className="text-gray-600">
-                                            {addon.vinylColor === "custom" ? `Custom (${addon.vinylHex})` : addon.vinylColor}
-                                          </span>
-                                        </div>
+                                        {addon.vinylImageUrl ? (
+                                          <>
+                                            <span className="font-medium text-gray-700 block mb-1">Vinyl Design (image):</span>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              <img
+                                                src={addon.vinylImageUrl}
+                                                alt="Vinyl design"
+                                                className="w-16 h-16 object-cover rounded border border-gray-300"
+                                              />
+                                              <a
+                                                href={addon.vinylImageUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1 px-2 py-1.5 bg-gray-100 hover:bg-gray-200 rounded text-gray-700 text-xs font-medium"
+                                              >
+                                                Open in new tab
+                                              </a>
+                                              <a
+                                                href={addon.vinylImageUrl}
+                                                download
+                                                className="inline-flex items-center gap-1 px-2 py-1.5 bg-black text-white rounded text-xs font-medium hover:bg-gray-800"
+                                              >
+                                                Download image
+                                              </a>
+                                            </div>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <span className="font-medium text-gray-700">Vinyl Color:</span>
+                                            <div className="flex items-center gap-2 mt-1">
+                                              {addon.vinylHex && (
+                                                <span
+                                                  className="inline-block w-5 h-5 rounded border border-gray-400"
+                                                  style={{ backgroundColor: addon.vinylHex }}
+                                                ></span>
+                                              )}
+                                              <span className="text-gray-600">
+                                                {addon.vinylColor === "custom" ? `Custom (${addon.vinylHex})` : addon.vinylColor}
+                                              </span>
+                                            </div>
+                                          </>
+                                        )}
                                       </div>
                                     )}
 

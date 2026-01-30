@@ -71,55 +71,60 @@ const cardWidth = window.innerWidth < 768 ? 300 : 284;
         </p>
       </div>
 
-      {/* Arrows */}
-      <button
-        onClick={prev}
-      className="hidden md:flex absolute left-20 top-1/2 -translate-y-1/2 z-20 bg-[#8B5C42] p-4 rounded-full text-white shadow-lg hover:bg-[#704A36]"
-      >
-        <FiChevronLeft size={24} />
-      </button>
-
-      <button
-        onClick={next}
-  className="hidden md:flex absolute right-20 top-1/2 -translate-y-1/2 z-20 bg-[#8B5C42] p-4 rounded-full text-white shadow-lg hover:bg-[#704A36]"
-      >
-        <FiChevronRight size={24} />
-      </button>
-
-      {/* Slider with margins */}
-      <div className="max-w-[1136px] mx-auto overflow-hidden">
-
-        {/* SLIDER TRACK */}
-        <div
-          ref={trackRef}
-          className="flex"
-          style={{
-            transform: `translateX(-${index * cardWidth}px)`,
-          }}
+      {/* Arrows outside slider: [left arrow] [slider] [right arrow] */}
+      <div className="flex items-center justify-center gap-4 md:gap-6 w-full max-w-[1200px] mx-auto px-4">
+        {/* Left arrow – outside, no overlap */}
+        <button
+          type="button"
+          onClick={prev}
+          className="hidden md:flex flex-shrink-0 w-12 h-12 bg-black text-white rounded-full shadow-lg hover:bg-gray-800 items-center justify-center"
+          aria-label="Previous"
         >
-          {videos.map((video, i) => (
-            <div
-              key={i}
-                className="w-[260px] h-[400px] mx-3 flex-shrink-0 rounded-xl overflow-hidden shadow-lg"
-            >
-              <a
-              href={instaLinks[i % instaLinks.length]}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <video
-                src={video}
-                autoPlay
-                muted
-                loop
-                playsInline
-                className="w-full h-full object-cover cursor-pointer"
-              />
-            </a>
+          <FiChevronLeft size={24} />
+        </button>
 
-            </div>
-          ))}
+        {/* Slider only – no arrow overlap */}
+        <div className="flex-1 min-w-0 overflow-hidden max-w-[1136px]">
+          <div
+            ref={trackRef}
+            className="flex transition-transform duration-300 ease-out"
+            style={{
+              transform: `translateX(-${index * cardWidth}px)`,
+            }}
+          >
+            {videos.map((video, i) => (
+              <div
+                key={i}
+                className="w-[260px] h-[400px] mx-3 flex-shrink-0 rounded-xl overflow-hidden shadow-lg"
+              >
+                <a
+                  href={instaLinks[i % instaLinks.length]}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <video
+                    src={video}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="w-full h-full object-cover cursor-pointer"
+                  />
+                </a>
+              </div>
+            ))}
+          </div>
         </div>
+
+        {/* Right arrow – outside, no overlap */}
+        <button
+          type="button"
+          onClick={next}
+          className="hidden md:flex flex-shrink-0 w-12 h-12 bg-black text-white rounded-full shadow-lg hover:bg-gray-800 items-center justify-center"
+          aria-label="Next"
+        >
+          <FiChevronRight size={24} />
+        </button>
       </div>
     </section>
   );

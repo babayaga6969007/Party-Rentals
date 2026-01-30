@@ -108,7 +108,7 @@ const iconHoverClass =
     `group relative transition-all duration-200
      ${
        scrolled
-         ? "text-[#2D2926] hover:text-[#8B5C42]"
+         ? "text-[#2D2926] hover:text-black"
          : "text-white hover:text-gray-200"
      }
      ${isActive ? "font-semibold" : ""}
@@ -120,7 +120,7 @@ const iconHoverClass =
               <span className="relative">
   {item.label}
   <span
-    className={`absolute left-0 -bottom-1 h-[2px] w-0 bg-[#8B5C42]
+    className={`absolute left-0 -bottom-1 h-[2px] w-0 bg-black
       transition-all duration-300
       group-hover:w-full`}
   />

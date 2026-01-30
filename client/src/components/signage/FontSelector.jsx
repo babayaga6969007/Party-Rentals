@@ -20,7 +20,7 @@ const FontSelector = memo(() => {
               onClick={() => setSelectedFont(font.value)}
               className={`shrink-0 px-4 py-3 rounded-lg border-2 transition ${
                 selectedFont === font.value
-                  ? "border-[#8B5C42] bg-[#FFF7F0]"
+                  ? "border-black bg-gray-100"
                   : "border-gray-300 hover:border-gray-400"
               }`}
               style={{ fontFamily: font.value }}

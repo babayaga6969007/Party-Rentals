@@ -15,7 +15,7 @@ const SignageControls = memo(({ isSharedView, onAddToCart, isAddingToCart, produ
           className="text-4xl font-bold"
           style={{
             fontFamily: "'Sloop Script Three', cursive",
-            color: "#8B5C42",
+            color: "black",
             textShadow: "2px 2px 4px rgba(0,0,0,0.1)",
             letterSpacing: "0.05em",
           }}
@@ -48,7 +48,7 @@ const SignageControls = memo(({ isSharedView, onAddToCart, isAddingToCart, produ
                   navigate("/shop");
                 }
               }}
-              className="w-full mt-3 px-4 py-3 bg-[#8B5C42] text-white rounded-lg hover:bg-[#704A36]"
+              className="w-full mt-3 px-4 py-3 bg-black text-white rounded-lg hover:bg-gray-800"
             >
               View Product
             </button>

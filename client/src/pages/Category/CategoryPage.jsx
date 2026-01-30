@@ -351,12 +351,12 @@ return inCategory && inPrice && inTags;
             >
               <div
                 className={`
-                  w-20 h-20 rounded-full overflow-hidden shadow-md border-2
+                  w-20 h-20 rounded-full overflow-hidden shadow-md
                   transition-all duration-300
                   ${
                     selectedCategories.includes(cat.value)
-                      ? "border-[#8B5C42] scale-110"
-                      : "border-transparent group-hover:border-gray-300"
+                      ? "border-[3px] border-black scale-110"
+                      : "border-2 border-transparent group-hover:border-gray-300"
                   }
                 `}
               >
@@ -368,7 +368,7 @@ return inCategory && inPrice && inTags;
 
               </div>
 
-              <span className="mt-2 text-xs text-[#2D2926] group-hover:text-[#8B5C42]">
+              <span className="mt-2 text-xs text-[#2D2926] group-hover:text-black">
                 {cat.label}
               </span>
             </button>
@@ -514,11 +514,11 @@ return inCategory && inPrice && inTags;
             key={tag}
             onClick={() => toggleTag(tag)}
             className={`
-              px-3 py-1 rounded-full border text-sm transition
+              px-3 py-1.5 rounded-full text-sm font-medium transition
               ${
                 selectedTags.includes(tag)
-                  ? "bg-[#8B5C42] text-white border-[#8B5C42]"
-                  : "bg-white text-[#2D2926] border-gray-300"
+                  ? "bg-black text-white border-2 border-black ring-2 ring-black ring-offset-1"
+                  : "bg-white text-[#2D2926] border-2 border-gray-300 hover:border-gray-400"
               }
             `}
           >

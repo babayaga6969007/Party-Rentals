@@ -418,7 +418,7 @@ const SignageEditorContent = () => {
                   </h3>
                   <div className="text-right">
                     <div className="text-sm text-gray-500">Price</div>
-                    <div className="text-xl font-bold text-[#8B5C42]">
+                    <div className="text-xl font-bold text-black">
                       ${currentPrice || 0}
                     </div>
                   </div>
