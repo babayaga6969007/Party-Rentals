@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "./AdminLayout";
 
 import {
@@ -19,6 +19,10 @@ import {
   Area,
 } from "recharts";
 
+// ✅ SAME api util used in your working Orders page
+// If your path differs, change only this line.
+import { api } from "../utils/api";
+
 const CURRENCY = (n) =>
   new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(
     Number(n || 0)
@@ -33,67 +37,6 @@ const addDaysISO = (baseISO, delta) => {
   return d.toISOString().slice(0, 10);
 };
 
-const DEMO = {
-  // daily sales (mix of rental + shop)
-  daily: [
-    { date: "2025-11-20", revenue: 980, orders: 2, aov: 490, rentals: 1, shop: 1 },
-    { date: "2025-11-21", revenue: 1460, orders: 3, aov: 486, rentals: 2, shop: 1 },
-    { date: "2025-11-22", revenue: 2100, orders: 4, aov: 525, rentals: 3, shop: 1 },
-    { date: "2025-11-23", revenue: 1600, orders: 3, aov: 533, rentals: 2, shop: 1 },
-    { date: "2025-11-24", revenue: 2450, orders: 5, aov: 490, rentals: 4, shop: 1 },
-    { date: "2025-11-25", revenue: 3100, orders: 6, aov: 517, rentals: 4, shop: 2 },
-    { date: "2025-11-26", revenue: 2750, orders: 5, aov: 550, rentals: 3, shop: 2 },
-    { date: "2025-11-27", revenue: 3600, orders: 7, aov: 514, rentals: 5, shop: 2 },
-    { date: "2025-11-28", revenue: 4200, orders: 8, aov: 525, rentals: 6, shop: 2 },
-    { date: "2025-11-29", revenue: 3900, orders: 7, aov: 557, rentals: 5, shop: 2 },
-    { date: "2025-11-30", revenue: 4700, orders: 9, aov: 522, rentals: 7, shop: 2 },
-    { date: "2025-12-01", revenue: 5200, orders: 10, aov: 520, rentals: 7, shop: 3 },
-    { date: "2025-12-02", revenue: 4850, orders: 9, aov: 539, rentals: 6, shop: 3 },
-    { date: "2025-12-03", revenue: 6100, orders: 12, aov: 508, rentals: 9, shop: 3 },
-  ],
-
-  categoryRevenue: [
-    { name: "Backdrops", value: 9800 },
-    { name: "Furniture", value: 7200 },
-    { name: "Lights", value: 4600 },
-    { name: "Photo Props", value: 3200 },
-    { name: "Balloon Stands", value: 2500 },
-    { name: "Tables", value: 4100 },
-  ],
-
-  topProducts: [
-    { name: "Backdrop Arch (Rental)", revenue: 5400, orders: 12, avgDays: 3.2 },
-    { name: "Luxury Sofa Set (Rental)", revenue: 4200, orders: 6, avgDays: 2.7 },
-    { name: "LED Fairy Lights (Shop)", revenue: 2600, orders: 18, avgDays: 0 },
-    { name: "Wedding Floral Stand (Rental)", revenue: 2200, orders: 4, avgDays: 2.5 },
-    { name: "Cocktail Table Set (Rental)", revenue: 1900, orders: 5, avgDays: 1.8 },
-  ],
-
-  channelMix: [
-    { name: "Direct", orders: 18, revenue: 9800 },
-    { name: "Instagram", orders: 12, revenue: 6200 },
-    { name: "Referral", orders: 7, revenue: 3100 },
-    { name: "Google", orders: 6, revenue: 2600 },
-  ],
-
-  orderPipeline: [
-    { stage: "Enquiries", count: 120 },
-    { stage: "Quoted", count: 78 },
-    { stage: "Booked", count: 44 },
-    { stage: "Delivered", count: 32 },
-    { stage: "Completed", count: 28 },
-  ],
-
-  // “rental ops” style metrics
-  utilization: [
-    { week: "W1", utilization: 54 },
-    { week: "W2", utilization: 61 },
-    { week: "W3", utilization: 66 },
-    { week: "W4", utilization: 72 },
-    { week: "W5", utilization: 69 },
-  ],
-};
-
 const PIE_COLORS = ["#8B5C42", "#2D2926", "#CFAF9B", "#EAD9C7", "#A77C63", "#6B5B53"];
 
 function inRange(d, start, end) {
@@ -104,66 +47,365 @@ function inRange(d, start, end) {
   return t >= s && t <= e;
 }
 
+const getAdminToken = () => localStorage.getItem("admin_token") || "";
+
+// Normalize order to safe numbers
+const getOrderTotal = (order) => Number(order?.pricing?.total || 0);
+const getOrderDateISO = (order) => {
+  const dt = order?.createdAt ? new Date(order.createdAt) : new Date();
+  return dt.toISOString().slice(0, 10);
+};
+
+const normalizeType = (t) => String(t || "").toLowerCase();
+
+// What counts as "rental" vs "shop" in reports
+const isRentalItem = (item) => normalizeType(item?.productType) === "rental";
+
+// I’m treating purchase + signage as “Shop” since your Orders page distinguishes them similarly :contentReference[oaicite:4]{index=4}
+const isShopItem = (item) => {
+  const t = normalizeType(item?.productType);
+  return t === "purchase" || t === "signage";
+};
+
+// Allocate revenue by item line totals (fallback to proportional if line totals missing)
+const splitOrderRevenue = (order) => {
+  const items = Array.isArray(order?.items) ? order.items : [];
+  const total = getOrderTotal(order);
+
+  let rentalLine = 0;
+  let shopLine = 0;
+  let allLine = 0;
+
+  for (const it of items) {
+    const line = Number(it?.lineTotal || 0);
+    allLine += line;
+    if (isRentalItem(it)) rentalLine += line;
+    if (isShopItem(it)) shopLine += line;
+  }
+
+  // If line totals exist, use them; else fallback to "whole order goes to whichever type exists"
+  if (allLine > 0) {
+    const rentalRevenue = (rentalLine / allLine) * total;
+    const shopRevenue = (shopLine / allLine) * total;
+    return { rentalRevenue, shopRevenue };
+  }
+
+  const hasRental = items.some(isRentalItem);
+  const hasShop = items.some(isShopItem);
+
+  if (hasRental && !hasShop) return { rentalRevenue: total, shopRevenue: 0 };
+  if (!hasRental && hasShop) return { rentalRevenue: 0, shopRevenue: total };
+
+  // mixed but no line totals => split 50/50
+  return { rentalRevenue: total / 2, shopRevenue: total / 2 };
+};
+
 const SalesReports = () => {
-const [startDate, setStartDate] = useState(addDaysISO(todayISO(), -30));
+  const [startDate, setStartDate] = useState(addDaysISO(todayISO(), -30));
   const [endDate, setEndDate] = useState(todayISO());
   const [view, setView] = useState("All"); // All | Rental | Shop
 
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+  const [orders, setOrders] = useState([]);
+const [products, setProducts] = useState([]);
+
+  // ---------------------------
+  // FETCH REAL DATA (ADMIN)
+  // GET /orders/admin/all
+  // ---------------------------
+  const fetchProducts = async () => {
+  try {
+    const res = await api("/products", { method: "GET" });
+    setProducts(res?.products || res || []);
+  } catch (e) {
+    console.error("Failed to fetch products", e);
+    setProducts([]);
+  }
+};
+
+const fetchOrders = async () => {
+  try {
+    setLoading(true);
+    setErr("");
+
+    const token = getAdminToken();
+
+    const res = await api(`/orders/admin/all?page=1&limit=1000`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const serverOrders = res?.orders || [];
+    setOrders(serverOrders);
+  } catch (e) {
+    console.error(e);
+    setErr(e?.message || "Failed to fetch orders");
+    setOrders([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
+ useEffect(() => {
+  fetchOrders();
+  fetchProducts();
+  // eslint-disable-next-line
+}, []);
+
+  // ---------------------------
+  // BUILD DAILY SERIES FROM ORDERS
+  // ---------------------------
+  const dailyFromOrders = useMemo(() => {
+    // exclude cancelled by default (common reporting expectation)
+    const validOrders = (orders || []).filter((o) => String(o?.orderStatus || "") !== "cancelled");
+
+    // group by date
+    const byDate = new Map();
+
+    for (const o of validOrders) {
+      const date = getOrderDateISO(o);
+
+      if (!byDate.has(date)) {
+        byDate.set(date, {
+          date,
+          revenueAll: 0,
+          ordersAll: 0,
+          rentalRevenue: 0,
+          rentalOrders: 0,
+          shopRevenue: 0,
+          shopOrders: 0,
+        });
+      }
+
+      const bucket = byDate.get(date);
+      const total = getOrderTotal(o);
+
+      bucket.revenueAll += total;
+      bucket.ordersAll += 1;
+
+      const { rentalRevenue, shopRevenue } = splitOrderRevenue(o);
+
+      const hasRental = rentalRevenue > 0.0001;
+      const hasShop = shopRevenue > 0.0001;
+
+      bucket.rentalRevenue += rentalRevenue;
+      bucket.shopRevenue += shopRevenue;
+
+      if (hasRental) bucket.rentalOrders += 1;
+      if (hasShop) bucket.shopOrders += 1;
+    }
+
+    // sort chronologically
+    const rows = Array.from(byDate.values()).sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    // convert to chart-friendly shape
+    return rows.map((r) => ({
+      date: r.date,
+      revenue: Math.round(r.revenueAll),
+      orders: r.ordersAll,
+      aov: r.ordersAll ? Math.round(r.revenueAll / r.ordersAll) : 0,
+      rentals: r.rentalOrders,
+      shop: r.shopOrders,
+      rentalRevenue: Math.round(r.rentalRevenue),
+      shopRevenue: Math.round(r.shopRevenue),
+    }));
+  }, [orders]);
+
+  // ---------------------------
+  // APPLY DATE RANGE + VIEW (All/Rental/Shop)
+  // ---------------------------
   const filteredDaily = useMemo(() => {
-    const base = DEMO.daily.filter((x) => inRange(x.date, startDate, endDate));
+    const base = dailyFromOrders.filter((x) => inRange(x.date, startDate, endDate));
+
     if (view === "All") return base;
+
     if (view === "Rental") {
-      // keep revenue but focus rentals; we’ll recompute revenue proxy for demo
       return base.map((x) => ({
         ...x,
-        revenue: Math.round((x.revenue * x.rentals) / Math.max(1, x.orders)),
+        revenue: x.rentalRevenue,
         orders: x.rentals,
-        aov: x.rentals ? Math.round(((x.revenue * x.rentals) / Math.max(1, x.orders)) / x.rentals) : 0,
+        aov: x.rentals ? Math.round(x.rentalRevenue / x.rentals) : 0,
       }));
     }
+
     // Shop
     return base.map((x) => ({
       ...x,
-      revenue: Math.round((x.revenue * x.shop) / Math.max(1, x.orders)),
+      revenue: x.shopRevenue,
       orders: x.shop,
-      aov: x.shop ? Math.round(((x.revenue * x.shop) / Math.max(1, x.orders)) / x.shop) : 0,
+      aov: x.shop ? Math.round(x.shopRevenue / x.shop) : 0,
     }));
-  }, [startDate, endDate, view]);
+  }, [dailyFromOrders, startDate, endDate, view]);
 
+  // ---------------------------
+  // KPI CALCS (with previous-period comparison)
+  // ---------------------------
   const kpis = useMemo(() => {
-    const revenue = filteredDaily.reduce((s, x) => s + x.revenue, 0);
-    const orders = filteredDaily.reduce((s, x) => s + x.orders, 0);
-    const aov = orders ? revenue / orders : 0;
+    const revenue = filteredDaily.reduce((s, x) => s + Number(x.revenue || 0), 0);
+    const ordersCount = filteredDaily.reduce((s, x) => s + Number(x.orders || 0), 0);
+    const aov = ordersCount ? revenue / ordersCount : 0;
 
-    // compare to previous period (same length) for “trend”
+    // compare to previous period (same number of days)
     const days = Math.max(1, filteredDaily.length);
     const prevStart = addDaysISO(startDate, -days);
     const prevEnd = addDaysISO(endDate, -days);
-    const prev = DEMO.daily.filter((x) => inRange(x.date, prevStart, prevEnd));
 
-    const prevRevenue = prev.reduce((s, x) => s + x.revenue, 0);
-    const prevOrders = prev.reduce((s, x) => s + x.orders, 0);
+    const prevBase = dailyFromOrders
+      .filter((x) => inRange(x.date, prevStart, prevEnd))
+      .map((x) => {
+        if (view === "All") return { revenue: x.revenue, orders: x.orders };
+        if (view === "Rental") return { revenue: x.rentalRevenue, orders: x.rentals };
+        return { revenue: x.shopRevenue, orders: x.shop };
+      });
+
+    const prevRevenue = prevBase.reduce((s, x) => s + Number(x.revenue || 0), 0);
+    const prevOrders = prevBase.reduce((s, x) => s + Number(x.orders || 0), 0);
 
     const revChange = prevRevenue ? ((revenue - prevRevenue) / prevRevenue) * 100 : 0;
-    const orderChange = prevOrders ? ((orders - prevOrders) / prevOrders) * 100 : 0;
+    const orderChange = prevOrders ? ((ordersCount - prevOrders) / prevOrders) * 100 : 0;
 
-    // rental utilization proxy
-    const util = DEMO.utilization.reduce((s, x) => s + x.utilization, 0) / DEMO.utilization.length;
+    // Utilization: you don’t have this in backend yet, so keep a neutral computed proxy
+    // Proxy = % of days in range that had at least 1 rental order (only meaningful for Rental/All)
+    const daysWithRental = filteredDaily.filter((d) => Number(d.rentals || 0) > 0).length;
+    const util = filteredDaily.length ? (daysWithRental / filteredDaily.length) * 100 : 0;
 
-    return {
-      revenue,
-      orders,
-      aov,
-      revChange,
-      orderChange,
-      util,
+    return { revenue, orders: ordersCount, aov, revChange, orderChange, util };
+  }, [filteredDaily, startDate, endDate, dailyFromOrders, view]);
+
+  // ---------------------------
+  // TOP PRODUCTS TABLE (REAL)
+  // based on items[].name + lineTotal + days
+  // ---------------------------
+  const topProducts = useMemo(() => {
+    const validOrders = (orders || []).filter((o) => String(o?.orderStatus || "") !== "cancelled");
+
+    const map = new Map();
+
+    for (const o of validOrders) {
+      const orderDate = getOrderDateISO(o);
+      if (!inRange(orderDate, startDate, endDate)) continue;
+
+      for (const it of o.items || []) {
+        // view filter: All / Rental / Shop
+        if (view === "Rental" && !isRentalItem(it)) continue;
+        if (view === "Shop" && !isShopItem(it)) continue;
+
+        const name = it?.name || "Unnamed item";
+        const line = Number(it?.lineTotal || 0);
+        const days = Number(it?.days || 0);
+
+        if (!map.has(name)) {
+          map.set(name, { name, revenue: 0, orders: 0, daysTotal: 0, daysCount: 0 });
+        }
+        const row = map.get(name);
+        row.revenue += line;
+        row.orders += 1;
+        if (days > 0) {
+          row.daysTotal += days;
+          row.daysCount += 1;
+        }
+      }
+    }
+
+    const arr = Array.from(map.values())
+      .map((x) => ({
+        name: x.name,
+        revenue: Math.round(x.revenue),
+        orders: x.orders,
+        avgDays: x.daysCount ? x.daysTotal / x.daysCount : 0,
+      }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 10);
+
+    return arr;
+  }, [orders, startDate, endDate, view]);
+
+const categoryRevenue = useMemo(() => {
+  if (!products.length) return [];
+
+  // Build productId → categoryName map
+  const productCategoryMap = new Map();
+  for (const p of products) {
+    const catName =
+      typeof p.category === "object"
+        ? p.category.name
+        : p.category || "Uncategorized";
+
+    productCategoryMap.set(String(p._id), catName);
+  }
+
+  const buckets = new Map();
+
+  const validOrders = (orders || []).filter(
+    (o) => String(o?.orderStatus || "") !== "cancelled"
+  );
+
+  for (const o of validOrders) {
+    const orderDate = getOrderDateISO(o);
+    if (!inRange(orderDate, startDate, endDate)) continue;
+
+    for (const it of o.items || []) {
+      if (view === "Rental" && !isRentalItem(it)) continue;
+      if (view === "Shop" && !isShopItem(it)) continue;
+
+      const category =
+        productCategoryMap.get(String(it.productId)) || "Uncategorized";
+
+      const value = Number(it?.lineTotal || 0);
+      buckets.set(category, (buckets.get(category) || 0) + value);
+    }
+  }
+
+  return Array.from(buckets.entries())
+    .map(([name, value]) => ({
+      name,
+      value: Math.round(value),
+    }))
+    .sort((a, b) => b.value - a.value);
+}, [orders, products, startDate, endDate, view]);
+
+
+  // ---------------------------
+  // PIPELINE (REAL) using orderStatus counts (since Enquiry/Quoted don’t exist in schema) :contentReference[oaicite:7]{index=7}
+  // ---------------------------
+  const orderPipeline = useMemo(() => {
+    const validOrders = (orders || []).filter((o) => {
+      const orderDate = getOrderDateISO(o);
+      return inRange(orderDate, startDate, endDate);
+    });
+
+    const stages = ["pending", "confirmed", "dispatched", "completed", "cancelled"];
+    const labels = {
+      pending: "Pending",
+      confirmed: "Confirmed",
+      dispatched: "Dispatched",
+      completed: "Completed",
+      cancelled: "Cancelled",
     };
-  }, [filteredDaily, startDate, endDate]);
 
+    const counts = {};
+    for (const s of stages) counts[s] = 0;
+
+    for (const o of validOrders) {
+      const st = String(o?.orderStatus || "pending");
+      if (counts[st] === undefined) counts[st] = 0;
+      counts[st] += 1;
+    }
+
+    return stages.map((s) => ({ stage: labels[s] || s, count: counts[s] || 0 }));
+  }, [orders, startDate, endDate]);
+
+  // ---------------------------
+  // INSIGHTS (REAL from filteredDaily)
+  // ---------------------------
   const insights = useMemo(() => {
-    if (filteredDaily.length === 0) return [];
-    const bestDay = [...filteredDaily].sort((a, b) => b.revenue - a.revenue)[0];
-    const worstDay = [...filteredDaily].sort((a, b) => a.revenue - b.revenue)[0];
+    if (filteredDaily.length === 0) return ["No data in this date range."];
+
+    const bestDay = [...filteredDaily].sort((a, b) => (b.revenue || 0) - (a.revenue || 0))[0];
+    const worstDay = [...filteredDaily].sort((a, b) => (a.revenue || 0) - (b.revenue || 0))[0];
 
     const growthHint =
       kpis.revChange >= 0
@@ -172,22 +414,36 @@ const [startDate, setStartDate] = useState(addDaysISO(todayISO(), -30));
 
     const aovHint =
       kpis.aov >= 500
-        ? "AOV is strong — consider bundle upsells to keep it above $500."
-        : "AOV is below $500 — add bundles (Backdrop + Lights) and minimum rental days.";
+        ? "AOV is strong — keep pushing bundles and add-ons."
+        : "AOV is below $500 — consider bundles and minimum rental days.";
 
     return [
       `Top revenue day: ${bestDay.date} (${CURRENCY(bestDay.revenue)}).`,
       `Lowest revenue day: ${worstDay.date} (${CURRENCY(worstDay.revenue)}).`,
       growthHint,
       aovHint,
-      `Utilization trend is healthy (~${formatPct(kpis.util)}). Consider blocking maintenance days proactively.`,
+      view === "Shop"
+        ? "Shop view: watch conversion and repeat purchase later."
+        : `Rental activity proxy: ~${formatPct(kpis.util)} of days had rentals in this period.`,
     ];
-  }, [filteredDaily, kpis]);
+  }, [filteredDaily, kpis, view]);
 
+  // ---------------------------
+  // EXPORT CSV (FIXED)
+  // ---------------------------
   const exportCSV = () => {
     const header = ["date", "revenue", "orders", "aov", "rentals", "shop"];
-    const rows = filteredDaily.map((x) => [x.date, x.revenue, x.orders, x.aov, x.rentals, x.shop]);
+    const rows = filteredDaily.map((x) => [
+      x.date,
+      x.revenue,
+      x.orders,
+      x.aov,
+      x.rentals,
+      x.shop,
+    ]);
+
     const csv = [header.join(","), ...rows.map((r) => r.join(","))].join("\n");
+
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -204,7 +460,7 @@ const [startDate, setStartDate] = useState(addDaysISO(todayISO(), -30));
         <div>
           <h1 className="text-3xl font-semibold text-[#2D2926]">Sales Reports</h1>
           <p className="text-gray-600 mt-1">
-            Revenue, orders, product performance & rental ops — demo analytics (ready to connect to backend).
+            Revenue, orders, product performance & ops — now powered by real orders.
           </p>
         </div>
 
@@ -246,264 +502,256 @@ const [startDate, setStartDate] = useState(addDaysISO(todayISO(), -30));
           <button
             onClick={exportCSV}
             className="sm:ml-2 px-4 py-2 rounded-lg bg-[#8B5C42] text-white text-sm hover:bg-[#704A36] transition"
+            disabled={loading}
           >
             Export CSV
+          </button>
+
+          <button
+            onClick={fetchOrders}
+            className="px-4 py-2 rounded-lg border text-sm hover:bg-gray-50 transition"
+          >
+            Refresh
           </button>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        <KpiCard
-          title="Revenue"
-          value={CURRENCY(kpis.revenue)}
-          sub={`${kpis.revChange >= 0 ? "▲" : "▼"} ${Math.abs(kpis.revChange).toFixed(1)}% vs prev`}
-        />
-        <KpiCard
-          title="Orders"
-          value={String(kpis.orders)}
-          sub={`${kpis.orderChange >= 0 ? "▲" : "▼"} ${Math.abs(kpis.orderChange).toFixed(1)}% vs prev`}
-        />
-        <KpiCard title="Avg Order Value" value={CURRENCY(kpis.aov)} sub="Target: $500+" />
-        <KpiCard title="Rental Utilization" value={formatPct(kpis.util)} sub="Weekly average (demo)" />
-      </div>
+      {/* STATES */}
+      {loading && <div className="bg-white p-6 rounded-xl border">Loading sales data…</div>}
 
-      {/* Charts row 1 */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
-        {/* Revenue Trend */}
-        <div className="bg-white border rounded-2xl shadow-sm p-5 xl:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-[#2D2926]">Revenue Trend</h2>
-            <span className="text-xs text-gray-500">Daily</span>
-          </div>
-
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={filteredDaily}>
-                <defs>
-                  <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8B5C42" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#8B5C42" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip formatter={(v) => CURRENCY(v)} />
-                <Area type="monotone" dataKey="revenue" stroke="#8B5C42" fill="url(#revFill)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-            <MiniStat label="Peak day" value={CURRENCY(Math.max(...filteredDaily.map((d) => d.revenue || 0)))} />
-            <MiniStat label="Avg / day" value={CURRENCY(kpis.revenue / Math.max(1, filteredDaily.length))} />
-            <MiniStat label="Min order" value={CURRENCY(1000)} />
-            <MiniStat label="Payment" value="Prepaid (later Stripe)" />
-          </div>
+      {!loading && err && (
+        <div className="bg-white p-6 rounded-xl border text-red-600">
+          {err}
         </div>
+      )}
 
-        {/* Category split */}
-        <div className="bg-white border rounded-2xl shadow-sm p-5">
-          <h2 className="text-lg font-semibold text-[#2D2926] mb-4">Revenue by Category</h2>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={DEMO.categoryRevenue}
-                  dataKey="value"
-                  nameKey="name"
-                  outerRadius={100}
-                  innerRadius={55}
-                  paddingAngle={3}
-                >
-                  {DEMO.categoryRevenue.map((_, idx) => (
-                    <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v) => CURRENCY(v)} />
-                <Legend verticalAlign="bottom" height={36} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <p className="text-xs text-gray-500 mt-3">
-            Tip: push bundles in top categories to lift AOV and reduce churn.
-          </p>
-        </div>
-      </div>
-
-      {/* Charts row 2 */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
-        {/* Orders & AOV */}
-        <div className="bg-white border rounded-2xl shadow-sm p-5 xl:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-[#2D2926]">Orders & AOV</h2>
-            <span className="text-xs text-gray-500">Daily</span>
+      {!loading && !err && (
+        <>
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+            <KpiCard
+              title="Revenue"
+              value={CURRENCY(kpis.revenue)}
+              sub={`${kpis.revChange >= 0 ? "▲" : "▼"} ${Math.abs(kpis.revChange).toFixed(
+                1
+              )}% vs prev`}
+            />
+            <KpiCard
+              title="Orders"
+              value={String(kpis.orders)}
+              sub={`${kpis.orderChange >= 0 ? "▲" : "▼"} ${Math.abs(kpis.orderChange).toFixed(
+                1
+              )}% vs prev`}
+            />
+            <KpiCard title="Avg Order Value" value={CURRENCY(kpis.aov)} sub="Target: $500+" />
+            <KpiCard
+              title={view === "Shop" ? "Activity" : "Rental Activity"}
+              value={formatPct(kpis.util)}
+              sub="Proxy metric (days with rentals)"
+            />
           </div>
 
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={filteredDaily}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
-                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
-                <Tooltip
-                  formatter={(v, name) => {
-                    if (name === "aov") return CURRENCY(v);
-                    return v;
-                  }}
+          {/* Charts row 1 */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+            {/* Revenue Trend */}
+            <div className="bg-white border rounded-2xl shadow-sm p-5 xl:col-span-2">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-[#2D2926]">Revenue Trend</h2>
+                <span className="text-xs text-gray-500">Daily</span>
+              </div>
+
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={filteredDaily}>
+                    <defs>
+                      <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8B5C42" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#8B5C42" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} />
+                    <Tooltip formatter={(v) => CURRENCY(v)} />
+                    <Area type="monotone" dataKey="revenue" stroke="#8B5C42" fill="url(#revFill)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                <MiniStat
+                  label="Peak day"
+                  value={CURRENCY(Math.max(...filteredDaily.map((d) => d.revenue || 0), 0))}
                 />
-                <Line yAxisId="left" type="monotone" dataKey="orders" stroke="#2D2926" strokeWidth={2} dot={false} />
-                <Line yAxisId="right" type="monotone" dataKey="aov" stroke="#8B5C42" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="mt-4 bg-[#FAF7F5] border rounded-xl p-4 text-sm text-gray-700">
-            <p className="font-medium text-[#2D2926] mb-1">Interpretation</p>
-            <ul className="list-disc ml-5 space-y-1">
-              <li>When orders rise but AOV drops: add minimum days or bundle add-ons.</li>
-              <li>When AOV rises but orders drop: run “starter packages” for smaller events.</li>
-              <li>For rentals, focus on utilization and delivery capacity — not only revenue.</li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Channel mix */}
-        <div className="bg-white border rounded-2xl shadow-sm p-5">
-          <h2 className="text-lg font-semibold text-[#2D2926] mb-4">Channel Mix</h2>
-
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={DEMO.channelMix}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="orders" fill="#2D2926" />
-                <Bar dataKey="revenue" fill="#8B5C42" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <p className="text-xs text-gray-500 mt-3">
-            Tip: Track CAC by channel later (Meta/Google spend) to measure profitable growth.
-          </p>
-        </div>
-      </div>
-
-      {/* Tables + Funnel */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Top products */}
-        <div className="bg-white border rounded-2xl shadow-sm p-5 xl:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-[#2D2926]">Top Products</h2>
-            <span className="text-xs text-gray-500">By revenue</span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-[#FAF7F5] border-b">
-                <tr className="text-left">
-                  <th className="py-3 px-4">Product</th>
-                  <th className="py-3 px-4">Revenue</th>
-                  <th className="py-3 px-4">Orders</th>
-                  <th className="py-3 px-4">Avg Days</th>
-                  <th className="py-3 px-4">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {DEMO.topProducts.map((p, i) => (
-                  <tr key={i} className="border-b last:border-0 hover:bg-gray-50 transition">
-                    <td className="py-3 px-4 font-medium text-[#2D2926]">{p.name}</td>
-                    <td className="py-3 px-4">{CURRENCY(p.revenue)}</td>
-                    <td className="py-3 px-4">{p.orders}</td>
-                    <td className="py-3 px-4">{p.avgDays ? p.avgDays.toFixed(1) : "—"}</td>
-                    <td className="py-3 px-4">
-                      <button className="text-[#8B5C42] hover:underline">View</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-            <ActionCard title="Bundle Opportunity" text="Backdrop + Lights + Props = higher AOV" />
-            <ActionCard title="Utilization Risk" text="Top rentals need maintenance days planned" />
-            <ActionCard title="Pricing Test" text="Try weekend premium for peak dates" />
-          </div>
-        </div>
-
-        {/* Funnel + Utilization */}
-        <div className="bg-white border rounded-2xl shadow-sm p-5 space-y-6">
-          <div>
-            <h2 className="text-lg font-semibold text-[#2D2926] mb-3">Enquiry → Completion Funnel</h2>
-            <div className="space-y-2">
-              {DEMO.orderPipeline.map((s, idx) => {
-                const max = DEMO.orderPipeline[0].count;
-                const pct = (s.count / max) * 100;
-                return (
-                  <div key={idx}>
-                    <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                      <span>{s.stage}</span>
-                      <span>{s.count}</span>
-                    </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${pct}%`,
-                          background: idx < 2 ? "#2D2926" : "#8B5C42",
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <p className="text-xs text-gray-500 mt-3">
-              Biggest drop is usually “Quoted → Booked”. Improve with faster follow-ups + clear packages.
-            </p>
-          </div>
-
-          <div>
-            <h2 className="text-lg font-semibold text-[#2D2926] mb-3">Rental Utilization</h2>
-            <div className="h-44">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={DEMO.utilization}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="week" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} domain={[0, 100]} />
-                  <Tooltip formatter={(v) => `${v}%`} />
-                  <Line type="monotone" dataKey="utilization" stroke="#8B5C42" strokeWidth={2} dot />
-                </LineChart>
-              </ResponsiveContainer>
+                <MiniStat
+                  label="Avg / day"
+                  value={CURRENCY(kpis.revenue / Math.max(1, filteredDaily.length))}
+                />
+                <MiniStat label="Orders total" value={String(kpis.orders)} />
+                <MiniStat label="View" value={view} />
+              </div>
             </div>
 
-            <div className="mt-3 bg-[#FAF7F5] border rounded-xl p-3 text-xs text-gray-700">
-              <p className="font-medium text-[#2D2926] mb-1">Recommendation</p>
-              <p>
-                When utilization crosses ~75%, increase delivery slots and consider raising rental prices on peak weekends.
+            {/* Category split */}
+            <div className="bg-white border rounded-2xl shadow-sm p-5">
+              <h2 className="text-lg font-semibold text-[#2D2926] mb-4">
+                Revenue by Category
+              </h2>
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={categoryRevenue}
+                      dataKey="value"
+                      nameKey="name"
+                      outerRadius={100}
+                      innerRadius={55}
+                      paddingAngle={3}
+                    >
+                      {categoryRevenue.map((_, idx) => (
+                        <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v) => CURRENCY(v)} />
+                    <Legend verticalAlign="bottom" height={36} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              
+            </div>
+          </div>
+
+          {/* Charts row 2 */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+            {/* Orders & AOV */}
+            <div className="bg-white border rounded-2xl shadow-sm p-5 xl:col-span-2">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-[#2D2926]">Orders & AOV</h2>
+                <span className="text-xs text-gray-500">Daily</span>
+              </div>
+
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={filteredDaily}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                    <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
+                    <Tooltip
+                      formatter={(v, name) => {
+                        if (name === "aov") return CURRENCY(v);
+                        return v;
+                      }}
+                    />
+                    <Line yAxisId="left" type="monotone" dataKey="orders" stroke="#2D2926" strokeWidth={2} dot={false} />
+                    <Line yAxisId="right" type="monotone" dataKey="aov" stroke="#8B5C42" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="mt-4 bg-[#FAF7F5] border rounded-xl p-4 text-sm text-gray-700">
+                <p className="font-medium text-[#2D2926] mb-1">Interpretation</p>
+                <ul className="list-disc ml-5 space-y-1">
+                  <li>When orders rise but AOV drops: add bundles and add-ons.</li>
+                  <li>When AOV rises but orders drop: create starter packages.</li>
+                  <li>For rentals: delivery capacity and scheduling drive growth.</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Status funnel */}
+            <div className="bg-white border rounded-2xl shadow-sm p-5">
+              <h2 className="text-lg font-semibold text-[#2D2926] mb-4">
+                Order Status Funnel
+              </h2>
+
+              <div className="space-y-2">
+                {orderPipeline.map((s, idx) => {
+                  const max = Math.max(...orderPipeline.map((x) => x.count), 1);
+                  const pct = (s.count / max) * 100;
+                  return (
+                    <div key={idx}>
+                      <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                        <span>{s.stage}</span>
+                        <span>{s.count}</span>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${pct}%`,
+                            background: idx < 2 ? "#2D2926" : "#8B5C42",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <p className="text-xs text-gray-500 mt-3">
+                This funnel is built from real <code>orderStatus</code> values.
               </p>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Insights panel */}
-      <div className="mt-6 bg-white border rounded-2xl shadow-sm p-5">
-        <h2 className="text-lg font-semibold text-[#2D2926] mb-3">Executive Summary (Auto Insights)</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {insights.map((t, i) => (
-            <div key={i} className="bg-[#FFF7F0] border border-[#EAD9C7] rounded-xl p-4 text-sm text-[#2D2926]">
-              {t}
+          {/* Top products */}
+          <div className="bg-white border rounded-2xl shadow-sm p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-[#2D2926]">Top Products</h2>
+              <span className="text-xs text-gray-500">By item revenue</span>
             </div>
-          ))}
-        </div>
-      </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-[#FAF7F5] border-b">
+                  <tr className="text-left">
+                    <th className="py-3 px-4">Product</th>
+                    <th className="py-3 px-4">Revenue</th>
+                    <th className="py-3 px-4">Orders</th>
+                    <th className="py-3 px-4">Avg Days</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topProducts.map((p, i) => (
+                    <tr key={i} className="border-b last:border-0 hover:bg-gray-50 transition">
+                      <td className="py-3 px-4 font-medium text-[#2D2926]">{p.name}</td>
+                      <td className="py-3 px-4">{CURRENCY(p.revenue)}</td>
+                      <td className="py-3 px-4">{p.orders}</td>
+                      <td className="py-3 px-4">{p.avgDays ? p.avgDays.toFixed(1) : "—"}</td>
+                    </tr>
+                  ))}
+
+                  {topProducts.length === 0 && (
+                    <tr>
+                      <td className="py-6 px-4 text-gray-500" colSpan={4}>
+                        No product data in this range.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Insights panel */}
+          <div className="mt-6 bg-white border rounded-2xl shadow-sm p-5">
+            <h2 className="text-lg font-semibold text-[#2D2926] mb-3">
+              Executive Summary (Auto Insights)
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {insights.map((t, i) => (
+                <div
+                  key={i}
+                  className="bg-[#FFF7F0] border border-[#EAD9C7] rounded-xl p-4 text-sm text-[#2D2926]"
+                >
+                  {t}
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </AdminLayout>
   );
 };
@@ -526,13 +774,5 @@ const MiniStat = ({ label, value }) => (
   <div className="border rounded-xl p-3">
     <p className="text-xs text-gray-500">{label}</p>
     <p className="text-sm font-semibold text-[#2D2926] mt-1">{value}</p>
-  </div>
-);
-
-const ActionCard = ({ title, text }) => (
-  <div className="border rounded-xl p-4 bg-white">
-    <p className="text-sm font-semibold text-[#2D2926]">{title}</p>
-    <p className="text-xs text-gray-600 mt-1">{text}</p>
-    <button className="mt-3 text-xs text-[#8B5C42] hover:underline">Open</button>
   </div>
 );

@@ -501,9 +501,11 @@ if (minPrice || maxPrice) {
 
   try {
     const products = await Product.find(query)
-      .skip(skip)
-      .limit(limit)
-      .populate("attributes.groupId");
+  .skip(skip)
+  .limit(limit)
+  .populate("category", "name")         
+  .populate("attributes.groupId");
+
 
     res.json({
       total: await Product.countDocuments(query),
