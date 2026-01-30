@@ -803,7 +803,7 @@ useEffect(() => {
                   key={i}
                   src={img}
                   onClick={() => setActiveImage(i)}
-                  className={`w-full h-20 object-cover rounded-xl shadow cursor-pointer transition border-2 ${i === activeImage ? "border-[#8B5C42]" : "border-transparent"
+                  className={`w-full h-20 object-cover rounded-xl shadow cursor-pointer transition border-2 ${i === activeImage ? "border-black" : "border-transparent"
                     }`}
                 />
               ))}
@@ -839,7 +839,7 @@ useEffect(() => {
                       </p>
                     </Link>
 
-                    <p className="text-[#8B5C42] font-semibold mt-1">
+                    <p className="text-black font-semibold mt-1">
                       $ {rp.pricePerDay} / day
                     </p>
 
@@ -948,7 +948,7 @@ useEffect(() => {
                     </span>
                   </>
                 ) : (
-                  <span className="text-3xl font-semibold text-[#8B5C42]">
+                  <span className="text-3xl font-semibold text-black">
                     $ {selectedVariation?.price ?? 0} / day
                   </span>
                 )
@@ -962,7 +962,7 @@ useEffect(() => {
                   </span>
                 </>
               ) : (
-                <span className="text-3xl font-semibold text-[#8B5C42]">
+                <span className="text-3xl font-semibold text-black">
                   $ {product.pricePerDay} / day
                 </span>
               )}
@@ -971,9 +971,9 @@ useEffect(() => {
 
 
             {/* Stock — beside price on desktop, below on mobile */}
-            <div className="mt-2 md:mt-0 bg-[#FFF7F0] border border-[#E5DED6] rounded-lg px-4 py-2 inline-block">
+            <div className="mt-2 md:mt-0 bg-gray-100 border border-[#E5DED6] rounded-lg px-4 py-2 inline-block">
               <p className="text-sm font-medium text-[#2D2926]">
-                Stock Availability: <span className="text-[#8B5C42] font-semibold">
+                Stock Availability: <span className="text-black font-semibold">
                   {maxStock}
                 </span>
 
@@ -1002,7 +1002,7 @@ useEffect(() => {
               className={`px-3 py-1 rounded text-white
     ${productQty >= maxStock
                   ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-[#8B5C42] hover:bg-[#704A36]"
+                  : "bg-black hover:bg-gray-800"
                 }
   `}
             >
@@ -1089,10 +1089,10 @@ useEffect(() => {
                         key={addon.optionId}
                         type="button"
                         onClick={() => navigate("/signage")}
-                        className="w-full flex items-center justify-between border-2 border-[#8B5C42] rounded-lg px-4 py-3 transition bg-gradient-to-r from-[#FFF7F0] to-[#FFE5D9] hover:from-[#FFE5D9] hover:to-[#FFF7F0] hover:shadow-md"
+                        className="w-full flex items-center justify-between border-2 border-black rounded-lg px-4 py-3 transition bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-100 hover:shadow-md"
                       >
                         <div className="text-left flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-[#8B5C42] flex items-center justify-center">
+                          <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center">
                             <svg
                               className="w-6 h-6 text-white"
                               fill="currentColor"
@@ -1109,7 +1109,7 @@ useEffect(() => {
                           </div>
                         </div>
 
-                        <div className="text-sm font-semibold px-3 py-1 rounded-full bg-[#8B5C42] text-white flex items-center gap-1">
+                        <div className="text-sm font-semibold px-3 py-1 rounded-full bg-black text-white flex items-center gap-1">
                           <span>Design</span>
                           <span>→</span>
                         </div>
@@ -1124,7 +1124,7 @@ useEffect(() => {
                       type="button"
                       onClick={() => toggleAddon(addon)}
                       className={`w-full flex items-center justify-between border rounded-lg px-4 py-3 transition
-              ${selected ? "border-[#8B5C42] bg-[#FFF7F0]" : "hover:bg-gray-50"}
+              ${selected ? "border-black bg-gray-100" : "hover:bg-gray-50"}
             `}
                     >
                       <div className="text-left">
@@ -1138,7 +1138,7 @@ useEffect(() => {
 
                       <div
                         className={`text-sm font-semibold px-3 py-1 rounded-full
-                ${selected ? "bg-[#8B5C42] text-white" : "bg-gray-200 text-gray-700"}
+                ${selected ? "bg-black text-white" : "bg-gray-200 text-gray-700"}
               `}
                       >
                         {selected ? "Selected" : "Add"}
@@ -1247,10 +1247,10 @@ useEffect(() => {
 
                   {/* Price Display */}
                   {calculateShelvingPrice(shelvingTier, shelvingSize, shelvingQuantity, isShelvingSelected) > 0 && (
-                    <div className="mt-4 p-3 bg-white rounded-lg border border-[#8B5C42]">
+                    <div className="mt-4 p-3 bg-white rounded-lg border border-black">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-gray-700">Shelving Total:</span>
-                        <span className="text-lg font-bold text-[#8B5C42]">
+                        <span className="text-lg font-bold text-black">
                           ${calculateShelvingPrice(shelvingTier, shelvingSize, shelvingQuantity, isShelvingSelected)}
                         </span>
                       </div>
@@ -1484,7 +1484,7 @@ useEffect(() => {
 
 
           {/* EVENT DATE SELECTION */}
-          <div className="mt-6 bg-[#FAF7F5] p-5 rounded-xl border border-[#E5DED6]">
+          <div className="mt-6 bg-gray-100 p-5 rounded-xl border border-gray-200">
             <h3 className="text-lg font-semibold text-[#2D2926] mb-4">
               Event Date
             </h3>
@@ -1492,7 +1492,7 @@ useEffect(() => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* START DATE */}
               <div>
-                <label className="block mb-1 text-sm text-gray-600">
+                <label className="block mb-1 text-sm font-medium text-gray-700">
                   Start Date
                 </label>
                 <input
@@ -1503,13 +1503,13 @@ useEffect(() => {
                     setStartDate(e.target.value);
                     setEndDate("");
                   }}
-                  className="w-full p-3 border rounded-lg"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
                 />
               </div>
 
               {/* END DATE */}
               <div>
-                <label className="block mb-1 text-sm text-gray-600">
+                <label className="block mb-1 text-sm font-medium text-gray-700">
                   End Date
                 </label>
                 <input
@@ -1518,13 +1518,13 @@ useEffect(() => {
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   disabled={!startDate}
-                  className="w-full p-3 border rounded-lg disabled:bg-gray-100"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black disabled:bg-gray-100"
                 />
               </div>
             </div>
 
             {/* DATE SUMMARY */}
-            <div className="mt-4 bg-white p-4 rounded-lg border text-sm text-[#2D2926]">
+            <div className="mt-4 bg-white p-4 rounded-lg border border-gray-200 text-sm text-[#2D2926]">
               {!startDate && <p>Please select an event start date.</p>}
 
               {startDate && !endDate && (
@@ -1755,9 +1755,9 @@ useEffect(() => {
       text-sm font-medium text-[#2D2926]
       bg-white
       transition-all duration-200
-      hover:bg-[#FFF7F0]
-      hover:border-[#8B5C42]
-      hover:text-[#8B5C42]
+      hover:bg-gray-100
+      hover:border-black
+      hover:text-black
       hover:-translate-y-[1px]
       hover:shadow-md
     "
@@ -1818,7 +1818,7 @@ useEffect(() => {
 
               <button
                 onClick={() => setShowFullDesc(!showFullDesc)}
-                className="mt-2 text-[#8B5C42] font-medium underline"
+                className="mt-2 text-black font-medium underline"
               >
                 {showFullDesc ? "Read Less" : "Read More"}
               </button>
@@ -1828,7 +1828,7 @@ useEffect(() => {
             <div className="bg-white p-5 rounded-xl shadow">
               <a
                 href="/"
-                className="font-semibold text-lg text-[#8B5C42] underline hover:text-[#704A36]"
+                className="font-semibold text-lg text-black underline hover:text-gray-800"
               >
                 Terms & Conditions
               </a>
@@ -1842,17 +1842,17 @@ useEffect(() => {
 
       {/* ⭐ TRUST BADGE STRIP — FULL WIDTH, ABOVE FOOTER */}
       <div className="max-w-7xl mx-auto px-6 mt-16 mb-16">
-        <div className="bg-[#FAF7F5] border border-[#E5DED6] rounded-2xl py-6 px-8 
+        <div className="bg-gray-100 border border-gray-200 rounded-2xl py-6 px-8 
                   flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
 
           {trustBadges.map((item, index) => {
             const Icon = item.icon;
             return (
               <div key={index} className="flex items-center gap-3">
-                <div className="w-12 h-12 flex items-center justify-center rounded-full bg-[#8B5C42]/10">
-                  <Icon className="text-[#8B5C42]" size={26} />
+                <div className="w-12 h-12 flex items-center justify-center rounded-full bg-black/10">
+                  <Icon className="text-black" size={26} />
                 </div>
-                <span className="text-[#2D2926] font-medium text-[16px]">
+                <span className="text-gray-900 font-medium text-[16px]">
                   {item.label}
                 </span>
               </div>

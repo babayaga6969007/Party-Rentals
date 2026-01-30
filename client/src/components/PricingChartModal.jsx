@@ -4,34 +4,14 @@ const PricingChartModal = ({ isOpen, onClose, basePrice = 100 }) => {
   const [activeTab, setActiveTab] = useState("table");
   const [days, setDays] = useState(1);
 
-  // Discount based on days (same as ProductPage)
-  const getDiscountRate = (days) => {
-    if (days <= 3) return 0;
-    if (days <= 7) return 0.05;   // 5% discount
-    if (days <= 15) return 0.1;   // 10% discount
-    if (days <= 30) return 0.15;  // 15% discount
-    if (days <= 60) return 0.2;   // 20% discount
-    return 0.25;                  // 25% discount
-  };
-
   // Calculate price based on formula:
   // Day 1: 1x (base price)
   // Day 2: 1x + 0.5x = 1.5x
-  // Day 3: 1x + 0.5x + 0.5x = 2x
   // Day n: 1x + (n-1) * 0.5x
-  // Then apply discount based on rental period
   const calculatePrice = (numDays) => {
     if (numDays <= 0) return 0;
     if (numDays === 1) return basePrice;
-    
-    // First day: 1x, each additional day: 0.5x
-    const baseRentalPrice = basePrice + (numDays - 1) * (basePrice * 0.5);
-    
-    // Apply discount based on rental period
-    const discount = getDiscountRate(numDays);
-    const discountedPrice = baseRentalPrice * (1 - discount);
-    
-    return discountedPrice;
+    return basePrice + (numDays - 1) * (basePrice * 0.5);
   };
 
   // Generate pricing table for days 1-10
@@ -94,8 +74,8 @@ const PricingChartModal = ({ isOpen, onClose, basePrice = 100 }) => {
               }}
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 activeTab === "table"
-                  ? "text-[#2D2926] border-b-2 border-[#2D2926]"
-                  : "text-gray-500 hover:text-[#2D2926]"
+                  ? "text-black border-b-2 border-black"
+                  : "text-gray-500 hover:text-black"
               }`}
             >
               Pricing Table
@@ -109,8 +89,8 @@ const PricingChartModal = ({ isOpen, onClose, basePrice = 100 }) => {
               }}
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 activeTab === "calculator"
-                  ? "text-[#2D2926] border-b-2 border-[#2D2926]"
-                  : "text-gray-500 hover:text-[#2D2926]"
+                  ? "text-black border-b-2 border-black"
+                  : "text-gray-500 hover:text-black"
               }`}
             >
               Calculator
@@ -123,7 +103,7 @@ const PricingChartModal = ({ isOpen, onClose, basePrice = 100 }) => {
           {activeTab === "table" && (
             <div className="overflow-x-auto">
               <table className="w-full border border-gray-200 rounded-lg text-sm">
-                <thead className="bg-[#F5F7FF]">
+                <thead className="bg-gray-100">
                   <tr>
                     <th className="px-4 py-3 text-left">Days</th>
                     <th className="px-4 py-3 text-left">Price</th>
@@ -148,14 +128,13 @@ const PricingChartModal = ({ isOpen, onClose, basePrice = 100 }) => {
 
               <p className="mt-4 text-xs text-gray-500">
                 * Prices are calculated based on the formula: Day 1 = full price, 
-                each additional day = 50% of base price. Discounts apply: 4-7 days (5%), 
-                8-15 days (10%), 16-30 days (15%), 31-60 days (20%), 61+ days (25%)
+                each additional day = 50% of base price.
               </p>
             </div>
           )}
 
           {activeTab === "calculator" && (
-            <div className="bg-[#FAF7F5] p-6 rounded-lg border">
+            <div className="bg-gray-100 p-6 rounded-lg border border-gray-200">
               <h4 className="font-semibold text-[#2D2926] mb-4">
                 Calculate Rental Price
               </h4>
@@ -174,50 +153,28 @@ const PricingChartModal = ({ isOpen, onClose, basePrice = 100 }) => {
                       const value = parseInt(e.target.value) || 1;
                       setDays(Math.max(1, Math.min(365, value)));
                     }}
-                    className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2D2926]"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
                   />
                 </div>
 
-                <div className="bg-white p-4 rounded-lg border">
+                <div className="bg-white p-4 rounded-lg border border-gray-200">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-gray-600">Base Price (Day 1):</span>
                     <span className="font-semibold">${basePrice.toFixed(2)}</span>
                   </div>
                   {days > 1 && (
-                    <>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-gray-600">
-                          Additional Days ({days - 1} × ${(basePrice * 0.5).toFixed(2)}):
-                        </span>
-                        <span className="font-semibold">
-                          ${((days - 1) * basePrice * 0.5).toFixed(2)}
-                        </span>
-                      </div>
-                      {getDiscountRate(days) > 0 && (
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm text-gray-600">
-                            Subtotal:
-                          </span>
-                          <span className="font-semibold">
-                            ${(basePrice + (days - 1) * basePrice * 0.5).toFixed(2)}
-                          </span>
-                        </div>
-                      )}
-                      {getDiscountRate(days) > 0 && (
-                        <div className="flex justify-between items-center mb-2 text-green-600">
-                          <span className="text-sm">
-                            Discount ({Math.round(getDiscountRate(days) * 100)}%):
-                          </span>
-                          <span className="font-semibold">
-                            -${((basePrice + (days - 1) * basePrice * 0.5) * getDiscountRate(days)).toFixed(2)}
-                          </span>
-                        </div>
-                      )}
-                    </>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm text-gray-600">
+                        Additional Days ({days - 1} × ${(basePrice * 0.5).toFixed(2)}):
+                      </span>
+                      <span className="font-semibold">
+                        ${((days - 1) * basePrice * 0.5).toFixed(2)}
+                      </span>
+                    </div>
                   )}
-                  <div className="border-t pt-2 mt-2 flex justify-between items-center">
+                  <div className="border-t border-gray-200 pt-2 mt-2 flex justify-between items-center">
                     <span className="text-lg font-semibold text-[#2D2926]">Total Price:</span>
-                    <span className="text-2xl font-bold text-[#8B5C42]">
+                    <span className="text-2xl font-bold text-black">
                       ${calculatedPrice.toFixed(2)}
                     </span>
                   </div>
@@ -228,11 +185,6 @@ const PricingChartModal = ({ isOpen, onClose, basePrice = 100 }) => {
                     <strong>Formula:</strong> Day 1 = ${basePrice.toFixed(2)} (full price), 
                     each additional day = ${(basePrice * 0.5).toFixed(2)} (50% of base price)
                   </p>
-                  {days > 3 && (
-                    <p className="mt-1">
-                      <strong>Discount:</strong> {Math.round(getDiscountRate(days) * 100)}% off for {days} day{days > 1 ? 's' : ''} rental
-                    </p>
-                  )}
                 </div>
               </div>
             </div>
