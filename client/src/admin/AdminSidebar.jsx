@@ -150,11 +150,11 @@ const Sidebar = () => {
   Inventory
 </NavLink>
  
-      {/* Calendar (placeholder) */}
-      <div className={placeholderClass}>
-        <FiCalendar className="inline mr-2" />
-        Calendar
-      </div>
+    {/* Calendar */}
+<NavLink to="/admin/AvailabilityCalendar" className={linkClass}>
+  <FiCalendar className="inline mr-2" />
+  Availability Calendar
+</NavLink>
 
 
       {/* Logout */}

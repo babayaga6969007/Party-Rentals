@@ -11,10 +11,19 @@ router.get("/", orderController.getAllOrdersPublic);
 router.post("/", orderController.createOrder);
 
 // Admin
+
 router.get("/admin/all", authAdmin, orderController.getAllOrdersAdmin);
 router.get("/admin/:id", authAdmin, orderController.getSingleOrderAdmin);
 router.patch("/admin/:id/status", authAdmin, orderController.updateOrderStatusAdmin);
 router.delete("/admin/:id", authAdmin, orderController.deleteOrderAdmin);
+
+// Admin Rental Availability Calendar (MONTH VIEW)
+router.get(
+  "/admin/rentals/calendar",
+  authAdmin,
+  orderController.getRentalCalendarAdmin
+);
+
 
 
 module.exports = router;

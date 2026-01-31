@@ -96,6 +96,16 @@ const order = new Order({
 });
 
 await order.save();
+// 🔔 Notify admins (calendar refresh)
+const io = req.app.get("io");
+if (io) {
+  io.emit("orders:changed", {
+    type: "created",
+    orderId: order._id,
+  });
+}
+
+
 try {
   // Email to customer
   if (order.customer?.email) {
@@ -129,6 +139,78 @@ if (order.coupon?.code) {
   }
 };
 
+// -------------------------------
+// ADMIN: RENTAL CALENDAR (month view)
+// GET /api/orders/admin/rentals/calendar?month=YYYY-MM
+// returns: { month: "YYYY-MM", days: { "YYYY-MM-DD": [booking,...] } }
+// -------------------------------
+exports.getRentalCalendarAdmin = async (req, res) => {
+  try {
+    const { month } = req.query; // "2026-01"
+    if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({ message: "month query must be YYYY-MM" });
+    }
+
+    const startOfMonth = `${month}-01`;
+    const startDateObj = new Date(startOfMonth);
+    const endDateObj = new Date(startDateObj.getFullYear(), startDateObj.getMonth() + 1, 0); // last day
+    const endOfMonth = endDateObj.toISOString().split("T")[0];
+
+    // Only statuses that should block availability (same logic you already use) :contentReference[oaicite:6]{index=6}
+    const blockingStatuses = ["pending", "confirmed", "dispatched"];
+
+    // Pull only orders that are in blocking statuses
+    const orders = await Order.find({ orderStatus: { $in: blockingStatuses } })
+      .select("_id customer orderStatus items createdAt");
+
+    // Prepare map for each day of month
+    const days = {};
+    const monthDays = getDateStringsBetween(startOfMonth, endOfMonth); // you already import this util :contentReference[oaicite:7]{index=7}
+    monthDays.forEach((d) => (days[d] = []));
+
+    // Fill day map with rental bookings that overlap each day
+    for (const order of orders) {
+      for (const item of order.items || []) {
+        if (item.productType !== "rental") continue;
+
+        // Rental items store startDate/endDate as "yyyy-mm-dd" strings :contentReference[oaicite:8]{index=8}
+        const s = item.startDate;
+        const e = item.endDate;
+        if (!s || !e) continue;
+
+        // If item doesn't overlap this month at all, skip
+        if (e < startOfMonth || s > endOfMonth) continue;
+
+        // Clamp the rental range to this month for mapping
+        const clampStart = s < startOfMonth ? startOfMonth : s;
+        const clampEnd = e > endOfMonth ? endOfMonth : e;
+
+        const overlapDays = getDateStringsBetween(clampStart, clampEnd);
+
+        overlapDays.forEach((day) => {
+          if (!days[day]) return;
+
+          days[day].push({
+            orderId: order._id,
+            status: order.orderStatus,
+            customerName: order.customer?.name || "",
+            productId: item.productId || null,
+            name: item.name,
+            image: item.image || "",
+            qty: item.qty,
+            startDate: s,
+            endDate: e,
+          });
+        });
+      }
+    }
+
+    return res.json({ month, days });
+  } catch (err) {
+    console.error("getRentalCalendarAdmin error:", err);
+    return res.status(500).json({ message: err.message || "Server error" });
+  }
+};
 
 // -------------------------------
 // ADMIN: GET ALL ORDERS
@@ -260,6 +342,17 @@ product.availabilityCount -= item.qty;
     }
 
     await order.save();
+   // 🔔 Notify admins (calendar refresh)
+const io = req.app.get("io");
+if (io) {
+  io.emit("orders:changed", {
+    type: "status",
+    orderId: order._id,
+    status: order.orderStatus,
+  });
+}
+
+
 // 📧 SEND EMAILS ON ORDER PLACEMENT ONLY
 try {
   // Email to customer
@@ -321,5 +414,102 @@ exports.deleteOrderAdmin = async (req, res) => {
   } catch (err) {
     console.error("Delete order admin error:", err);
     return res.status(500).json({ message: "Failed to delete order" });
+  }
+};
+/* =========================================================
+   ADMIN – RENTAL AVAILABILITY CALENDAR (MONTH VIEW)
+   GET /api/orders/admin/rentals/calendar?month=YYYY-MM
+========================================================= */
+exports.getRentalCalendarAdmin = async (req, res) => {
+  try {
+    const { month } = req.query; // expected: "2026-01"
+
+    if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({
+        message: "Invalid month format. Use YYYY-MM",
+      });
+    }
+
+    // Month boundaries
+    const monthStart = new Date(`${month}-01`);
+    const monthEnd = new Date(
+      monthStart.getFullYear(),
+      monthStart.getMonth() + 1,
+      0
+    );
+
+    const startStr = monthStart.toISOString().split("T")[0];
+    const endStr = monthEnd.toISOString().split("T")[0];
+
+    // Order statuses that BLOCK availability
+    const blockingStatuses = ["pending", "confirmed", "dispatched"];
+
+    // Fetch only blocking orders
+    const orders = await Order.find({
+      orderStatus: { $in: blockingStatuses },
+    }).select("orderStatus customer items");
+
+    // Utility: generate all dates between two yyyy-mm-dd strings
+    const getDatesBetween = (start, end) => {
+      const dates = [];
+      let current = new Date(start);
+
+      while (current <= new Date(end)) {
+        dates.push(current.toISOString().split("T")[0]);
+        current.setDate(current.getDate() + 1);
+      }
+      return dates;
+    };
+
+    // Prepare empty map for the month
+    const days = {};
+    getDatesBetween(startStr, endStr).forEach((d) => {
+      days[d] = [];
+    });
+
+    // Fill calendar
+    for (const order of orders) {
+      for (const item of order.items || []) {
+        if (item.productType !== "rental") continue;
+        if (!item.startDate || !item.endDate) continue;
+
+        // Skip if rental does not overlap this month
+        if (item.endDate < startStr || item.startDate > endStr) continue;
+
+        // Clamp rental range to this month
+        const rentalStart =
+          item.startDate < startStr ? startStr : item.startDate;
+        const rentalEnd =
+          item.endDate > endStr ? endStr : item.endDate;
+
+        const rentalDays = getDatesBetween(rentalStart, rentalEnd);
+
+        rentalDays.forEach((day) => {
+          if (!days[day]) return;
+
+          days[day].push({
+            orderId: order._id,
+            status: order.orderStatus,
+            customerName: order.customer?.name || "",
+            productId: item.productId || null,
+            name: item.name,
+            image: item.image || "",
+            qty: item.qty,
+            startDate: item.startDate,
+            endDate: item.endDate,
+          });
+        });
+      }
+    }
+
+    res.json({
+      month,
+      days,
+    });
+  } catch (error) {
+    console.error("Calendar error:", error);
+    res.status(500).json({
+      message: "Failed to load rental calendar",
+    });
   }
 };
