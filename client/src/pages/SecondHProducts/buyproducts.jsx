@@ -39,24 +39,9 @@ const ProductPage = () => {
   const location = useLocation();
 
   const [product, setProduct] = useState(null);
-  // ====================
-//  RENDER ATTRIBUTES (ADMIN SELECTED)
-// ====================
-const renderedAttributes =
-  product?.attributes?.map((attr) => {
-    if (!attr?.groupId || !Array.isArray(attr.groupId.options)) return null;
 
-    const selectedOptions = attr.groupId.options.filter((opt) =>
-      attr.optionIds?.includes(opt._id)
-    );
+const [selectedOptionState, setSelectedOptionState] = useState({});
 
-    if (selectedOptions.length === 0) return null;
-
-    return {
-      groupName: attr.groupId.name,
-      values: selectedOptions.map((o) => o.label),
-    };
-  }) || [];
 
   const productImages = product?.images?.map((img) => img.url) || [];
 
@@ -265,7 +250,43 @@ useEffect(() => {
     setProductQty(maxStock);
   }
 }, [product, maxStock]);
+// ====================
+// ATTRIBUTE GROUPS FOR UI (Unified Options UI)
+// ====================
+const attributeGroupsForUI =
+  product?.attributes
+    ?.filter((a) => a?.groupId && Array.isArray(a.groupId.options))
+    .map((a) => ({
+      groupId: String(a.groupId._id),
+      name: a.groupId.name,
+      options: (a.groupId.options || []).filter((opt) =>
+        (a.optionIds || []).some(
+          (oid) => String(oid) === String(opt._id)
+        )
+      ),
+    })) || [];
 
+// ====================
+// AUTO-SELECT DEFAULT ATTRIBUTE OPTIONS (SALE PAGE)
+// ====================
+useEffect(() => {
+  if (attributeGroupsForUI.length === 0) return;
+
+  const defaults = {};
+
+  attributeGroupsForUI.forEach((g) => {
+    if (g.options?.length >= 1) {
+      // if only one option → select it
+      // if multiple options → select first
+      defaults[g.groupId] = String(g.options[0]._id);
+    }
+  });
+
+  // Apply defaults ONLY on first load
+  setSelectedOptionState((prev) =>
+    Object.keys(prev).length > 0 ? prev : defaults
+  );
+}, [product?._id, attributeGroupsForUI.length]);
 
 if (loadingProduct) {
   return <div className="page-wrapper max-w-7xl mx-auto px-6 py-20">Loading...</div>;
@@ -515,27 +536,47 @@ if (!product) {
 
 
           <div className="mt-10 space-y-4">
-            {/* ⭐ PRODUCT ATTRIBUTES (ADMIN SELECTED) */}
-{renderedAttributes?.filter(Boolean)?.length > 0 && (
-  <div className="bg-white p-5 rounded-xl shadow">
-    <h3 className="font-semibold text-lg text-[#2D2926] mb-3">
-      Product Details
+        
+{/* OPTIONS (Unified Attribute UI) */}
+{attributeGroupsForUI.length > 0 && (
+  <div className="bg-white p-5 rounded-xl shadow mb-4">
+    <h3 className="font-semibold text-lg text-[#2D2926] mb-4">
+      Available Options
     </h3>
 
-    <div className="space-y-2">
-      {renderedAttributes
-        .filter(Boolean)
-        .map((attr) => (
-          <div key={attr.groupName} className="text-sm">
-            <span className="font-medium text-[#2D2926]">
-              {attr.groupName}:
-            </span>{" "}
-            <span className="text-gray-700">
-              {attr.values.join(", ")}
-            </span>
-          </div>
-        ))}
-    </div>
+    {attributeGroupsForUI.map((g) => (
+      <div key={g.groupId} className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          {g.name}
+        </label>
+
+        <div className="flex flex-wrap gap-2">
+          {g.options.map((opt) => (
+            <button
+  key={String(opt._id)}
+  type="button"
+  onClick={() => {
+    // UI-only selection for sale products
+    setSelectedOptionState((prev) => ({
+      ...prev,
+      [g.groupId]: String(opt._id),
+    }));
+  }}
+  className={`px-4 py-2 rounded-lg border text-sm transition
+    ${
+      selectedOptionState?.[g.groupId] === String(opt._id)
+        ? "border-black bg-black text-white"
+        : "border-gray-300 bg-white hover:bg-gray-50"
+    }
+  `}
+>
+  {opt.label}
+</button>
+
+          ))}
+        </div>
+      </div>
+    ))}
   </div>
 )}
 

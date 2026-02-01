@@ -43,8 +43,12 @@ const [selectedVariationIndex, setSelectedVariationIndex] = useState(0);
   // ====================
   // VARIATIONS (Rental Variable Products)
   // ====================
-  const isVariableRental =
-    product?.productType === "rental" && product?.productSubType === "variable";
+const isRental = product?.productType === "rental";
+
+const isVariableRental =
+  isRental && (product?.productSubType === "variable" || product?.variations?.length > 0);
+
+
   // 🔑 Helper: get lowest priced variation (salePrice > price)
   const getLowestPriceVariation = (variations = []) => {
     if (!variations.length) return null;
@@ -416,23 +420,50 @@ useEffect(() => {
 
     fetchRelated();
   }, [product]);
+// Groups available on this product (based on selected attributes)
+const attributeGroupsForUI =
+  product?.attributes
+    ?.filter((a) => a?.groupId && Array.isArray(a.groupId.options))
+    .map((a) => ({
+      groupId: String(a.groupId._id),
+      name: a.groupId.name,
+      options: (a.groupId.options || []).filter((opt) =>
+        (a.optionIds || []).some((oid) => String(oid) === String(opt._id))
+      ),
+    })) || [];
 
   // Auto-select first options for each group (only for variable rental)
-  useEffect(() => {
-    if (!isVariableRental) {
-      setSelectedVarOptions({});
-      setSelectedVariation(null);
-      return;
+ useEffect(() => {
+
+  if (!isRental) {
+    setSelectedVarOptions({});
+    setSelectedVariation(null);
+    return;
+  }
+
+  // ✅ Rental (single OR variable): build default selections
+  const defaults = {};
+
+  attributeGroupsForUI.forEach((g) => {
+    if (g.options?.length >= 1) {
+      // if only 1 option → select it
+      // if multiple options → select first one
+      defaults[g.groupId] = String(g.options[0]._id);
     }
+  });
 
-    // Default selection: first option of each group
-    const defaults = {};
-    attributeGroupsForUI.forEach((g) => {
-      if (g.options?.length > 0) defaults[g.groupId] = String(g.options[0]._id);
-    });
+  // ✅ Apply defaults ONLY ON FIRST LOAD
+  setSelectedVarOptions((prev) =>
+    Object.keys(prev).length > 0 ? prev : defaults
+  );
 
-    setSelectedVarOptions(defaults);
-  }, [isVariableRental, product?._id]); // re-run when product changes
+  // ✅ For rental single, no variation matching
+  if (!isVariableRental) {
+    setSelectedVariation(null);
+  }
+}, [isRental, isVariableRental, product?._id, attributeGroupsForUI.length]);
+
+ // re-run when product changes
 
   // Find matching variation whenever selection changes
   useEffect(() => {
@@ -488,18 +519,7 @@ useEffect(() => {
     };
   });
 
-  // Groups available on this product (based on selected attributes)
-  const attributeGroupsForUI =
-    product?.attributes
-      ?.filter((a) => a?.groupId && Array.isArray(a.groupId.options))
-      .map((a) => ({
-        groupId: String(a.groupId._id),
-        name: a.groupId.name,
-        // allowed options on this product (only those admin selected)
-        options: (a.groupId.options || []).filter((opt) =>
-          (a.optionIds || []).some((oid) => String(oid) === String(opt._id))
-        ),
-      })) || [];
+
 
   // ====================
   // ADD-ONS (safe even when product is null during loading)
@@ -1013,36 +1033,14 @@ useEffect(() => {
 
 
           {/* PRODUCT ATTRIBUTES */}
-          {/* ✅ SAVED ATTRIBUTES (Admin-selected) */}
-{renderedAttributes?.filter(Boolean)?.length > 0 && (
-  <div className="mt-6 bg-white p-5 rounded-xl shadow">
-    <h3 className="font-semibold text-lg text-[#2D2926] mb-4">
-      Product Details
-    </h3>
-
-    <div className="space-y-2">
-      {renderedAttributes
-        .filter(Boolean)
-        .map((a) => (
-          <div key={a.groupName} className="text-sm">
-            <span className="font-medium text-[#2D2926]">
-              {a.groupName}:
-            </span>{" "}
-            <span className="text-gray-700">
-              {a.values.join(", ")}
-            </span>
-          </div>
-        ))}
-    </div>
-  </div>
-)}
 
           {/* VARIATIONS (only for rental variable products) */}
-          {isVariableRental && (
+{attributeGroupsForUI.length > 0 && (
             <div className="mt-6 bg-white p-5 rounded-xl shadow">
-              <h3 className="font-semibold text-lg text-[#2D2926] mb-4">
-                Choose Options
-              </h3>
+             <h3 className="font-semibold text-lg text-[#2D2926] mb-4">
+  {isVariableRental ? "Choose Options" : "Available Options"}
+</h3>
+
 
               {attributeGroupsForUI.map((g) => (
                 <div key={g.groupId} className="mb-4">
@@ -1056,31 +1054,41 @@ useEffect(() => {
 
                       return (
                         <button
-                          key={String(opt._id)}
-                          type="button"
-                          onClick={() =>
-                            setSelectedVarOptions((prev) => ({
-                              ...prev,
-                              [g.groupId]: String(opt._id),
-                            }))
-                          }
-                          className={`px-4 py-2 rounded-lg border text-sm transition
-                  ${selected ? "border-black bg-black text-white" : "border-gray-300 bg-white hover:bg-gray-50"}
-                `}
-                        >
-                          {opt.label}
-                        </button>
+  key={String(opt._id)}
+  type="button"
+  disabled={!isRental}
+  onClick={() => {
+    if (!isRental) return;
+
+    setSelectedVarOptions((prev) => ({
+      ...prev,
+      [g.groupId]: String(opt._id),
+    }));
+  }}
+  className={`px-4 py-2 rounded-lg border text-sm transition
+    ${
+      selected
+        ? "border-black bg-black text-white"
+        : "border-gray-300 bg-white hover:bg-gray-50"
+    }
+    ${!isRental ? "cursor-not-allowed opacity-60" : ""}
+  `}
+>
+  {opt.label}
+</button>
+
+
                       );
                     })}
                   </div>
                 </div>
               ))}
 
-              {!selectedVariation && (
-                <p className="text-sm text-red-600">
-                  This combination is not available.
-                </p>
-              )}
+             {isVariableRental && !selectedVariation && (
+              <p className="text-sm text-red-600">
+                This combination is not available.
+              </p>
+            )}
 
               {selectedVariation && (
                 <p className="text-sm text-gray-600 mt-2">
@@ -1835,9 +1843,9 @@ useEffect(() => {
             <div className="bg-white p-5 rounded-xl shadow">
               <h3 className="font-semibold text-lg text-[#2D2926]">Description</h3>
 
-              <p className="mt-3 text-gray-700 leading-relaxed">
-                {showFullDesc ? fullDescription : shortDescription}
-              </p>
+              <p className="mt-3 text-gray-700 leading-relaxed whitespace-pre-line">
+  {showFullDesc ? fullDescription : shortDescription}
+</p>
 
 
               <button
