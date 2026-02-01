@@ -1,12 +1,12 @@
 import { FiFacebook, FiInstagram, FiPhone } from "react-icons/fi";
-
+import { Link } from "react-router-dom";
 const Footer = () => {
   return (
     <footer className="bg-white py-16 border-t border-[#EDEEEA]">
-      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
+<div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-y-12 md:gap-x-20">
 
         {/* Column 1 — Company Info */}
-        <div>
+<div className="max-w-sm">
           <h2
             className="text-3xl font-semibold mb-4 text-[#2D2926]"
             style={{ fontFamily: '"Cormorant Garamond", serif' }}
@@ -14,7 +14,7 @@ const Footer = () => {
             New Project Designs
           </h2>
 
-          <p className="text-[#2D2926]/80 leading-relaxed text-[15px]">
+<p className="text-[#2D2926]/80 leading-relaxed text-[15px] max-w-md">
             We provide premium event décor, props, lighting, and 
             celebration essentials for all types of events across America. 
             From intimate gatherings to grand celebrations, we ensure 
@@ -30,50 +30,77 @@ const Footer = () => {
 
           {/* Social Icons */}
           <div className="flex gap-4 mt-6 text-[#2D2926]">
-            <FiFacebook size={22} className="hover:opacity-70 cursor-pointer" />
-            <FiInstagram size={22} className="hover:opacity-70 cursor-pointer" />
-            
-          </div>
-        </div>
+  <a
+    href="https://www.facebook.com/newprojectdesigns"
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Facebook"
+  >
+    <FiFacebook size={22} className="hover:opacity-70 cursor-pointer" />
+  </a>
 
-        {/* Column 2 — Rentals */}
-        <div>
-          <h3
-            className="text-xl font-semibold mb-4 text-[#2D2926]"
-            style={{ fontFamily: '"Cormorant Garamond", serif' }}
-          >
-            Rentals
-          </h3>
+  <a
+    href="https://www.instagram.com/p/DQ0tqBADhDa/"
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Instagram"
+  >
+    <FiInstagram size={22} className="hover:opacity-70 cursor-pointer" />
+  </a>
+</div>
 
-          <ul className="space-y-3 text-[#2D2926]/80">
-            <li className="hover:text-black cursor-pointer">Backdrops</li>
-            <li className="hover:text-black cursor-pointer">Lighting</li>
-            <li className="hover:text-black cursor-pointer">Table Décor</li>
-            <li className="hover:text-black cursor-pointer">Seating & Props</li>
-          
-          </ul>
         </div>
 
         {/* Column 3 — Support */}
-        <div>
+<div className="max-w-sm">
           <h3
             className="text-xl font-semibold mb-4 text-[#2D2926]"
             style={{ fontFamily: '"Cormorant Garamond", serif' }}
           >
-            Support
+            Quick Links
           </h3>
 
-          <ul className="space-y-3 text-[#2D2926]/80">
-            <li className="hover:text-black cursor-pointer">About Us</li>
-            <li className="hover:text-black cursor-pointer">FAQs</li>
-            <li className="hover:text-black cursor-pointer">Contact Us</li>
-            
-            <li className="hover:text-black cursor-pointer">Terms & Policies</li>
-          </ul>
+         <ul className="space-y-3 text-[#2D2926]/80">
+  <li>
+    <Link
+      to="/about"
+      className="hover:text-black cursor-pointer block"
+    >
+      About Us
+    </Link>
+  </li>
+
+  <li>
+    <Link
+      to="/faqs"
+      className="hover:text-black cursor-pointer block"
+    >
+      FAQs
+    </Link>
+  </li>
+
+  <li>
+    <Link
+      to="/contact"
+      className="hover:text-black cursor-pointer block"
+    >
+      Contact Us
+    </Link>
+  </li>
+
+  <li>
+    <Link
+      to="/contract"
+      className="hover:text-black cursor-pointer block"
+    >
+      Terms & Policies
+    </Link>
+  </li>
+</ul>
         </div>
 
         {/* Column 4 — Contact */}
-        <div>
+<div className="max-w-sm">
           <h3
             className="text-xl font-semibold mb-4 text-[#2D2926]"
             style={{ fontFamily: '"Cormorant Garamond", serif' }}

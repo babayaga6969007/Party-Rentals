@@ -1,7 +1,7 @@
 import { useLocation } from "react-router-dom";
 import NavbarTransparent from "./NavbarTransparent";
 import Footer from "./Footer";
-import FooterDark from "./FooterDark";
+
 
 const Layout = ({ children }) => {
   const { pathname } = useLocation();
@@ -21,11 +21,8 @@ const Layout = ({ children }) => {
       </main>
 
       {/* ✅ Show Footer ONLY on non-admin pages */}
-      {!isAdminRoute && (
-        ["/about", "/contact"].includes(pathname)
-          ? <FooterDark />
-          : <Footer />
-      )}
+     
+{!isAdminRoute && <Footer />}
 
     </div>
   );
