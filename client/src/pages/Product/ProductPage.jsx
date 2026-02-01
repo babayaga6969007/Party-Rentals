@@ -1013,6 +1013,30 @@ useEffect(() => {
 
 
           {/* PRODUCT ATTRIBUTES */}
+          {/* ✅ SAVED ATTRIBUTES (Admin-selected) */}
+{renderedAttributes?.filter(Boolean)?.length > 0 && (
+  <div className="mt-6 bg-white p-5 rounded-xl shadow">
+    <h3 className="font-semibold text-lg text-[#2D2926] mb-4">
+      Product Details
+    </h3>
+
+    <div className="space-y-2">
+      {renderedAttributes
+        .filter(Boolean)
+        .map((a) => (
+          <div key={a.groupName} className="text-sm">
+            <span className="font-medium text-[#2D2926]">
+              {a.groupName}:
+            </span>{" "}
+            <span className="text-gray-700">
+              {a.values.join(", ")}
+            </span>
+          </div>
+        ))}
+    </div>
+  </div>
+)}
+
           {/* VARIATIONS (only for rental variable products) */}
           {isVariableRental && (
             <div className="mt-6 bg-white p-5 rounded-xl shadow">
@@ -1827,7 +1851,7 @@ useEffect(() => {
             {/* TERMS & CONDITIONS */}
             <div className="bg-white p-5 rounded-xl shadow">
               <a
-                href="/"
+                href="/contract"
                 className="font-semibold text-lg text-black underline hover:text-gray-800"
               >
                 Terms & Conditions

@@ -39,6 +39,25 @@ const ProductPage = () => {
   const location = useLocation();
 
   const [product, setProduct] = useState(null);
+  // ====================
+//  RENDER ATTRIBUTES (ADMIN SELECTED)
+// ====================
+const renderedAttributes =
+  product?.attributes?.map((attr) => {
+    if (!attr?.groupId || !Array.isArray(attr.groupId.options)) return null;
+
+    const selectedOptions = attr.groupId.options.filter((opt) =>
+      attr.optionIds?.includes(opt._id)
+    );
+
+    if (selectedOptions.length === 0) return null;
+
+    return {
+      groupName: attr.groupId.name,
+      values: selectedOptions.map((o) => o.label),
+    };
+  }) || [];
+
   const productImages = product?.images?.map((img) => img.url) || [];
 
   const [loadingProduct, setLoadingProduct] = useState(true);
@@ -496,6 +515,30 @@ if (!product) {
 
 
           <div className="mt-10 space-y-4">
+            {/* ⭐ PRODUCT ATTRIBUTES (ADMIN SELECTED) */}
+{renderedAttributes?.filter(Boolean)?.length > 0 && (
+  <div className="bg-white p-5 rounded-xl shadow">
+    <h3 className="font-semibold text-lg text-[#2D2926] mb-3">
+      Product Details
+    </h3>
+
+    <div className="space-y-2">
+      {renderedAttributes
+        .filter(Boolean)
+        .map((attr) => (
+          <div key={attr.groupName} className="text-sm">
+            <span className="font-medium text-[#2D2926]">
+              {attr.groupName}:
+            </span>{" "}
+            <span className="text-gray-700">
+              {attr.values.join(", ")}
+            </span>
+          </div>
+        ))}
+    </div>
+  </div>
+)}
+
 {/* DIMENSIONS (ONLY IF EXISTS) */}
 {product?.dimensions && (
   <div className="bg-white p-5 rounded-xl shadow">
