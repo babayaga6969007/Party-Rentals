@@ -30,11 +30,16 @@ const ProductAddonSchema = new mongoose.Schema(
       ref: "Attribute",
       required: true,
     },
+
+    // Optional override for flat addons
     overridePrice: {
       type: Number,
-      default: null, // if null → use base price from Attribute option
+      default: null,
     },
-    // Shelving configuration (for shelving addons)
+
+    /* =========================
+       SHELVING CONFIG
+    ========================= */
     shelvingTier: {
       type: String,
       enum: ["A", "B", "C"],
@@ -49,9 +54,31 @@ const ProductAddonSchema = new mongoose.Schema(
       default: 1,
       min: 0,
     },
+
+    /* =========================
+       PEDESTALS CONFIG
+    ========================= */
+    pedestals: {
+      type: [
+        {
+          dimension: {
+            type: String,
+            trim: true,
+            required: true,
+          },
+          price: {
+            type: Number,
+            required: true,
+            min: 0,
+          },
+        },
+      ],
+      default: [],
+    },
   },
   { _id: false }
 );
+
 // =========================
 // VARIATION SUB-SCHEMA
 // =========================

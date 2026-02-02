@@ -34,6 +34,8 @@ const ProductPage = () => {
 // DIMENSION-BASED VARIATION (Rental Variable)
 // ====================
 const [selectedVariationIndex, setSelectedVariationIndex] = useState(0);
+// which pedestal item (index) is chosen in dropdown
+const [selectedPedestalIndex, setSelectedPedestalIndex] = useState("");
 
   const [openPricingChart, setOpenPricingChart] = useState(false);
   const [openShippingModal, setOpenShippingModal] = useState(false); // ✅ ADD THIS
@@ -585,6 +587,24 @@ const attributeGroupsForUI =
     ? !!selectedAddons[shelvingOptionId]
     : false;
 
+
+
+// ===== PEDESTALS ADDON DETECTION =====
+const pedestalAddon = renderedAddons.find((a) => {
+  const n = normalize(a.name);
+  return n === "pedestals" || n === "pedestal";
+});
+
+const pedestalOptionId = pedestalAddon?.optionId || null;
+
+const isPedestalSelected = pedestalOptionId
+  ? !!selectedAddons[pedestalOptionId]
+  : false;
+const pedestalItems =
+  pedestalOptionId && Array.isArray(product?.addons)
+    ? (product.addons.find((a) => String(a.optionId) === String(pedestalOptionId))?.pedestals || [])
+    : [];
+
   // Shelving config state
   const [shelvingConfig, setShelvingConfig] = useState(null);
 
@@ -762,12 +782,18 @@ const attributeGroupsForUI =
           setShelvingQuantity(1);
           setShelvingError("");
         }
+        // if this addon is pedestals, clear pedestal selection
+if (addon.optionId === pedestalOptionId) {
+  setSelectedPedestalIndex("");
+}
+
       } else {
-        // select
-        next[addon.optionId] = {
-          name: addon.name,
-          price: addon.finalPrice,
-        };
+    // select
+next[addon.optionId] = {
+  name: addon.name,
+  price: addon.optionId === pedestalOptionId ? 0 : addon.finalPrice, // pedestal price comes from dropdown
+};
+
       }
 
       return next;
@@ -1108,6 +1134,8 @@ const attributeGroupsForUI =
               </h3>
 
               <div className="space-y-3">
+
+
                 {renderedAddons.map((addon) => {
                   const selected = !!selectedAddons[addon.optionId];
                   const isSignage = addon.optionId === signageOptionId;
@@ -1162,10 +1190,13 @@ const attributeGroupsForUI =
                       <div className="text-left">
                         <div className="font-medium text-gray-700">{addon.name}</div>
                         <div className="text-sm text-gray-500">
-                          {isSelectedShelving
-                            ? `+ $ ${calculateShelvingPrice(shelvingTier, shelvingSize, shelvingQuantity, isShelvingSelected) || addon.finalPrice}`
-                            : `+ $ ${addon.finalPrice}`}
-                        </div>
+  {addon.optionId === pedestalOptionId
+    ? "+ Select pedestal to see price"
+    : isSelectedShelving
+    ? `+ $ ${calculateShelvingPrice(shelvingTier, shelvingSize, shelvingQuantity, isShelvingSelected)}`
+    : `+ $ ${addon.finalPrice}`}
+</div>
+
                       </div>
 
                       <div
@@ -1179,7 +1210,76 @@ const attributeGroupsForUI =
                   );
                 })}
               </div>
+                {/* ====================
+    PEDESTALS DROPDOWN
+==================== */}
+{pedestalOptionId && isPedestalSelected && (
+  <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+    <h4 className="font-semibold text-[#2D2926] mb-3">Pedestals</h4>
 
+    <label className="block text-sm font-medium text-gray-700 mb-2">
+      Select a pedestal (dimension + price)
+    </label>
+
+    <select
+      className="w-full p-2 border rounded-lg bg-white"
+      value={selectedPedestalIndex}
+      onChange={(e) => {
+        const idxStr = e.target.value;
+        setSelectedPedestalIndex(idxStr);
+
+        // if user chose "Select..."
+        if (idxStr === "") {
+          setSelectedAddons((prev) => ({
+            ...prev,
+            [pedestalOptionId]: {
+              ...prev[pedestalOptionId],
+              price: 0,
+              pedestalData: null,
+            },
+          }));
+          return;
+        }
+
+        const idx = Number(idxStr);
+        const chosen = pedestalItems[idx];
+
+        setSelectedAddons((prev) => ({
+          ...prev,
+          [pedestalOptionId]: {
+            ...prev[pedestalOptionId],
+            price: Number(chosen?.price) || 0,
+            pedestalData: chosen ? { dimension: chosen.dimension, price: Number(chosen.price) || 0 } : null,
+          },
+        }));
+      }}
+    >
+      <option value="">— Select pedestal —</option>
+
+      {pedestalItems.map((p, idx) => (
+        <option key={idx} value={String(idx)}>
+          {p.dimension} (+ $ {Number(p.price || 0)})
+        </option>
+      ))}
+    </select>
+
+    {selectedAddons[pedestalOptionId]?.pedestalData && (
+      <div className="mt-3 text-sm text-gray-700">
+        Selected:{" "}
+        <span className="font-semibold">
+          {selectedAddons[pedestalOptionId].pedestalData.dimension}
+        </span>{" "}
+        (+ $ {selectedAddons[pedestalOptionId].pedestalData.price})
+      </div>
+    )}
+
+    {pedestalItems.length === 0 && (
+      <div className="mt-3 text-sm text-red-600">
+        No pedestal options found for this product.
+      </div>
+    )}
+  </div>
+)}
               {/* Shelving Configuration (only if shelving addon is selected) */}
               {shelvingOptionId && isShelvingSelected && (
                 <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -1726,21 +1826,33 @@ const attributeGroupsForUI =
                 endDate,
 
                 addons: Object.entries(selectedAddons).map(([optionId, a]) => ({
-                  optionId,
-                  name: a.name,
-                  price: a.price,
+  optionId,
+  name: a.name,
+  price: a.price,
 
-                  signageText:
-                    optionId === signageOptionId ? signageText : "",
-                  vinylColor:
-                    optionId === vinylOptionId ? vinylColor : "",
-                  vinylHex:
-                    optionId === vinylOptionId ? vinylHex : "",
-                  vinylImageUrl:
-                    optionId === vinylOptionId ? (resolvedVinylImageUrl || vinylImageUrl || "") : "",
-                  shelvingData:
-                    optionId === shelvingOptionId && a.shelvingData ? a.shelvingData : null,
-                })),
+  pedestalData:
+    optionId === pedestalOptionId ? a.pedestalData || null : null,
+
+  signageText:
+    optionId === signageOptionId ? signageText : "",
+
+  vinylColor:
+    optionId === vinylOptionId ? vinylColor : "",
+
+  vinylHex:
+    optionId === vinylOptionId ? vinylHex : "",
+
+  vinylImageUrl:
+    optionId === vinylOptionId
+      ? (resolvedVinylImageUrl || vinylImageUrl || "")
+      : "",
+
+  shelvingData:
+    optionId === shelvingOptionId && a.shelvingData
+      ? a.shelvingData
+      : null,
+})),
+
 
                 // 🔒 FINAL SNAPSHOT PRICE
                 lineTotal: totalPrice,

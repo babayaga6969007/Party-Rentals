@@ -28,6 +28,44 @@ let uploadedImages = [];
       addons = req.body.addons
         ? JSON.parse(req.body.addons)
         : [];
+        // -----------------------------
+// Normalize addon data (pedestals + shelving)
+// -----------------------------
+addons = (addons || []).map((a) => {
+  const addonData = {
+    optionId: a.optionId,
+    overridePrice:
+      a.overridePrice === "" || a.overridePrice === null
+        ? null
+        : Number(a.overridePrice),
+  };
+
+  // Shelving
+  if (a.shelvingTier) {
+    addonData.shelvingTier = a.shelvingTier;
+    addonData.shelvingSize = a.shelvingSize || "";
+    addonData.shelvingQuantity = a.shelvingQuantity || 1;
+  }
+
+  // Pedestals
+  if (Array.isArray(a.pedestals)) {
+    addonData.pedestals = a.pedestals
+      .filter(
+        (p) =>
+          p &&
+          typeof p.dimension === "string" &&
+          p.dimension.trim() !== "" &&
+          Number(p.price) >= 0
+      )
+      .map((p) => ({
+        dimension: p.dimension.trim(),
+        price: Number(p.price),
+      }));
+  }
+
+  return addonData;
+});
+
     } catch (err) {
       return res.status(400).json({
         message: "Invalid attributes or addons format",
@@ -279,24 +317,41 @@ else if (updates.productSubType === "simple") {
   if ("addons" in req.body) {
   const parsedAddons = JSON.parse(req.body.addons || "[]");
 
-  updates.addons = parsedAddons.map((a) => {
-    const addonData = {
-      optionId: a.optionId,
-      overridePrice:
-        a.overridePrice === "" || a.overridePrice === null
-          ? null
-          : Number(a.overridePrice),
-    };
-    
-    // Include shelving configuration if present
-    if (a.shelvingTier) {
-      addonData.shelvingTier = a.shelvingTier;
-      addonData.shelvingSize = a.shelvingSize || "";
-      addonData.shelvingQuantity = a.shelvingQuantity || 1;
-    }
-    
-    return addonData;
-  });
+ updates.addons = parsedAddons.map((a) => {
+  const addonData = {
+    optionId: a.optionId,
+    overridePrice:
+      a.overridePrice === "" || a.overridePrice === null
+        ? null
+        : Number(a.overridePrice),
+  };
+
+  // Shelving
+  if (a.shelvingTier) {
+    addonData.shelvingTier = a.shelvingTier;
+    addonData.shelvingSize = a.shelvingSize || "";
+    addonData.shelvingQuantity = a.shelvingQuantity || 1;
+  }
+
+  // Pedestals
+  if (Array.isArray(a.pedestals)) {
+    addonData.pedestals = a.pedestals
+      .filter(
+        (p) =>
+          p &&
+          typeof p.dimension === "string" &&
+          p.dimension.trim() !== "" &&
+          Number(p.price) >= 0
+      )
+      .map((p) => ({
+        dimension: p.dimension.trim(),
+        price: Number(p.price),
+      }));
+  }
+
+  return addonData;
+});
+
 }
 
 
@@ -412,16 +467,24 @@ exports.getSingleProduct = async (req, res) => {
       });
     });
 
-    product.addons = (product.addons || []).map((a) => ({
-      ...a,
-      option: optionMap[String(a.optionId)] || null,
-      // Preserve shelving data if it exists
-      shelvingData: (a.shelvingTier || a.shelvingSize || a.shelvingQuantity) ? {
-        tier: a.shelvingTier || "",
-        size: a.shelvingSize || "",
-        quantity: a.shelvingQuantity || 1,
-      } : null,
-    }));
+   product.addons = (product.addons || []).map((a) => ({
+  ...a,
+  option: optionMap[String(a.optionId)] || null,
+
+  // Shelving (existing)
+  shelvingData:
+    a.shelvingTier || a.shelvingSize || a.shelvingQuantity
+      ? {
+          tier: a.shelvingTier || "",
+          size: a.shelvingSize || "",
+          quantity: a.shelvingQuantity || 1,
+        }
+      : null,
+
+  // Pedestals (NEW)
+  pedestals: Array.isArray(a.pedestals) ? a.pedestals : [],
+}));
+
 
     res.json(product);
   } catch (err) {

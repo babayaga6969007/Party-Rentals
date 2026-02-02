@@ -57,7 +57,15 @@ const [variations, setVariations] = useState([]);
   const [selectedAttrs, setSelectedAttrs] = useState({});
   const [selectedAddons, setSelectedAddons] = useState({});
 
-  // groupId → optionId → { selected, overridePrice, shelvingTier, shelvingSize, shelvingQuantity }
+// groupId → optionId → {
+//   selected,
+//   overridePrice,
+//   shelvingTier,
+//   shelvingSize,
+//   shelvingQuantity,
+//   pedestalCount,
+//   pedestals: [{ dimension, price }]
+// }
   const [loadedAddons, setLoadedAddons] = useState([]);
 
   // Shelving config for admin
@@ -192,13 +200,20 @@ const [variations, setVariations] = useState([]);
     const option = addonGroup.options.find(o => String(o._id) === optionId);
     const tierFromOption = option?.tier || "A";
     
-    grouped[groupKey][optionId] = {
-      selected: true,
-      overridePrice: a.overridePrice ?? "",
-      shelvingTier: shelvingData.tier || (a.shelvingTier || tierFromOption),
-      shelvingSize: shelvingData.size || (a.shelvingSize || ""),
-      shelvingQuantity: shelvingData.quantity || (a.shelvingQuantity || 1),
-    };
+   grouped[groupKey][optionId] = {
+  selected: true,
+  overridePrice: a.overridePrice ?? "",
+
+  // Shelving
+  shelvingTier: shelvingData.tier || (a.shelvingTier || tierFromOption),
+  shelvingSize: shelvingData.size || (a.shelvingSize || ""),
+  shelvingQuantity: shelvingData.quantity || (a.shelvingQuantity || 1),
+
+  // Pedestals
+  pedestalCount: Array.isArray(a.pedestals) ? a.pedestals.length : 0,
+  pedestals: Array.isArray(a.pedestals) ? a.pedestals : [],
+};
+
   });
 
     setSelectedAddons(grouped);
@@ -381,10 +396,15 @@ formData.append("productSubType", rentalSubType);
 
     // Add shelving configuration if it's a shelving addon
     if (isShelving && v.shelvingTier) {
-      addonData.shelvingTier = v.shelvingTier;
-      addonData.shelvingSize = v.shelvingSize || "";
-      addonData.shelvingQuantity = v.shelvingQuantity || 1;
-    }
+  addonData.shelvingTier = v.shelvingTier;
+  addonData.shelvingSize = v.shelvingSize || "";
+  addonData.shelvingQuantity = v.shelvingQuantity || 1;
+}
+
+if (v.pedestalCount && v.pedestalCount > 0) {
+  addonData.pedestals = v.pedestals || [];
+}
+
 
     addonsPayload.push(addonData);
   });
@@ -818,6 +838,8 @@ const shelvingQuantity = selectedAddons[groupKey]?.[oid]?.shelvingQuantity || 1;
 // Check if this is a shelving addon
 const isShelving = o.label?.toLowerCase().includes("shelving") || 
                    o.label?.toLowerCase().includes("shelf");
+                   const isPedestal = o.label?.toLowerCase().includes("pedestal");
+
 const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
 
 
@@ -844,12 +866,19 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
     [groupKey]: {
       ...(prev[groupKey] || {}),
       [oid]: {
-        selected: checked,
-        overridePrice: prev[groupKey]?.[oid]?.overridePrice ?? "",
-        shelvingTier: prev[groupKey]?.[oid]?.shelvingTier || (o.tier || "A"),
-        shelvingSize: prev[groupKey]?.[oid]?.shelvingSize || "",
-        shelvingQuantity: prev[groupKey]?.[oid]?.shelvingQuantity || 1,
-      },
+  selected: checked,
+  overridePrice: prev[groupKey]?.[oid]?.overridePrice ?? "",
+
+  // Shelving
+  shelvingTier: prev[groupKey]?.[oid]?.shelvingTier || (o.tier || "A"),
+  shelvingSize: prev[groupKey]?.[oid]?.shelvingSize || "",
+  shelvingQuantity: prev[groupKey]?.[oid]?.shelvingQuantity || 1,
+
+  // Pedestals
+  pedestalCount: prev[groupKey]?.[oid]?.pedestalCount || 0,
+  pedestals: prev[groupKey]?.[oid]?.pedestals || [],
+},
+
     },
   };
 });
@@ -907,9 +936,111 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
                       />
                     </div>
                     </div>
+{/* Pedestal Configuration UI */}
+{isPedestal && isSelected && (
+  <div className="mt-3 pt-3 border-t border-gray-300 space-y-4">
+    <h4 className="font-semibold text-sm text-gray-700">
+      Pedestal Configuration
+    </h4>
+
+    {/* Pedestal Count */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        How many pedestals would you require?
+      </label>
+      <input
+        type="number"
+        min="0"
+        max="10"
+        value={selectedAddons[groupKey]?.[oid]?.pedestalCount || 0}
+        onChange={(e) => {
+          const count = Number(e.target.value) || 0;
+
+          setSelectedAddons((prev) => {
+            const groupData = prev[groupKey] || {};
+            const existing = groupData[oid] || {};
+
+            return {
+              ...prev,
+              [groupKey]: {
+                ...groupData,
+                [oid]: {
+                  ...existing,
+                  selected: true,
+                  pedestalCount: count,
+                  pedestals: Array.from({ length: count }, (_, i) =>
+                    existing.pedestals?.[i] || { dimension: "", price: "" }
+                  ),
+                },
+              },
+            };
+          });
+        }}
+        className="w-32 p-2 border rounded-lg"
+      />
+    </div>
+
+    {/* Pedestal Fields */}
+    {(selectedAddons[groupKey]?.[oid]?.pedestals || []).map((p, idx) => (
+      <div
+        key={idx}
+        className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-gray-50 p-3 rounded-lg"
+      >
+        <input
+          type="text"
+          placeholder={`Pedestal ${idx + 1} Dimension`}
+          value={p.dimension}
+          onChange={(e) => {
+            const value = e.target.value;
+            setSelectedAddons((prev) => {
+              const copy = [...prev[groupKey][oid].pedestals];
+              copy[idx] = { ...copy[idx], dimension: value };
+              return {
+                ...prev,
+                [groupKey]: {
+                  ...prev[groupKey],
+                  [oid]: {
+                    ...prev[groupKey][oid],
+                    pedestals: copy,
+                  },
+                },
+              };
+            });
+          }}
+          className="p-2 border rounded-lg"
+        />
+
+        <input
+          type="number"
+          placeholder="Price"
+          value={p.price}
+          onChange={(e) => {
+            const value = e.target.value;
+            setSelectedAddons((prev) => {
+              const copy = [...prev[groupKey][oid].pedestals];
+              copy[idx] = { ...copy[idx], price: value };
+              return {
+                ...prev,
+                [groupKey]: {
+                  ...prev[groupKey],
+                  [oid]: {
+                    ...prev[groupKey][oid],
+                    pedestals: copy,
+                  },
+                },
+              };
+            });
+          }}
+          className="p-2 border rounded-lg"
+        />
+      </div>
+    ))}
+  </div>
+)}
 
                     {/* Shelving Configuration UI (only when shelving addon is selected) */}
                     {isShelving && isSelected && (
+                      
                       <div className="mt-3 pt-3 border-t border-gray-300 space-y-3">
                         <h4 className="font-semibold text-sm text-gray-700">Shelving Configuration</h4>
                         
@@ -1068,7 +1199,9 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
                           </div>
                         )}
                       </div>
-                    )}
+                      
+                    )
+                    }
                   </div>
                 );
               })}
