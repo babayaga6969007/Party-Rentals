@@ -564,18 +564,14 @@ console.log("🚀 SENDING API REQUEST TO:", endpoint);
                 type="button"
                 key={type}
                 disabled={isEditMode}
-                onClick={() => {
-                  if (isEditMode) return;
+                 onClick={() => {
+    if (isEditMode) return;
 
-                  setProductType(type);
-                  setCategory("");
+    setProductType(type);
+    setCategory("");
+  }}
+  className={`px-6 py-2 rounded-full border border-gray-400 transition
 
-                
-                }}
-
-
-
-                className={`px-6 py-2 rounded-full border border-gray-400 transition
                   ${productType === type
                     ? "bg-[#8B5C42] text-white"
                     : "bg-white hover:bg-gray-100"
@@ -647,6 +643,7 @@ console.log("🚀 SENDING API REQUEST TO:", endpoint);
               ))}
 
             </select>
+          </div>
           </div>
           {productType === "rental" && rentalSubType === "variable" && (
   <div className="bg-[#FAF7F5] p-6 rounded-xl border">
@@ -775,19 +772,22 @@ console.log("🚀 SENDING API REQUEST TO:", endpoint);
 />
 
 
-{/* Existing images (edit mode) */}
-{v.existingImages?.length > 0 && (
+{/* Preview (existing + new) */}
+{(v.existingImages?.length > 0 || v.previews?.length > 0) && (
   <div className="flex gap-2 flex-wrap mt-2">
-    {v.existingImages.map((img, i) => (
+    {/* Existing images (edit mode) */}
+    {(v.existingImages || []).map((img, i) => (
       <div key={`existing-${i}`} className="relative">
         <img
           src={img.url || img}
           className="w-24 h-24 object-cover rounded border"
+          alt=""
         />
         <button
           type="button"
           onClick={() => {
             const copy = [...variations];
+            copy[index].existingImages = [...(copy[index].existingImages || [])];
             copy[index].existingImages.splice(i, 1);
             setVariations(copy);
           }}
@@ -797,24 +797,26 @@ console.log("🚀 SENDING API REQUEST TO:", endpoint);
         </button>
       </div>
     ))}
-  </div>
-)}
 
-{/* Newly added previews */}
-{v.previews?.length > 0 && (
-  <div className="flex gap-2 flex-wrap mt-2">
-    {v.previews.map((src, i) => (
+    {/* Newly added previews */}
+    {(v.previews || []).map((src, i) => (
       <div key={`new-${i}`} className="relative">
         <img
           src={src}
           className="w-24 h-24 object-cover rounded border"
+          alt=""
         />
         <button
           type="button"
           onClick={() => {
             const copy = [...variations];
+
+            copy[index].images = [...(copy[index].images || [])];
+            copy[index].previews = [...(copy[index].previews || [])];
+
             copy[index].images.splice(i, 1);
             copy[index].previews.splice(i, 1);
+
             setVariations(copy);
           }}
           className="absolute -top-2 -right-2 bg-black text-white rounded-full w-5 h-5 text-xs"
@@ -826,64 +828,11 @@ console.log("🚀 SENDING API REQUEST TO:", endpoint);
   </div>
 )}
 
-{/* Existing images (edit mode) */}
-{v.existingImages?.length > 0 && (
-  <div className="flex gap-2 flex-wrap mt-2">
-    {v.existingImages.map((img, i) => (
-      <div key={`existing-${i}`} className="relative">
-        <img
-          src={img.url || img}
-          className="w-24 h-24 object-cover rounded border"
-        />
-        <button
-          type="button"
-          onClick={() => {
-            const copy = [...variations];
-            copy[index].existingImages.splice(i, 1);
-            setVariations(copy);
-          }}
-          className="absolute -top-2 -right-2 bg-black text-white rounded-full w-5 h-5 text-xs"
-        >
-          ×
-        </button>
-      </div>
-    ))}
-  </div>
-)}
 
-{/* Newly added previews */}
-{v.previews?.length > 0 && (
-  <div className="flex gap-2 flex-wrap mt-2">
-    {v.previews.map((src, i) => (
-      <div key={`new-${i}`} className="relative">
-        <img
-          src={src}
-          className="w-24 h-24 object-cover rounded border"
-        />
-        <button
-          type="button"
-          onClick={() => {
-            const copy = [...variations];
-            copy[index].images.splice(i, 1);
-            copy[index].previews.splice(i, 1);
-            setVariations(copy);
-          }}
-          className="absolute -top-2 -right-2 bg-black text-white rounded-full w-5 h-5 text-xs"
-        >
-          ×
-        </button>
-      </div>
-    ))}
-  </div>
-)}
-
-  </div>
-)}
-
-    </div>
-  ))}
-
+   
         </div>
+  ))
+}
 
         {/* PRICING — hidden for variable rentals */}
 {!(productType === "rental" && rentalSubType === "variable") && (
@@ -1060,39 +1009,36 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-gray-600">Override price</span>
                       <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        disabled={!isSelected}
-                        value={overridePrice}
-                        onChange={(e) => {
-  if (!oid || oid === "null") return;
+  type="number"
+  min="0"
+  step="1"
+  disabled={!isSelected}
+  value={overridePrice}
+  onChange={(e) => {
+    if (!oid || oid === "null") return;
 
-  const value = e.target.value;
+    const value = e.target.value;
 
-  setSelectedAddons((prev) => {
-  const groupKey = String(g._id);
+    setSelectedAddons((prev) => {
+      const groupKey = String(g._id);
 
-  return {
-    ...prev,
-    [groupKey]: {
-      ...(prev[groupKey] || {}),
-      [oid]: {
-        ...prev[groupKey]?.[oid],
-        selected: true,
-        overridePrice: value === "" ? "" : Number(value),
-      },
-    },
-  };
-});
+      return {
+        ...prev,
+        [groupKey]: {
+          ...(prev[groupKey] || {}),
+          [oid]: {
+            ...prev[groupKey]?.[oid],
+            selected: true,
+            overridePrice: value === "" ? "" : Number(value),
+          },
+        },
+      };
+    });
+  }}
+  className="w-36 p-2 border border-gray-300 rounded-lg disabled:bg-gray-100"
+  placeholder={`${Number(o.priceDelta || 0).toFixed(0)}`}
+/>
 
-}}
-
-
-
-                        className="w-36 p-2 border border-gray-300 rounded-lg disabled:bg-gray-100"
-                        placeholder={`${Number(o.priceDelta || 0).toFixed(0)}`}
-                      />
                     </div>
                     </div>
 {/* Pedestal Configuration UI */}
