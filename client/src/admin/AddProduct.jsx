@@ -264,6 +264,7 @@ const [variations, setVariations] = useState([]);
 
         setAvailabilityCount(data.availabilityCount || 1);
        setProductType(data.productType);
+setRentalSubType(data.productSubType || "simple");
 
 
 
@@ -288,6 +289,24 @@ const [variations, setVariations] = useState([]);
 
         setLoadedAddons(data.addons || []);
 
+// 🔄 Restore variations (EDIT MODE)
+if (data.productType === "rental" && data.productSubType === "variable") {
+  const restored = (data.variations || []).map((v, i) => ({
+    id: i,
+    dimension: v.dimension || "",
+    pricePerDay: v.pricePerDay || "",
+    salePrice: v.salePrice || "",
+    stock: v.stock || 1,
+
+    // images restored from backend
+    images: [],
+    previews: (v.images || []).map((img) => img.url),
+    existingImages: v.images || [],
+  }));
+
+  setVariations(restored);
+  setVariationCount(restored.length);
+}
 
 
 
@@ -339,11 +358,12 @@ console.log("✅ SUBMIT CLICKED");
     }))
   ));
 
-  variations.forEach((v, i) => {
-    if (v.image) {
-      formData.append(`variationImages_${i}`, v.image);
-    }
+ variations.forEach((v, i) => {
+  (v.images || []).forEach((img) => {
+    formData.append(`variationImages_${i}`, img);
   });
+});
+
 }
 console.log("📦 VARIATIONS APPENDED:", variations.length);
 
@@ -435,20 +455,28 @@ formData.append("isEditMode", String(isEditMode));
       formData.append("addons", JSON.stringify(addonsPayload));
     }
 
-    // Regular price
-    // ===============================
-// PRICING SUBMISSION
-    // ===============================
 
-if (productType === "rental" && rentalSubType === "simple") {
+
+// ===============================
+// PRICING SUBMISSION (STORE BOTH)
+// ===============================
+
+// Always send pricePerDay if filled (works for rental + sale)
+if (pricePerDay !== "" && pricePerDay !== null && pricePerDay !== undefined) {
   formData.append("pricePerDay", pricePerDay);
 }
 
-if (productType === "sale") {
-  formData.append("price", pricePerDay); 
+// Always send salePrice if filled (works for rental + sale)
+if (salePrice !== "" && salePrice !== null && salePrice !== undefined) {
+  formData.append("salePrice", salePrice);
+}
 
-  if (salePrice !== "" && salePrice !== null) {
-    formData.append("salePrice", salePrice);
+// Sale products also need "price" (your backend uses req.body.price for sale)
+if (productType === "sale") {
+  // Your UI currently uses the same input (pricePerDay) as the main selling price.
+  // So we mirror it into "price" to keep your current UI unchanged.
+  if (pricePerDay !== "" && pricePerDay !== null && pricePerDay !== undefined) {
+    formData.append("price", pricePerDay);
   }
 }
 
@@ -461,7 +489,11 @@ if (isEditMode) {
   // CREATE MODE
   if (productType === "rental" && rentalSubType === "variable") {
     // Each variation must have its own image
-    const missingImage = variations.some(v => !v.image);
+const missingImage = variations.some(
+  (v) =>
+    (!v.images || v.images.length === 0) &&
+    (!v.existingImages || v.existingImages.length === 0)
+);
 
     if (missingImage) {
       alert("Each variation must have an image");
@@ -523,32 +555,7 @@ console.log("🚀 SENDING API REQUEST TO:", endpoint);
       >
         {/* PRODUCT TYPE */}
         {/* RENTAL SUB TYPE */}
-{productType === "rental" && (
-  <div>
-    <label className="font-medium">Rental Type</label>
-    <div className="flex gap-4 mt-2">
-      {["simple", "variable"].map((type) => (
-        <button
-          key={type}
-          type="button"
-          onClick={() => {
-            setRentalSubType(type);
-            setVariationCount(0);
-            setVariations([]);
-          }}
-          className={`px-6 py-2 rounded-full border ${
-            rentalSubType === type
-              ? "bg-[#8B5C42] text-white"
-              : "bg-white hover:bg-gray-100"
-          }`}
-        >
-          {type === "simple" ? "Simple Rental" : "Variable Rental"}
-        </button>
-      ))}
-    </div>
-  </div>
-)}
-
+        
         <div>
           <label className="font-medium">Product Type</label>
           <div className="flex gap-4 mt-2">
@@ -579,6 +586,34 @@ console.log("🚀 SENDING API REQUEST TO:", endpoint);
             ))}
           </div>
         </div>
+{productType === "rental" && (
+  <div>
+    <label className="font-medium">Rental Type</label>
+    <div className="flex gap-4 mt-2">
+      {["simple", "variable"].map((type) => (
+        <button
+          key={type}
+          type="button"
+          onClick={() => {
+  if (isEditMode) return;
+  setRentalSubType(type);
+  setVariationCount(0);
+  setVariations([]);
+}}
+
+          className={`px-6 py-2 rounded-full border ${
+            rentalSubType === type
+              ? "bg-[#8B5C42] text-white"
+              : "bg-white hover:bg-gray-100"
+          }`}
+        >
+          {type === "simple" ? "Simple Rental" : "Variable Rental"}
+        </button>
+      ))}
+    </div>
+  </div>
+)}
+
         
 
         {/* BASIC INFO */}
@@ -618,29 +653,31 @@ console.log("🚀 SENDING API REQUEST TO:", endpoint);
     <label className="font-medium">
       How many variations do you want?
     </label>
-    <input
-      type="number"
-      min="1"
-      max="20"
-      className="mt-2 w-40 p-3 border rounded-lg"
-      value={variationCount}
-      onChange={(e) => {
-        const count = Number(e.target.value);
-        setVariationCount(count);
+   <input
+  type="number"
+  min="1"
+  max="20"
+  value={variationCount}
+  disabled={isEditMode}
+  onChange={(e) => {
+    if (isEditMode) return;
+    const count = Number(e.target.value);
+    setVariationCount(count);
+    setVariations(
+      Array.from({ length: count }, (_, i) => ({
+        id: i,
+        dimension: "",
+        pricePerDay: "",
+        salePrice: "",
+        stock: 1,
+        images: [],
+        previews: [],
+        existingImages: [],
+      }))
+    );
+  }}
+/>
 
-        setVariations(
-          Array.from({ length: count }, (_, i) => ({
-            id: i,
-            dimension: "",
-            pricePerDay: "",
-            salePrice: "",
-            stock: 1,
-            image: null,
-            preview: null,
-          }))
-        );
-      }}
-    />
   </div>
   
 )}
@@ -702,25 +739,134 @@ console.log("🚀 SENDING API REQUEST TO:", endpoint);
         }}
       />
 
-      {/* Single Image */}
-      <input
-        type="file"
-        accept="image/*"
-        onChange={(e) => {
-          const file = e.target.files[0];
-          const copy = [...variations];
-          copy[index].image = file;
-          copy[index].preview = URL.createObjectURL(file);
-          setVariations(copy);
-        }}
-      />
+    {/* Variation Images (max 5) */}
+<input
+  type="file"
+  accept="image/*"
+  multiple
+  onChange={(e) => {
+    const files = Array.from(e.target.files || []);
+    const copy = [...variations];
 
-      {v.preview && (
+    const remaining = 5 - copy[index].images.length;
+    const accepted = files.slice(0, remaining);
+
+    copy[index].images.push(...accepted);
+    copy[index].previews.push(
+      ...accepted.map((f) => URL.createObjectURL(f))
+    );
+
+    setVariations(copy);
+  }}
+/>
+
+{/* Preview */}
+{v.previews?.length > 0 && (
+  <div className="flex gap-2 flex-wrap mt-2">
+    {/* Existing images (edit mode) */}
+{v.existingImages?.length > 0 && (
+  <div className="flex gap-2 flex-wrap mt-2">
+    {v.existingImages.map((img, i) => (
+      <div key={`existing-${i}`} className="relative">
         <img
-          src={v.preview}
-          className="w-32 h-32 object-cover rounded-lg"
+          src={img.url || img}
+          className="w-24 h-24 object-cover rounded border"
         />
-      )}
+        <button
+          type="button"
+          onClick={() => {
+            const copy = [...variations];
+            copy[index].existingImages.splice(i, 1);
+            setVariations(copy);
+          }}
+          className="absolute -top-2 -right-2 bg-black text-white rounded-full w-5 h-5 text-xs"
+        >
+          ×
+        </button>
+      </div>
+    ))}
+  </div>
+)}
+
+{/* Newly added previews */}
+{v.previews?.length > 0 && (
+  <div className="flex gap-2 flex-wrap mt-2">
+    {v.previews.map((src, i) => (
+      <div key={`new-${i}`} className="relative">
+        <img
+          src={src}
+          className="w-24 h-24 object-cover rounded border"
+        />
+        <button
+          type="button"
+          onClick={() => {
+            const copy = [...variations];
+            copy[index].images.splice(i, 1);
+            copy[index].previews.splice(i, 1);
+            setVariations(copy);
+          }}
+          className="absolute -top-2 -right-2 bg-black text-white rounded-full w-5 h-5 text-xs"
+        >
+          ×
+        </button>
+      </div>
+    ))}
+  </div>
+)}
+{/* Existing images (edit mode) */}
+{v.existingImages?.length > 0 && (
+  <div className="flex gap-2 flex-wrap mt-2">
+    {v.existingImages.map((img, i) => (
+      <div key={`existing-${i}`} className="relative">
+        <img
+          src={img.url || img}
+          className="w-24 h-24 object-cover rounded border"
+        />
+        <button
+          type="button"
+          onClick={() => {
+            const copy = [...variations];
+            copy[index].existingImages.splice(i, 1);
+            setVariations(copy);
+          }}
+          className="absolute -top-2 -right-2 bg-black text-white rounded-full w-5 h-5 text-xs"
+        >
+          ×
+        </button>
+      </div>
+    ))}
+  </div>
+)}
+
+{/* Newly added previews */}
+{v.previews?.length > 0 && (
+  <div className="flex gap-2 flex-wrap mt-2">
+    {v.previews.map((src, i) => (
+      <div key={`new-${i}`} className="relative">
+        <img
+          src={src}
+          className="w-24 h-24 object-cover rounded border"
+        />
+        <button
+          type="button"
+          onClick={() => {
+            const copy = [...variations];
+            copy[index].images.splice(i, 1);
+            copy[index].previews.splice(i, 1);
+            setVariations(copy);
+          }}
+          className="absolute -top-2 -right-2 bg-black text-white rounded-full w-5 h-5 text-xs"
+        >
+          ×
+        </button>
+      </div>
+    ))}
+  </div>
+)}
+
+  </div>
+)}
+
     </div>
   ))}
 

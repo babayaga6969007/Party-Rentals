@@ -129,11 +129,14 @@ dimension: {
 },
 
 
-    // Optional image override
-    image: {
-      public_id: { type: String },
-      url: { type: String },
-    },
+  // Variation images (up to 5)
+images: [
+  {
+    public_id: { type: String },
+    url: { type: String, required: true },
+  },
+],
+
   },
   { _id: false }
 );

@@ -157,20 +157,23 @@ if (productSubType === "variable") {
     });
   }
 }
-// ✅ FIX 1: Upload variation images (1 image per variation)
+
+// 🔹 Upload variation images (UP TO 5 per variation)
 const variationImagesMap = {};
 
 if (productSubType === "variable") {
   for (let i = 0; i < parsedVariations.length; i++) {
     const files = req.files?.[`variationImages_${i}`] || [];
 
-    // Your UI allows a single image per variation, so we take [0]
     if (files.length > 0) {
       const uploaded = await uploadImagesToCloudinary(files);
-      variationImagesMap[i] = uploaded[0]; // { public_id, url }
+      variationImagesMap[i] = uploaded;
+    } else {
+      variationImagesMap[i] = [];
     }
   }
 }
+
 
 const finalVariations =
   productSubType === "variable"
@@ -179,7 +182,7 @@ const finalVariations =
         pricePerDay: Number(v.pricePerDay),
         salePrice: v.salePrice ? Number(v.salePrice) : null,
         stock: Number(v.stock),
-        image: variationImagesMap[i] || null,
+        images: variationImagesMap[i] || [],
       }))
     : [];
 
@@ -201,15 +204,24 @@ const basePayload = {
   variations: finalVariations,
 };
 
+// Store pricePerDay & salePrice for ANY simple product if provided
+if (productSubType === "simple") {
+  if (pricePerDay !== undefined && pricePerDay !== null && pricePerDay !== "") {
+    basePayload.pricePerDay = Number(pricePerDay);
+  }
 
-if (productType === "rental" && productSubType === "simple") {
-  basePayload.pricePerDay = Number(pricePerDay);
+  if (salePrice !== undefined && salePrice !== null && salePrice !== "") {
+    basePayload.salePrice = Number(salePrice);
+  }
 }
 
+// Sale products ALSO use "price" as their main selling price
 if (productType === "sale") {
-  basePayload.price = Number(price);
-  basePayload.salePrice = salePrice ? Number(salePrice) : null;
+  if (price !== undefined && price !== null && price !== "") {
+    basePayload.price = Number(price);
+  }
 }
+
 
 const product = await Product.create(basePayload);
 
@@ -251,9 +263,40 @@ exports.editProduct = async (req, res) => {
     const updates = {};
     // Load existing product (needed to preserve variation images)
 const existingProduct = await Product.findById(req.params.id).lean();
+// ===============================
+// STEP 3A: Parse variations JSON
+// ===============================
+let parsedVariations = [];
+
+if (req.body.variations) {
+  try {
+    parsedVariations = JSON.parse(req.body.variations);
+  } catch (err) {
+    return res.status(400).json({
+      message: "Invalid variations format",
+    });
+  }
+}
+// ==========================================
+// STEP 3B: Upload NEW variation images
+// ==========================================
+const variationImagesMap = {};
+
+for (let i = 0; i < parsedVariations.length; i++) {
+  const files = req.files?.[`variationImages_${i}`] || [];
+
+  if (files.length > 0) {
+    const uploaded = await uploadImagesToCloudinary(files);
+    variationImagesMap[i] = uploaded; // array of { public_id, url }
+  } else {
+    variationImagesMap[i] = [];
+  }
+}
+
 if (!existingProduct) {
   return res.status(404).json({ message: "Product not found" });
 }
+
 
 
    
@@ -264,12 +307,34 @@ if (req.body.description !== undefined)
 if (req.body.dimensions !== undefined)
   updates.dimensions = req.body.dimensions; // ✅
 if (req.body.category !== undefined) updates.category = req.body.category;
-updates.productSubType = "simple";
-updates.variations = [];
+
 
 
     if (req.body.productType !== undefined)
       updates.productType = req.body.productType;
+    if (parsedVariations.length > 0) {
+  updates.productSubType = "variable";
+
+  updates.variations = parsedVariations.map((v, i) => {
+    const existingVar = existingProduct.variations?.[i] || {};
+
+    return {
+      dimension: v.dimension,
+      pricePerDay: Number(v.pricePerDay),
+      salePrice: v.salePrice ? Number(v.salePrice) : null,
+      stock: Number(v.stock),
+      images: [
+        ...(v.existingImages || existingVar.images || []),
+        ...(variationImagesMap[i] || []),
+      ],
+    };
+  });
+
+  updates.pricePerDay = undefined;
+  updates.availabilityCount = 0;
+}
+
+
     if (req.body.featured !== undefined) {
   const featuredFlag =
     req.body.featured === "true" || req.body.featured === true;
@@ -284,19 +349,18 @@ if (updates.productType === "sale") {
 }
 
 
-    if (req.body.availabilityCount !== undefined)
-      updates.availabilityCount = Number(req.body.availabilityCount);
+// For SIMPLE rental only
+if (updates.productSubType !== "variable") {
+  if (req.body.availabilityCount !== undefined)
+    updates.availabilityCount = Number(req.body.availabilityCount);
 
-    if (req.body.pricePerDay !== undefined)
-      updates.pricePerDay = Number(req.body.pricePerDay);
+  if (req.body.pricePerDay !== undefined)
+    updates.pricePerDay = Number(req.body.pricePerDay);
+}
+
 
     if (req.body.salePrice !== undefined)
       updates.salePrice = Number(req.body.salePrice);
-
-else if (updates.productSubType === "simple") {
-  // Clear variations if switching back to simple
-  updates.variations = [];
-}
 
     // -------- ATTRIBUTES --------
    if (req.body.attributes) {
@@ -422,6 +486,7 @@ const product = await Product.findById(req.params.id)
     path: "variations.attributes.groupId",
     model: "Attribute",
   });
+
 
     if (!product) {
       return res.status(404).json({ message: "Product not found" });

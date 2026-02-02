@@ -25,9 +25,10 @@ const uploadFields = upload.fields([
 
   // ✅ allow up to 50 variation images safely
   ...Array.from({ length: 50 }).map((_, i) => ({
-    name: `variationImages_${i}`,
-    maxCount: 1,
-  })),
+  name: `variationImages_${i}`,
+  maxCount: 5,
+}
+)),
 ]);
 
 
