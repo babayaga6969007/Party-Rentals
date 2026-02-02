@@ -748,22 +748,34 @@ console.log("🚀 SENDING API REQUEST TO:", endpoint);
     const files = Array.from(e.target.files || []);
     const copy = [...variations];
 
-    const remaining = 5 - copy[index].images.length;
-    const accepted = files.slice(0, remaining);
-
-    copy[index].images.push(...accepted);
-    copy[index].previews.push(
-      ...accepted.map((f) => URL.createObjectURL(f))
+    const existingKeys = new Set(
+      (copy[index].images || []).map(
+        (f) => `${f.name}_${f.size}`
+      )
     );
 
+    const filtered = files.filter(
+      (f) => !existingKeys.has(`${f.name}_${f.size}`)
+    );
+
+    const remaining = 5 - copy[index].images.length;
+    const accepted = filtered.slice(0, remaining);
+
+    copy[index].images = [...copy[index].images, ...accepted];
+    copy[index].previews = [
+      ...copy[index].previews,
+      ...accepted.map((f) => URL.createObjectURL(f)),
+    ];
+
     setVariations(copy);
+
+    // 🔒 prevent re-fire
+    e.target.value = "";
   }}
 />
 
-{/* Preview */}
-{v.previews?.length > 0 && (
-  <div className="flex gap-2 flex-wrap mt-2">
-    {/* Existing images (edit mode) */}
+
+{/* Existing images (edit mode) */}
 {v.existingImages?.length > 0 && (
   <div className="flex gap-2 flex-wrap mt-2">
     {v.existingImages.map((img, i) => (
@@ -813,6 +825,7 @@ console.log("🚀 SENDING API REQUEST TO:", endpoint);
     ))}
   </div>
 )}
+
 {/* Existing images (edit mode) */}
 {v.existingImages?.length > 0 && (
   <div className="flex gap-2 flex-wrap mt-2">
