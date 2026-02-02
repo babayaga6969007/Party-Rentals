@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "./AdminLayout";
 import { FiPlus, FiTrash2, FiX } from "react-icons/fi";
-import axios from "axios";
+import { api } from "../utils/api";
 
-const API = import.meta.env.VITE_API_BASE_URL;
 
-// Adjust token key to your project (this is a common pattern)
+
 function getAdminToken() {
-  return localStorage.getItem("adminToken") || localStorage.getItem("token") || "";
+  return localStorage.getItem("admin_token") || localStorage.getItem("token") || "";
 }
 
 const pill = "px-3 py-1 rounded-full text-sm bg-[#FAF7F5] text-[#2D2926] border border-[#D9C7BE]";
@@ -34,18 +33,25 @@ const Attributes = () => {
     []
   );
 
-  async function fetchGroups() {
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API}/admin/attributes`, headers);
-      setGroups(res.data || []);
-    } catch (e) {
-      console.error(e);
-      alert("Failed to load attributes. Check API / token.");
-    } finally {
-      setLoading(false);
-    }
+ async function fetchGroups() {
+  setLoading(true);
+  try {
+    const res = await api("/admin/attributes", {
+      headers: {
+        Authorization: `Bearer ${getAdminToken()}`,
+      },
+    });
+
+    const data = res?.data ?? res;
+    setGroups(Array.isArray(data) ? data : []);
+  } catch (e) {
+    console.error(e);
+    alert("Failed to load attributes");
+  } finally {
+    setLoading(false);
   }
+}
+
 
   useEffect(() => {
     fetchGroups();
@@ -201,7 +207,7 @@ const Attributes = () => {
         <div className="text-gray-600">No attribute groups yet. Create one.</div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {groups.map((group) => {
+{Array.isArray(groups) && groups.map((group) => {
             const d = draftOption[group._id] || {};
             const activeOptions = (group.options || []).filter((o) => o.isActive !== false);
 
