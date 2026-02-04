@@ -87,7 +87,7 @@ const lowStockCount = products.filter((p) => {
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-[#FAF7F5] border-b">
+            <thead className="bg-gray-100 border-b">
               <tr className="text-left">
                 <th className="px-5 py-4">Product</th>
                 <th className="px-5 py-4">Type</th>
@@ -166,7 +166,7 @@ const lowStockCount = products.filter((p) => {
                     <td className="px-5 py-4 text-right">
                       <button
                         title="Edit Product"
-                        className="text-[#8B5C42]"
+                        className="text-black"
                         onClick={() =>
                           (window.location.href =
                             `/admin/products/edit/${p._id}`)

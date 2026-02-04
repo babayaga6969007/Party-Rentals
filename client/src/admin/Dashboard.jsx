@@ -214,7 +214,7 @@ const productsCount = (products || []).filter((p) => {
 
           <button
             onClick={loadDashboard}
-            className="bg-[#8B5C42] text-white px-5 py-2 rounded-lg hover:bg-[#704A36] transition"
+            className="bg-black text-white px-5 py-2 rounded-lg hover:bg-gray-800 transition"
           >
             Refresh
           </button>

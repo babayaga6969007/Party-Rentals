@@ -2,6 +2,14 @@
 
 @import "tailwindcss";
 
+/* All buttons use pointer cursor */
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
 /* Signage Fonts from public/fonts */
 @font-face {
   font-family: 'BlackMango-Bold';

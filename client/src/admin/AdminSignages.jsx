@@ -111,7 +111,7 @@ const AdminSignagesContent = () => {
         {/* Signages Table */}
         <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
           <table className="w-full">
-            <thead className="bg-[#FAF7F5] border-b">
+            <thead className="bg-gray-100 border-b">
               <tr>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-[#2D2926]">
                   ID
@@ -263,7 +263,7 @@ const AdminSignagesContent = () => {
 
               {/* Metadata */}
               {selectedSignage.metadata?.shareable && (
-                <div className="bg-[#FAF7F5] p-4 rounded-lg">
+                <div className="bg-gray-100 p-4 rounded-lg">
                   <p className="text-sm font-medium text-[#2D2926] mb-2">
                     Sharing Information
                   </p>

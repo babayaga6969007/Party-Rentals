@@ -291,7 +291,7 @@ const openOrderDetails = async (orderId) => {
     {/* 👁 View full order */}
     <button
       onClick={() => openOrderDetails(b.orderId)}
-      className="text-[#8B5C42] hover:text-[#704A36] transition mt-1"
+      className="text-black hover:text-gray-800 transition mt-1"
       title="View full order"
     >
       <FiEye />

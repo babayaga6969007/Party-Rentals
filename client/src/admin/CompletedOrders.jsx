@@ -72,7 +72,7 @@ const CompletedOrders = () => {
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-[#FAF7F5] border-b">
+            <thead className="bg-gray-100 border-b">
               <tr className="text-left">
                 <th className="px-6 py-4">Product</th>
                 <th className="px-6 py-4">Customer</th>

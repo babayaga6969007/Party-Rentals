@@ -9,7 +9,7 @@ function getAdminToken() {
   return localStorage.getItem("admin_token") || localStorage.getItem("token") || "";
 }
 
-const pill = "px-3 py-1 rounded-full text-sm bg-[#FAF7F5] text-[#2D2926] border border-[#D9C7BE]";
+const pill = "px-3 py-1 rounded-full text-sm bg-gray-100 text-[#2D2926] border border-gray-300";
 
 const Attributes = () => {
   const [groups, setGroups] = useState([]);
@@ -232,14 +232,14 @@ const Attributes = () => {
                 </div>
 
                 {/* Add Option Row */}
-                <div className="border rounded-xl p-4 bg-[#FAF7F5] border-[#D9C7BE] mb-5">
+                <div className="border rounded-xl p-4 bg-gray-100 border-gray-300 mb-5">
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
                     <div className="md:col-span-6">
                       <label className="block text-sm text-[#2D2926] mb-1">Option label</label>
                       <input
                         value={d.label || ""}
                         onChange={(e) => setDraft(group._id, { label: e.target.value })}
-                        className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
+                        className="w-full p-3 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
                         placeholder={
                           group.type === "addon"
                             ? "e.g. Extra balloons"
@@ -257,7 +257,7 @@ const Attributes = () => {
                           type="color"
                           value={d.hex || "#000000"}
                           onChange={(e) => setDraft(group._id, { hex: e.target.value })}
-                          className="w-full h-[46px] rounded-lg border border-[#D9C7BE] bg-white px-2"
+                          className="w-full h-[46px] rounded-lg border border-gray-300 bg-white px-2"
                         />
                       </div>
                     )}
@@ -270,7 +270,7 @@ const Attributes = () => {
                             type="number"
                             value={d.priceDelta ?? ""}
                             onChange={(e) => setDraft(group._id, { priceDelta: e.target.value })}
-                            className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
+                            className="w-full p-3 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
                             placeholder="e.g. 150"
                             min="0"
                             step="1"
@@ -283,7 +283,7 @@ const Attributes = () => {
                             <select
                               value={d.tier || "A"}
                               onChange={(e) => setDraft(group._id, { tier: e.target.value })}
-                              className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
+                              className="w-full p-3 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
                             >
                               <option value="A">Tier A</option>
                               <option value="B">Tier B</option>
@@ -382,7 +382,7 @@ const Attributes = () => {
                 <input
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
-                  className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
+                  className="w-full p-3 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
                   placeholder="e.g. Sizes"
                 />
               </div>
@@ -392,7 +392,7 @@ const Attributes = () => {
                 <select
                   value={newGroupType}
                   onChange={(e) => setNewGroupType(e.target.value)}
-                  className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
+                  className="w-full p-3 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
                 >
                   <option value="multi">Multi-select (tags, sizes)</option>
                   <option value="select">Single-select</option>
@@ -422,7 +422,7 @@ const Attributes = () => {
                 </button>
                 <button
                   onClick={() => setCreateOpen(false)}
-                  className="px-5 py-3 rounded-lg border border-[#D9C7BE] hover:bg-gray-50 transition"
+                  className="px-5 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition"
                 >
                   Cancel
                 </button>

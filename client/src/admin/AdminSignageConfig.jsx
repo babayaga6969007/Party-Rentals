@@ -316,7 +316,7 @@ const AdminSignageConfig = () => {
               type="button"
               onClick={handleSaveBackgroundSize}
               disabled={savingBackground}
-              className="bg-[#8B5C42] text-white px-4 py-2 rounded-lg hover:bg-[#704A36] transition disabled:opacity-60"
+              className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition disabled:opacity-60"
             >
               {savingBackground ? "Saving..." : "Save background size"}
             </button>
@@ -374,7 +374,7 @@ const AdminSignageConfig = () => {
             </div>
             <button
               type="submit"
-              className="mt-4 bg-[#8B5C42] text-white px-4 py-2 rounded-lg hover:bg-[#704A36] transition"
+              className="mt-4 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition"
             >
               Add Size
             </button>
@@ -430,7 +430,7 @@ const AdminSignageConfig = () => {
                     <div className="flex items-end gap-2">
                       <button
                         onClick={() => handleUpdateSize(size._id)}
-                        className="bg-[#8B5C42] text-white px-4 py-2 rounded-lg hover:bg-[#704A36] transition"
+                        className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition"
                       >
                         Save
                       </button>
@@ -450,7 +450,7 @@ const AdminSignageConfig = () => {
                       <span className="text-gray-500 ml-4">
                         {size.fontSize}px font
                       </span>
-                      <span className="text-[#8B5C42] font-semibold ml-4">
+                      <span className="text-black font-semibold ml-4">
                         ${size.price || 0}
                       </span>
                     </div>
@@ -465,7 +465,7 @@ const AdminSignageConfig = () => {
                           console.log("Setting editingSize with price:", editData.price, "from size.price:", size.price);
                           setEditingSize(editData);
                         }}
-                        className="text-[#8B5C42] hover:text-[#704A36] text-sm px-3 py-1 rounded-lg hover:bg-[#FFF7F0] transition"
+                        className="text-black hover:text-gray-800 text-sm px-3 py-1 rounded-lg hover:bg-gray-100 transition"
                       >
                         Edit
                       </button>

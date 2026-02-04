@@ -584,7 +584,7 @@ console.log("🚀 SENDING API REQUEST TO:", endpoint);
   className={`px-6 py-2 rounded-full border border-gray-400 transition
 
                   ${productType === type
-                    ? "bg-[#8B5C42] text-white"
+                    ? "bg-black text-white"
                     : "bg-white hover:bg-gray-100"
                   }`}
               >
@@ -610,7 +610,7 @@ console.log("🚀 SENDING API REQUEST TO:", endpoint);
 
           className={`px-6 py-2 rounded-full border ${
             rentalSubType === type
-              ? "bg-[#8B5C42] text-white"
+              ? "bg-black text-white"
               : "bg-white hover:bg-gray-100"
           }`}
         >
@@ -657,7 +657,7 @@ console.log("🚀 SENDING API REQUEST TO:", endpoint);
           </div>
           </div>
           {productType === "rental" && rentalSubType === "variable" && (
-  <div className="bg-[#FAF7F5] p-6 rounded-xl border space-y-4">
+  <div className="bg-gray-100 p-6 rounded-xl border space-y-4">
     {/* Title */}
     <div>
       <label className="block text-lg font-semibold text-[#2D2926]">
@@ -1268,7 +1268,7 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
                                 }}
                                 className={`px-4 py-2 rounded-lg border-2 transition ${
                                   shelvingTier === tier
-                                    ? "border-[#8B5C42] bg-[#FFF7F0] text-[#8B5C42] font-semibold"
+                                    ? "border-black bg-gray-50 text-black font-semibold"
                                     : "border-gray-300 hover:border-gray-400"
                                 }`}
                               >
@@ -1498,7 +1498,7 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
     border-2 border-dashed rounded-xl p-8 text-center transition
     ${totalImageCount >= MAX_IMAGES
                 ? "border-gray-200 bg-gray-100 cursor-not-allowed text-gray-400"
-                : "border-gray-300 cursor-pointer hover:border-[#8B5C42] hover:bg-[#8B5C42]/5"
+                : "border-gray-300 cursor-pointer hover:border-black hover:bg-black/5"
               }
   `}
           >
@@ -1591,7 +1591,7 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
 
 
         {/* SUBMIT */}
-        <button className="w-full py-4 bg-[#8B5C42] text-white rounded-xl text-lg font-medium hover:bg-[#704A36] transition">
+        <button className="w-full py-4 bg-black text-white rounded-xl text-lg font-medium hover:bg-gray-800 transition">
           {isEditMode ? "Update Product" : "Add Product"}
         </button>
 

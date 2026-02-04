@@ -1,11 +1,10 @@
-import {  FiMail, FiMapPin } from "react-icons/fi";
-
+import { FiMail, FiMapPin } from "react-icons/fi";
 import emailjs from "@emailjs/browser";
 import { useRef, useState } from "react";
-
-
+import { useContactFormModal } from "../../context/ContactFormModalContext";
 
 const Contact = () => {
+  const { openModal: openContactFormModal } = useContactFormModal();
   const startTime = useRef(Date.now());
 const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -72,8 +71,6 @@ const safetyTimer = setTimeout(() => {
 };
 
 
-  const [openForm, setOpenForm] = useState(false);
-  
   return (
     <section className="py-20 px-6 bg-white">
 
@@ -114,12 +111,14 @@ const safetyTimer = setTimeout(() => {
 Need something unique? Our experienced team will help you plan the perfect setup, thoughtfully designed for your occasion.  </p>
 
   <button
-  onClick={() => setOpenForm(true)}
+  type="button"
+  onClick={openContactFormModal}
   className="inline-block bg-black text-white font-medium 
-  px-5 py-2 rounded-lg shadow-sm transition-transform duration-200 ease-out
-  hover:scale-105"
+  px-5 py-2 rounded-lg shadow-sm cursor-pointer
+  transition-all duration-200 ease-out
+  hover:scale-105 hover:bg-gray-800 hover:shadow-md"
 >
-  Kindy Fill out a form →
+  Kindly Fill out a form →
 </button>
 
 </div>
@@ -305,169 +304,8 @@ Suite A                <br />
           ></iframe>
         </div>
       </div>
-      {openForm && (
-  <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4">
-    <div className="bg-white w-full max-w-3xl rounded-2xl shadow-xl overflow-y-auto max-h-[90vh]">
-
-      {/* Header */}
-      <div className="flex justify-between items-center p-5 border-b">
-        <h2 className="text-xl font-semibold text-[#2D2926]">
-          Tell us about your event (don’t worry—big ideas welcome)
-        </h2>
-        <button
-          onClick={() => setOpenForm(false)}
-          className="text-2xl text-gray-500 hover:text-black"
-        >
-          ×
-        </button>
-      </div>
-
-    <form className="p-6 space-y-10">
-
-  {/* ================= THE BASICS ================= */}
-  <section className="space-y-4">
-    <h3 className="text-xl font-semibold">The Basics</h3>
-
-    <input required placeholder="Name" className="input" />
-
-    <input required type="email" placeholder="Email" className="input" />
-
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <input required type="date" className="input" />
-      <input
-        placeholder="Event location & time"
-        className="input"
-      />
-    </div>
-  </section>
-
-  {/* ================= SERVICES NEEDED ================= */}
-  <section className="space-y-4">
-    <h3 className="text-xl font-semibold">What Can We Help With?</h3>
-
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-      {[
-        "Custom backdrops",
-        "Signage",
-        "Props",
-        "Install + breakdown",
-        "Full event styling",
-      ].map(item => (
-        <label key={item} className="flex items-center gap-2">
-          <input type="checkbox" />
-          {item}
-        </label>
-      ))}
-    </div>
-  </section>
-
-  {/* ================= THE FUN STUFF ================= */}
-  <section className="space-y-4">
-    <h3 className="text-xl font-semibold">The Fun Stuff</h3>
-
-    <p className="text-sm text-gray-600">Event Type</p>
-
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-      {[
-        "Wedding",
-        "Birthday",
-        "Baby / Bridal Shower",
-        "Corporate / Brand Event",
-        "Holiday / Themed Event",
-        "Other",
-      ].map(item => (
-        <label key={item} className="flex items-center gap-2">
-          <input type="checkbox" />
-          {item}
-        </label>
-      ))}
-    </div>
-
-    <textarea
-      rows="4"
-      placeholder="What are you envisioning?"
-      className="input"
-    />
-  </section>
-
-  {/* ================= THE DETAILS ================= */}
-  <section className="space-y-4">
-    <h3 className="text-xl font-semibold">The Details</h3>
-
-    <p className="text-sm text-gray-600">
-      Do you have a budget range in mind?
-    </p>
-
-    <div className="space-y-2 text-sm">
-      {[
-        "Under $1,000",
-        "$1,000–$2,500",
-        "$2,500–$5,000",
-        "$5,000+",
-        "I’m not sure yet",
-      ].map(item => (
-        <label key={item} className="flex items-center gap-2">
-          <input type="checkbox" />
-          {item}
-        </label>
-      ))}
-    </div>
-
-    <p className="text-sm text-gray-600">Please check all that apply:</p>
-
-    <div className="flex flex-col gap-2 text-sm">
-      {[
-        "Roof top event",
-        "Outdoor",
-        "Indoor",
-      ].map(item => (
-        <label key={item} className="flex items-center gap-2">
-          <input type="checkbox" />
-          {item}
-        </label>
-      ))}
-    </div>
-
-    <div className="flex items-center gap-4 text-sm">
-      <span>Will you need a mock up design from us?</span>
-      <label className="flex items-center gap-1">
-        <input type="radio" name="mockup" /> Yes
-      </label>
-      <label className="flex items-center gap-1">
-        <input type="radio" name="mockup" /> No
-      </label>
-    </div>
-
-    <textarea
-      rows="3"
-      placeholder="Anything else we should know?"
-      className="input"
-    />
-
-    <p className="text-sm text-gray-500">
-      You don’t need all the details figured out yet.  
-      We’ll review your inquiry within 1–2 business days.
-    </p>
-  </section>
-
-  {/* ================= SUBMIT ================= */}
-  <button
-    type="submit"
-    className="w-full bg-black text-white py-3 rounded-lg
-    hover:bg-gray-800 transition"
-  >
-    Let’s Design This
-  </button>
-
-</form>
-
-    </div>
-  </div>
-)}
-
 
     </section>
   );
 };
-
 export default Contact;

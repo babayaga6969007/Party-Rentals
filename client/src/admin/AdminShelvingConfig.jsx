@@ -287,7 +287,7 @@ const AdminShelvingConfig = () => {
               />
               <button
                 onClick={handleAddTierASize}
-                className="px-4 py-2 bg-[#8B5C42] text-white rounded-lg hover:bg-[#704A36] flex items-center justify-center gap-2"
+                className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 flex items-center justify-center gap-2"
               >
                 <FiPlus /> Add
               </button>
@@ -353,7 +353,7 @@ const AdminShelvingConfig = () => {
                     <div className="flex-1">
                       <div className="font-medium">{size.size}</div>
                       <div className="text-sm text-gray-600">{size.dimensions}</div>
-                      <div className="text-sm font-semibold text-[#8B5C42]">
+                      <div className="text-sm font-semibold text-black">
                         ${size.price}/shelf
                       </div>
                     </div>
@@ -427,7 +427,7 @@ const AdminShelvingConfig = () => {
             </div>
             <button
               onClick={handleUpdateTierB}
-              className="px-6 py-2 bg-[#8B5C42] text-white rounded-lg hover:bg-[#704A36]"
+              className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800"
             >
               Update Tier B
             </button>
@@ -461,7 +461,7 @@ const AdminShelvingConfig = () => {
             </div>
             <button
               onClick={handleUpdateTierC}
-              className="px-6 py-2 bg-[#8B5C42] text-white rounded-lg hover:bg-[#704A36]"
+              className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800"
             >
               Update Tier C
             </button>

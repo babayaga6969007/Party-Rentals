@@ -257,7 +257,7 @@ const Orders = () => {
 
         <button
           onClick={fetchOrders}
-          className="ml-auto bg-[#8B5C42] text-white px-5 py-2 rounded-lg hover:bg-[#704A36] transition"
+          className="ml-auto bg-black text-white px-5 py-2 rounded-lg hover:bg-gray-800 transition"
         >
           Refresh
         </button>
@@ -278,7 +278,7 @@ const Orders = () => {
       {!loading && !err && (
         <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-[#FAF7F5] border-b">
+            <thead className="bg-gray-100 border-b">
               <tr className="text-left">
                 <th className="px-6 py-4">Order ID</th>
                 <th className="px-6 py-4">Customer</th>
@@ -432,7 +432,7 @@ const Orders = () => {
                       <div className="flex justify-end gap-3">
                         <button
                           onClick={() => openOrderDetails(id)}
-                          className="text-[#8B5C42] hover:text-[#704A36] transition"
+                          className="text-black hover:text-gray-800 transition"
                         >
                           <FiEye />
                         </button>
@@ -824,7 +824,7 @@ const Orders = () => {
                     )}
                     <div className="flex justify-between pt-2 border-t font-bold text-lg">
                       <span>Total:</span>
-                      <span className="text-[#8B5C42]">${selectedOrder.pricing.finalTotal?.toFixed(2) || selectedOrder.pricing.total?.toFixed(2) || "0.00"}</span>
+                      <span className="text-black font-semibold">${selectedOrder.pricing.finalTotal?.toFixed(2) || selectedOrder.pricing.total?.toFixed(2) || "0.00"}</span>
                     </div>
                   </div>
                 </div>

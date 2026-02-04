@@ -235,7 +235,7 @@ const Gallery = () => {
           <h1 className="text-3xl font-semibold">Visual Showcase Management</h1>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#8B5C42] text-white rounded-lg hover:bg-[#704A36] transition"
+            className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition"
           >
             <FiPlus /> Add Image
           </button>
@@ -409,7 +409,7 @@ const Gallery = () => {
                   <button
                     onClick={addImage}
                     disabled={uploading}
-                    className="flex-1 px-4 py-2 bg-[#8B5C42] text-white rounded-lg hover:bg-[#704A36] transition disabled:opacity-50"
+                    className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
                   >
                     {uploading ? "Uploading..." : "Upload"}
                   </button>
@@ -512,7 +512,7 @@ const Gallery = () => {
                   <button
                     onClick={updateImage}
                     disabled={uploading}
-                    className="flex-1 px-4 py-2 bg-[#8B5C42] text-white rounded-lg hover:bg-[#704A36] transition disabled:opacity-50"
+                    className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
                   >
                     {uploading ? "Updating..." : "Update"}
                   </button>

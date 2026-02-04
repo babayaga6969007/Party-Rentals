@@ -1907,6 +1907,8 @@ next[addon.optionId] = {
             <div className="bg-white p-5 rounded-xl shadow">
               <a
                 href="/contract"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="font-semibold text-lg text-black underline hover:text-gray-800"
               >
                 Terms & Conditions

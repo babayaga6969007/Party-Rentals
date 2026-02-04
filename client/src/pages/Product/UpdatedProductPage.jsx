@@ -552,7 +552,9 @@ variant: selectedVariantKey,
   {/* TERMS & CONDITIONS */}
   <div className="bg-white p-5 rounded-xl shadow">
     <a
-      href="/"
+      href="/contract"
+      target="_blank"
+      rel="noopener noreferrer"
       className="font-semibold text-lg text-[#8B5C42] underline hover:text-[#704A36]"
     >
       Terms & Conditions
