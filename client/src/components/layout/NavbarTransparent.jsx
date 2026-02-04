@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { FiMail, FiInstagram, FiMenu, FiShoppingCart } from "react-icons/fi";
-import logo from "../../assets/logo-black.png";
+import logo from "../../assets/Logo-black.png";
 import { useCart } from "../../context/CartContext";
 import { useContactFormModal } from "../../context/ContactFormModalContext";
 
