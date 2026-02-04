@@ -45,7 +45,7 @@ const Sidebar = () => {
     `block px-4 py-2 rounded-lg text-sm transition
      ${
        isActive
-         ? "bg-blue-100 text-blue-600 font-semibold"
+         ? "bg-gray-200 text-black font-semibold"
          : "hover:bg-gray-100 text-gray-700"
      }`;
 
@@ -53,7 +53,7 @@ const Sidebar = () => {
     `block px-4 py-2 rounded-lg text-sm w-full text-left transition
      ${
        active
-         ? "bg-blue-50 text-blue-600 font-semibold"
+         ? "bg-gray-200 text-black font-semibold"
          : "hover:bg-gray-100 text-gray-700"
      }`;
 
