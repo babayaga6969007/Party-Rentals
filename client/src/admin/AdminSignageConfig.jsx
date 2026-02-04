@@ -19,6 +19,8 @@ const AdminSignageConfig = () => {
     price: "",
   });
   const [editingSize, setEditingSize] = useState(null);
+  const [backgroundSize, setBackgroundSize] = useState({ widthFt: 4, heightFt: 8 });
+  const [savingBackground, setSavingBackground] = useState(false);
 
   const fetchConfig = async () => {
     try {
@@ -48,23 +50,26 @@ const AdminSignageConfig = () => {
       
       setConfig(res.config);
       setError(""); // Clear error on success
+      setBackgroundSize({
+        widthFt: res.config.widthFt ?? 4,
+        heightFt: res.config.heightFt ?? 8,
+      });
     } catch (err) {
       console.error("Config fetch error:", err);
-      const errorMessage = err?.response?.data?.error || err?.response?.data?.message || err?.message || "Failed to load configuration";
+      const raw = err?.response?.data?.error ?? err?.response?.data?.message ?? err?.message ?? "Failed to load configuration";
+      const errorMessage = typeof raw === "string" ? raw : JSON.stringify(raw);
       
       // If token is invalid or expired, redirect to login
-      if (errorMessage.toLowerCase().includes("invalid token") || 
-          errorMessage.toLowerCase().includes("no token") ||
-          err?.response?.status === 401 ||
-          err?.response?.status === 400) {
+      const isAuthError =
+        err?.response?.status === 401 ||
+        err?.response?.status === 400 ||
+        (typeof errorMessage === "string" && errorMessage.toLowerCase().includes("invalid token")) ||
+        (typeof errorMessage === "string" && errorMessage.toLowerCase().includes("no token"));
+      if (isAuthError) {
         setError("Your session has expired. Please log in again.");
         toast.error("Session expired. Redirecting to login...");
-        // Clear the invalid token
         localStorage.removeItem("admin_token");
-        // Redirect to login after a short delay
-        setTimeout(() => {
-          navigate("/admin/login");
-        }, 2000);
+        setTimeout(() => navigate("/admin/login"), 2000);
       } else {
         setError(errorMessage);
         toast.error(errorMessage);
@@ -200,6 +205,34 @@ const AdminSignageConfig = () => {
     }
   };
 
+  const handleSaveBackgroundSize = async () => {
+    const w = Number(backgroundSize.widthFt);
+    const h = Number(backgroundSize.heightFt);
+    if (w < 0.5 || h < 0.5 || isNaN(w) || isNaN(h)) {
+      toast.error("Width and height must be at least 0.5 ft");
+      return;
+    }
+    try {
+      setSavingBackground(true);
+      const token = localStorage.getItem("admin_token");
+      const res = await api("/signage-config/admin", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ widthFt: w, heightFt: h }),
+      });
+      setConfig(res.config);
+      setBackgroundSize({ widthFt: w, heightFt: h });
+      toast.success("Background size saved");
+    } catch (err) {
+      toast.error(err?.message || "Failed to save background size");
+    } finally {
+      setSavingBackground(false);
+    }
+  };
+
   const handleRemoveSize = async (sizeId) => {
     if (!window.confirm("Remove this size?")) return;
 
@@ -250,9 +283,49 @@ const AdminSignageConfig = () => {
       <div className="p-6">
         <h1 className="text-2xl font-bold mb-6">Signage Configuration</h1>
 
+        {/* Background size (physical dimensions in ft) */}
+        <div className="bg-white p-6 rounded-lg shadow mb-6">
+          <h2 className="text-xl font-semibold mb-4">Background size (physical)</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Set the sign dimensions in feet. The preview will use this aspect ratio and text will scale relative to the sign size.
+          </p>
+          <div className="flex flex-wrap items-end gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Width (ft)</label>
+              <input
+                type="number"
+                value={backgroundSize.widthFt}
+                onChange={(e) => setBackgroundSize((s) => ({ ...s, widthFt: e.target.value }))}
+                className="border rounded px-3 py-2 w-24"
+                min="0.5"
+                step="0.5"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Height (ft)</label>
+              <input
+                type="number"
+                value={backgroundSize.heightFt}
+                onChange={(e) => setBackgroundSize((s) => ({ ...s, heightFt: e.target.value }))}
+                className="border rounded px-3 py-2 w-24"
+                min="0.5"
+                step="0.5"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleSaveBackgroundSize}
+              disabled={savingBackground}
+              className="bg-[#8B5C42] text-white px-4 py-2 rounded-lg hover:bg-[#704A36] transition disabled:opacity-60"
+            >
+              {savingBackground ? "Saving..." : "Save background size"}
+            </button>
+          </div>
+        </div>
+
         {/* Sizes Section */}
         <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">Sizes</h2>
+          <h2 className="text-xl font-semibold mb-4">Text sizes</h2>
 
           {/* Add Size Form */}
           <form onSubmit={handleAddSize} className="mb-6 pb-6 border-b">

@@ -32,8 +32,12 @@ export const DEFAULT_TEXT_SIZES = {
   extralarge: { width: 450, height: 100, fontSize: 80 },
 };
 
-// Default canvas dimensions (will be overridden by config)
-// Portrait orientation for better signage display
+// Pixels per foot for canvas (so physical size in ft maps to display size)
+const PX_PER_FT = 150;
+// Reference canvas height for text size scaling (font sizes in config are at this height)
+const REFERENCE_CANVAS_HEIGHT = 1200;
+
+// Default canvas dimensions (will be overridden by config from widthFt/heightFt)
 export const DEFAULT_CANVAS_WIDTH = 600;
 export const DEFAULT_CANVAS_HEIGHT = 1200;
 
@@ -56,6 +60,8 @@ export const SignageProvider = ({ children }) => {
   const [backgroundGradients, setBackgroundGradients] = useState(BACKGROUND_GRADIENTS);
   const [canvasWidth, setCanvasWidth] = useState(DEFAULT_CANVAS_WIDTH);
   const [canvasHeight, setCanvasHeight] = useState(DEFAULT_CANVAS_HEIGHT);
+  const [widthFt, setWidthFt] = useState(4);
+  const [heightFt, setHeightFt] = useState(8);
   const [configLoading, setConfigLoading] = useState(true);
 
   // Fetch config from backend
@@ -80,7 +86,16 @@ export const SignageProvider = ({ children }) => {
           // Store raw sizes config (with labels)
           setTextSizesConfig(res.config.sizes || []);
           
-          // Convert sizes array to object format
+          // Background dimensions in feet (admin-configurable)
+          const wFt = Number(res.config.widthFt) || 4;
+          const hFt = Number(res.config.heightFt) || 8;
+          setWidthFt(wFt);
+          setHeightFt(hFt);
+          // Derive canvas pixels from physical size (ft) so aspect ratio and scale are correct
+          setCanvasWidth(Math.round(wFt * PX_PER_FT));
+          setCanvasHeight(Math.round(hFt * PX_PER_FT));
+          
+          // Convert sizes array to object format (width/height scaled in the computed textSize below)
           const sizesObj = {};
           (res.config.sizes || []).forEach((size) => {
             sizesObj[size.key] = {
@@ -103,14 +118,6 @@ export const SignageProvider = ({ children }) => {
           if (res.config.backgroundGradients && res.config.backgroundGradients.length > 0) {
             setBackgroundGradients(res.config.backgroundGradients);
           }
-          
-          // Canvas dimensions from config
-          if (res.config.canvasWidth) {
-            setCanvasWidth(res.config.canvasWidth);
-          }
-          if (res.config.canvasHeight) {
-            setCanvasHeight(res.config.canvasHeight);
-          }
         }
       } catch (err) {
         console.error("Failed to load signage config:", err);
@@ -129,10 +136,10 @@ export const SignageProvider = ({ children }) => {
   const [selectedSize, setSelectedSize] = useState("medium");
   
   // Text position (single position for entire text block)
-  // Initialize at center horizontally, top vertically
+  // Initialize at center horizontally, a bit below top
   const [textPosition, setTextPosition] = useState({ 
     x: DEFAULT_CANVAS_WIDTH / 2, // Horizontally centered
-    y: 200, // Near top
+    y: 520, // A bit below top
   });
   
   // Update text position when canvas dimensions are loaded (horizontally centered)
@@ -140,11 +147,11 @@ export const SignageProvider = ({ children }) => {
     if (canvasWidth && canvasHeight && !configLoading) {
       setTextPosition(prev => {
         // Only update if position hasn't been manually set (still at default)
-        if (prev.x === DEFAULT_CANVAS_WIDTH / 2 && prev.y === 200) {
-          // Position horizontally centered, near top
+        if (prev.x === DEFAULT_CANVAS_WIDTH / 2 && prev.y === 520) {
+          // Position horizontally centered, a bit below top
           return {
             x: canvasWidth / 2, // Horizontally centered
-            y: 200, // Near top with padding
+            y: 520, // A bit below top
           };
         }
         return prev;
@@ -168,10 +175,25 @@ export const SignageProvider = ({ children }) => {
   const [isTextHovered, setIsTextHovered] = useState(false);
   const [isTextClicked, setIsTextClicked] = useState(false);
 
-  // Get current text size from selected size (with safe fallbacks)
-  const textSize = (textSizes && Object.keys(textSizes).length > 0)
-    ? (textSizes[selectedSize] || textSizes.medium || DEFAULT_TEXT_SIZES.medium)
-    : DEFAULT_TEXT_SIZES.medium;
+  // Scale factor: text sizes in config are at REFERENCE_CANVAS_HEIGHT; scale by actual canvas height so text looks relative to sign size
+  const textScale = canvasHeight > 0 ? canvasHeight / REFERENCE_CANVAS_HEIGHT : 1;
+  const baseTextSize = (textSizes && Object.keys(textSizes).length > 0)
+    ? (textSizes[selectedSize] || textSizes.medium)
+    : null;
+  const baseDefault = DEFAULT_TEXT_SIZES[selectedSize] || DEFAULT_TEXT_SIZES.medium;
+  const textSize = baseTextSize
+    ? {
+        width: (baseDefault.width ?? 250) * textScale,
+        height: (baseDefault.height ?? 60) * textScale,
+        fontSize: (baseTextSize.fontSize ?? 48) * textScale,
+        price: baseTextSize.price ?? 0,
+      }
+    : {
+        ...baseDefault,
+        fontSize: (baseDefault.fontSize ?? 48) * textScale,
+        width: (baseDefault.width ?? 250) * textScale,
+        height: (baseDefault.height ?? 60) * textScale,
+      };
   const fontSize = textSize?.fontSize || 48;
   
   // Get current price based on selected size
@@ -218,10 +240,10 @@ export const SignageProvider = ({ children }) => {
     setSelectedFont("'Farmhouse', cursive");
     setSelectedTextColor("#000000"); // Black by default
     setSelectedSize("medium");
-    // Position horizontally centered, near top
+    // Position horizontally centered, a bit below top
     setTextPosition({ 
       x: canvasWidth / 2, // Horizontally centered
-      y: 200, // Near top
+      y: 520, // A bit below top
     });
     setBackgroundType("image");
     setBackgroundColor("#F8F9FA");
@@ -335,6 +357,8 @@ export const SignageProvider = ({ children }) => {
     backgroundGradients,
     canvasWidth,
     canvasHeight,
+    widthFt,
+    heightFt,
     currentPrice,
     configLoading,
     
@@ -372,6 +396,8 @@ export const SignageProvider = ({ children }) => {
     backgroundGradients,
     canvasWidth,
     canvasHeight,
+    widthFt,
+    heightFt,
     currentPrice,
     configLoading,
     stableSetters,

@@ -8,23 +8,8 @@ import AddToCartButton from "./AddToCartButton";
 
 const SignageControls = memo(({ isSharedView, onAddToCart, isAddingToCart, product, productId, navigate }) => {
   return (
-    <div className="lg:col-span-1 relative">
-      {/* Sticky Signage Heading */}
-      <div className="sticky top-0 z-20 bg-gray-50 pb-4 mb-4">
-        <h2 
-          className="text-4xl font-bold"
-          style={{
-            fontFamily: "'Sloop Script Three', cursive",
-            color: "black",
-            textShadow: "2px 2px 4px rgba(0,0,0,0.1)",
-            letterSpacing: "0.05em",
-          }}
-        >
-          Signage
-        </h2>
-      </div>
-      
-      <div className="space-y-6 overflow-y-auto h-[calc(100vh-250px)] pr-2 flex flex-col">
+    <div className="lg:col-span-1 relative flex flex-col max-h-[calc(100vh-280px)] min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-6 pr-2">
         {!isSharedView && (
           <>
             <TextInputSection />
@@ -32,7 +17,6 @@ const SignageControls = memo(({ isSharedView, onAddToCart, isAddingToCart, produ
             <FontSelector />
             <TextColorPicker />
             <BackgroundOptions />
-            <AddToCartButton onClick={onAddToCart} isLoading={isAddingToCart} />
           </>
         )}
         {isSharedView && (
@@ -55,6 +39,11 @@ const SignageControls = memo(({ isSharedView, onAddToCart, isAddingToCart, produ
           </div>
         )}
       </div>
+      {!isSharedView && (
+        <div className="shrink-0 pt-4">
+          <AddToCartButton onClick={onAddToCart} isLoading={isAddingToCart} />
+        </div>
+      )}
     </div>
   );
 });

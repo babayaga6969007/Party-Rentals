@@ -17,16 +17,21 @@ const SignageEditorContent = () => {
   const navigate = useNavigate();
   const { addToCart, cartItems } = useCart();
   const canvasRef = useRef(null);
+  const previewRef = useRef(null);
   const [isSharedView, setIsSharedView] = useState(false);
   const [sharedSignage, setSharedSignage] = useState(null);
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Move drag state to local component to prevent context rerenders
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isTextClicked, setIsTextClicked] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [previewScale, setPreviewScale] = useState(1);
+  const [canvasZoom, setCanvasZoom] = useState(1);
+  const ZOOM_MIN = 1;
+  const ZOOM_MAX = 2;
+  const ZOOM_STEP = 0.25;
 
   const {
     textContent,
@@ -48,6 +53,8 @@ const SignageEditorContent = () => {
     currentPrice,
     canvasWidth,
     canvasHeight,
+    widthFt,
+    heightFt,
     configLoading,
   } = useSignage();
 
@@ -57,10 +64,10 @@ const SignageEditorContent = () => {
   // Ensure text is horizontally centered on initial load (for all new signages, not shared ones)
   useEffect(() => {
     if (!token && !loading && !isSharedView && !configLoading && !positionInitializedRef.current && canvasWidth && canvasHeight) {
-      // Position horizontally centered, near top
+      // Position horizontally centered, a bit below top
       const centeredPosition = { 
         x: canvasWidth / 2, // Horizontally centered
-        y: 200, // Near top with padding
+        y: 520, // A bit below top
       };
       
       setTextPosition(centeredPosition);
@@ -111,35 +118,31 @@ const SignageEditorContent = () => {
     fetchData();
   }, [productId, token, navigate, loadSignage]);
 
-  // Handle mouse down on text
   const handleTextMouseDown = (e) => {
     if (isSharedView) return;
     e.preventDefault();
     e.stopPropagation();
     const rect = canvasRef.current.getBoundingClientRect();
-    // Update drag offset first (no rerender needed)
+    const s = previewScale || 1;
     setDragOffset({
-      x: e.clientX - rect.left - textPosition.x,
-      y: e.clientY - rect.top - textPosition.y,
+      x: (e.clientX - rect.left) / s - textPosition.x,
+      y: (e.clientY - rect.top) / s - textPosition.y,
     });
-    // Use flushSync to batch updates, or better - use a single state update
     setIsDragging(true);
     setIsTextClicked(true);
   };
 
-  // Handle touch start
   const handleTextTouchStart = (e) => {
     if (isSharedView) return;
     e.preventDefault();
     e.stopPropagation();
     const rect = canvasRef.current.getBoundingClientRect();
     const touch = e.touches[0];
-    // Update drag offset first (no rerender needed)
+    const s = previewScale || 1;
     setDragOffset({
-      x: touch.clientX - rect.left - textPosition.x,
-      y: touch.clientY - rect.top - textPosition.y,
+      x: (touch.clientX - rect.left) / s - textPosition.x,
+      y: (touch.clientY - rect.top) / s - textPosition.y,
     });
-    // Single state update
     setIsDragging(true);
     setIsTextClicked(true);
   };
@@ -147,13 +150,12 @@ const SignageEditorContent = () => {
   // Use ref for drag position to prevent rerenders - only update context on drag end
   const dragPositionRef = useRef(null);
 
-  // Handle mouse move - update ref only, no state updates during drag
   const handleMouseMove = (e) => {
     if (!isDragging) return;
-
     const rect = canvasRef.current.getBoundingClientRect();
-    const newX = e.clientX - rect.left - dragOffset.x;
-    const newY = e.clientY - rect.top - dragOffset.y;
+    const s = previewScale || 1;
+    const newX = (e.clientX - rect.left) / s - dragOffset.x;
+    const newY = (e.clientY - rect.top) / s - dragOffset.y;
 
     const lines = textContent.split('\n').filter(line => line.trim());
     const lineHeight = fontSize * 1.4;
@@ -161,22 +163,20 @@ const SignageEditorContent = () => {
       textSize.height,
       (lines.length - 1) * lineHeight + fontSize
     );
-    
-    const clampedX = Math.max(textSize.width / 2, Math.min(newX, (canvasWidth || 600) - textSize.width / 2));
-    const clampedY = Math.max(dynamicHeight / 2, Math.min(newY, (canvasHeight || 1200) - dynamicHeight / 2));
-
-    // Store in ref - no rerender triggered, preview component reads from ref
+    const cw = canvasWidth || 600;
+    const ch = canvasHeight || 1200;
+    const clampedX = Math.max(textSize.width / 2, Math.min(newX, cw - textSize.width / 2));
+    const clampedY = Math.max(dynamicHeight / 2, Math.min(newY, ch - dynamicHeight / 2));
     dragPositionRef.current = { x: clampedX, y: clampedY };
   };
 
-  // Handle touch move
   const handleTouchMove = (e) => {
     if (!isDragging) return;
-
     const rect = canvasRef.current.getBoundingClientRect();
     const touch = e.touches[0];
-    const newX = touch.clientX - rect.left - dragOffset.x;
-    const newY = touch.clientY - rect.top - dragOffset.y;
+    const s = previewScale || 1;
+    const newX = (touch.clientX - rect.left) / s - dragOffset.x;
+    const newY = (touch.clientY - rect.top) / s - dragOffset.y;
 
     const lines = textContent.split('\n').filter(line => line.trim());
     const lineHeight = fontSize * 1.4;
@@ -184,11 +184,10 @@ const SignageEditorContent = () => {
       textSize.height,
       (lines.length - 1) * lineHeight + fontSize
     );
-    
-    const clampedX = Math.max(textSize.width / 2, Math.min(newX, (canvasWidth || 600) - textSize.width / 2));
-    const clampedY = Math.max(dynamicHeight / 2, Math.min(newY, (canvasHeight || 1200) - dynamicHeight / 2));
-
-    // Store in ref - no rerender triggered, preview component reads from ref
+    const cw = canvasWidth || 600;
+    const ch = canvasHeight || 1200;
+    const clampedX = Math.max(textSize.width / 2, Math.min(newX, cw - textSize.width / 2));
+    const clampedY = Math.max(dynamicHeight / 2, Math.min(newY, ch - dynamicHeight / 2));
     dragPositionRef.current = { x: clampedX, y: clampedY };
   };
 
@@ -391,6 +390,34 @@ const SignageEditorContent = () => {
             onBack={() => navigate(-1)}
           />
 
+          {/* Same-line header: Signage (centered) | Preview + Price */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center mb-4 bg-gray-50 -mx-6 px-6 py-4 rounded-lg">
+            <div className="flex justify-center order-2 lg:order-1">
+              <h2
+                className="text-4xl font-bold text-[#2D2926]"
+                style={{ fontFamily: "'Public Sans', sans-serif" }}
+              >
+                Signage
+              </h2>
+            </div>
+            <div className="lg:col-span-2 flex items-center justify-between order-1 lg:order-2 flex-wrap gap-2">
+              <div className="flex items-center gap-3">
+                <h3 className="text-lg font-semibold text-[#2D2926]">
+                  Preview
+                </h3>
+                <span className="text-sm text-gray-600" title="Physical sign size (set in admin)">
+                  {widthFt != null && heightFt != null ? `${Number(widthFt)} ft × ${Number(heightFt)} ft` : ""}
+                </span>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-gray-500">Price</div>
+                <div className="text-xl font-bold text-black">
+                  ${currentPrice || 0}
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Main Layout: Controls Left, Canvas Right */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             <SignageControls
@@ -409,26 +436,63 @@ const SignageEditorContent = () => {
               navigate={navigate}
             />
 
-            {/* RIGHT SIDE - CANVAS (Sticky) */}
-            <div className="lg:col-span-2 h-[calc(100vh-150px)] min-h-[800px]">
-              <div className="bg-white p-5 rounded-xl shadow h-full flex flex-col">
-                <div className="flex items-center justify-between mb-4 shrink-0">
-                  <h3 className="text-lg font-semibold text-[#2D2926]">
-                    Preview
-                  </h3>
-                  <div className="text-right">
-                    <div className="text-sm text-gray-500">Price</div>
-                    <div className="text-xl font-bold text-black">
-                      ${currentPrice || 0}
+            {/* RIGHT SIDE - CANVAS */}
+            <div className="lg:col-span-2 flex flex-col max-h-[calc(100vh-280px)] min-h-0">
+              <div className="bg-white p-5 rounded-xl shadow flex-1 min-h-0 flex flex-col overflow-hidden">
+                {!isSharedView && (
+                  <div className="flex items-center justify-between gap-2 mb-3 shrink-0">
+                    <span className="text-sm text-gray-600">Zoom</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setCanvasZoom((z) => Math.max(ZOOM_MIN, z - ZOOM_STEP))}
+                        disabled={canvasZoom <= ZOOM_MIN}
+                        className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-lg"
+                        title="Zoom out"
+                      >
+                        −
+                      </button>
+                      <span className="min-w-16 text-center text-sm font-medium text-gray-700">
+                        {Math.round(canvasZoom * 100)}%
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setCanvasZoom((z) => Math.min(ZOOM_MAX, z + ZOOM_STEP))}
+                        disabled={canvasZoom >= ZOOM_MAX}
+                        className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-lg"
+                        title="Zoom in"
+                      >
+                        +
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCanvasZoom(1)}
+                        className="px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                        title="Fit to view"
+                      >
+                        Fit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => previewRef.current?.recenter?.()}
+                        disabled={canvasZoom <= 1}
+                        className="px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Recenter image"
+                      >
+                        Recenter
+                      </button>
                     </div>
                   </div>
-                </div>
+                )}
                 <SignagePreview
+                  ref={previewRef}
                   isEditable={!isSharedView}
                   canvasRef={canvasRef}
                   dragPositionRef={dragPositionRef}
                   isDragging={isDragging}
                   isTextClicked={isTextClicked}
+                  zoom={canvasZoom}
+                  onScaleChange={setPreviewScale}
                   onTextMouseDown={handleTextMouseDown}
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUp}
@@ -437,7 +501,7 @@ const SignageEditorContent = () => {
                   onTouchEnd={handleMouseUp}
                 />
                 {!isSharedView && (
-                  <p className="text-sm text-gray-500 mt-4 text-center">
+                  <p className="text-sm text-gray-500 mt-4 text-center shrink-0">
                     Click and drag text to reposition
                   </p>
                 )}
