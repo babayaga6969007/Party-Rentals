@@ -670,38 +670,51 @@ console.log("🚀 SENDING API REQUEST TO:", endpoint);
     </div>
 
     {/* Stepper Input */}
-    <div className="flex items-center gap-4 max-w-xs">
-      <button
-        type="button"
-        disabled={variationCount <= 1 || isEditMode}
-        onClick={() => {
-          const n = Math.max(1, variationCount - 1);
-          setVariationCount(n);
-          setVariations((prev) => prev.slice(0, n));
-        }}
-        className="w-10 h-10 rounded-lg border text-xl font-medium
-                   disabled:opacity-40 disabled:cursor-not-allowed
-                   hover:bg-gray-100 transition"
-      >
-        −
-      </button>
+    <div className="flex items-center gap-4">
+  {/* − Button */}
+  <button
+    type="button"
+    disabled={variationCount <= 1}
+    onClick={() => {
+      if (variationCount <= variations.length) {
+        const ok = window.confirm(
+          "Reducing variations will permanently remove the last variation. Continue?"
+        );
+        if (!ok) return;
+      }
 
-      <input
-        type="number"
-        min="1"
-        max="20"
-        value={variationCount}
-        disabled={isEditMode}
-        onChange={(e) => {
-          if (isEditMode) return;
-          const count = Math.max(
-            1,
-            Math.min(20, Number(e.target.value) || 1)
-          );
-          setVariationCount(count);
-          setVariations(
-            Array.from({ length: count }, (_, i) => ({
-              id: i,
+      const n = Math.max(1, variationCount - 1);
+      setVariationCount(n);
+      setVariations((prev) => prev.slice(0, n));
+    }}
+  >
+    −
+  </button>
+
+  {/* ✅ NUMBER INPUT (THIS WAS MISSING) */}
+  <input
+    type="number"
+    min={1}
+    max={20}
+    value={variationCount}
+    onChange={(e) => {
+      const count = Math.max(1, Math.min(20, Number(e.target.value) || 1));
+
+      if (count < variations.length) {
+        const ok = window.confirm(
+          "Reducing variations will permanently remove variation data. Continue?"
+        );
+        if (!ok) return;
+      }
+
+      setVariationCount(count);
+
+      setVariations((prev) => {
+        if (count > prev.length) {
+          return [
+            ...prev,
+            ...Array.from({ length: count - prev.length }, (_, i) => ({
+              id: prev.length + i,
               dimension: "",
               pricePerDay: "",
               salePrice: "",
@@ -709,39 +722,42 @@ console.log("🚀 SENDING API REQUEST TO:", endpoint);
               images: [],
               previews: [],
               existingImages: [],
-            }))
-          );
-        }}
-        className="w-24 text-center p-2 border rounded-lg
-                   text-lg font-medium focus:ring-2 focus:ring-black"
-      />
+            })),
+          ];
+        }
+        return prev.slice(0, count);
+      });
+    }}
+    className="w-20 text-center border rounded-lg p-2"
+  />
 
-      <button
-        type="button"
-        disabled={variationCount >= 20 || isEditMode}
-        onClick={() => {
-          const n = Math.min(20, variationCount + 1);
-          setVariationCount(n);
-          setVariations(
-            Array.from({ length: n }, (_, i) => ({
-              id: i,
-              dimension: "",
-              pricePerDay: "",
-              salePrice: "",
-              stock: 1,
-              images: [],
-              previews: [],
-              existingImages: [],
-            }))
-          );
-        }}
-        className="w-10 h-10 rounded-lg border text-xl font-medium
-                   disabled:opacity-40 disabled:cursor-not-allowed
-                   hover:bg-gray-100 transition"
-      >
-        +
-      </button>
-    </div>
+  {/* + Button */}
+  <button
+    type="button"
+    disabled={variationCount >= 20}
+    onClick={() => {
+      const n = Math.min(20, variationCount + 1);
+      setVariationCount(n);
+
+      setVariations((prev) => [
+        ...prev,
+        {
+          id: prev.length,
+          dimension: "",
+          pricePerDay: "",
+          salePrice: "",
+          stock: 1,
+          images: [],
+          previews: [],
+          existingImages: [],
+        },
+      ]);
+    }}
+  >
+    +
+  </button>
+</div>
+
 
     {/* Helper Note */}
     <p className="text-xs text-gray-500">
