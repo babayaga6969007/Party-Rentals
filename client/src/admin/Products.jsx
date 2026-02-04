@@ -56,43 +56,56 @@ const Products = () => {
      HELPERS – VARIATIONS
   ====================== */
 
-  const getLowestVariation = (product) => {
-    if (
-      product?.productType === "rental" &&
-      product?.productSubType === "variable" &&
-      Array.isArray(product.variations) &&
-      product.variations.length > 0
-    ) {
-      return [...product.variations].sort((a, b) => {
-        const aPrice = a.salePrice ?? a.price ?? Infinity;
-        const bPrice = b.salePrice ?? b.price ?? Infinity;
-        return aPrice - bPrice;
-      })[0];
-    }
-    return null;
-  };
+const getLowestVariation = (product) => {
+  if (
+    product?.productType === "rental" &&
+    product?.productSubType === "variable" &&
+    Array.isArray(product.variations) &&
+    product.variations.length > 0
+  ) {
+    return [...product.variations].sort((a, b) => {
+      const aPrice = a.salePrice ?? a.pricePerDay ?? Infinity;
+      const bPrice = b.salePrice ?? b.pricePerDay ?? Infinity;
+      return aPrice - bPrice;
+    })[0];
+  }
+  return null;
+};
 
-  const getAdminProductImage = (product) => {
+const getAdminProductImage = (product) => {
+  // Variable rental → first image of lowest-priced variation
+  if (
+    product?.productType === "rental" &&
+    product?.productSubType === "variable" &&
+    Array.isArray(product.variations) &&
+    product.variations.length > 0
+  ) {
     const lowestVar = getLowestVariation(product);
     return (
-      lowestVar?.image?.url ||
-      product.images?.[0]?.url ||
+      lowestVar?.images?.[0]?.url ||
       "/placeholder-product.png"
     );
-  };
+  }
 
-  const getAdminProductPrice = (product) => {
-    if (product.productType !== "rental") {
-      return product.salePrice;
-    }
+  // Simple rental / sale → base product image
+  return (
+    product?.images?.[0]?.url ||
+    "/placeholder-product.png"
+  );
+};
 
-    const lowestVar = getLowestVariation(product);
-    if (lowestVar) {
-      return lowestVar.salePrice ?? lowestVar.price;
-    }
+const getAdminProductPrice = (product) => {
+  if (product.productType !== "rental") {
+    return product.salePrice;
+  }
 
-    return product.pricePerDay;
-  };
+  const lowestVar = getLowestVariation(product);
+  if (lowestVar) {
+    return lowestVar.salePrice ?? lowestVar.pricePerDay;
+  }
+
+  return product.pricePerDay;
+};
 
   const getCategoryName = (category) => {
     const categoryId =
