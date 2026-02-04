@@ -292,17 +292,20 @@ setRentalSubType(data.productSubType || "simple");
 // 🔄 Restore variations (EDIT MODE)
 if (data.productType === "rental" && data.productSubType === "variable") {
   const restored = (data.variations || []).map((v, i) => ({
-    id: i,
-    dimension: v.dimension || "",
-    pricePerDay: v.pricePerDay || "",
-    salePrice: v.salePrice || "",
-    stock: v.stock || 1,
+  id: i,
+  dimension: v.dimension || "",
+  pricePerDay: v.pricePerDay || "",
+  salePrice: v.salePrice || "",
+  stock: v.stock || 1,
 
-    // images restored from backend
-    images: [],
-    previews: (v.images || []).map((img) => img.url),
-    existingImages: v.images || [],
-  }));
+  // IMPORTANT: existing images stay ONLY here
+  existingImages: Array.isArray(v.images) ? v.images : [],
+
+  // new uploads only (empty on load)
+  images: [],
+  previews: [],
+}));
+
 
   setVariations(restored);
   setVariationCount(restored.length);
@@ -806,11 +809,12 @@ console.log("🚀 SENDING API REQUEST TO:", endpoint);
     const files = Array.from(e.target.files || []);
     const copy = [...variations];
 
-    const existingKeys = new Set(
-      (copy[index].images || []).map(
-        (f) => `${f.name}_${f.size}`
-      )
-    );
+const existingKeys = new Set(
+  (copy[index].images || []).map(
+    (f) => `${f.name}_${f.size}`
+  )
+);
+
 
     const filtered = files.filter(
       (f) => !existingKeys.has(`${f.name}_${f.size}`)
