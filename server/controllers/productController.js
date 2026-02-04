@@ -315,20 +315,26 @@ if (req.body.category !== undefined) updates.category = req.body.category;
     if (parsedVariations.length > 0) {
   updates.productSubType = "variable";
 
-  updates.variations = parsedVariations.map((v, i) => {
-    const existingVar = existingProduct.variations?.[i] || {};
+updates.variations = parsedVariations.map((v, i) => {
+  const existingVar = existingProduct.variations?.[i] || {};
 
-    return {
-      dimension: v.dimension,
-      pricePerDay: Number(v.pricePerDay),
-      salePrice: v.salePrice ? Number(v.salePrice) : null,
-      stock: Number(v.stock),
-      images: [
-        ...(v.existingImages || existingVar.images || []),
-        ...(variationImagesMap[i] || []),
-      ],
-    };
-  });
+  //  IMPORTANT: distinguish between "not provided" and "empty array"
+  const keptImages =
+    Array.isArray(v.existingImages)
+      ? v.existingImages              // may be empty → delete all
+      : existingVar.images || [];     // fallback ONLY if not provided
+
+  return {
+    dimension: v.dimension,
+    pricePerDay: Number(v.pricePerDay),
+    salePrice: v.salePrice ? Number(v.salePrice) : null,
+    stock: Number(v.stock),
+    images: [
+      ...keptImages,
+      ...(variationImagesMap[i] || []),
+    ],
+  };
+});
 
   updates.pricePerDay = undefined;
   updates.availabilityCount = 0;

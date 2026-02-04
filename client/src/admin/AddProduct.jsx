@@ -352,14 +352,22 @@ console.log("✅ SUBMIT CLICKED");
 
 
     if (productType === "rental" && rentalSubType === "variable") {
-  formData.append("variations", JSON.stringify(
-    variations.map(v => ({
+  formData.append(
+  "variations",
+  JSON.stringify(
+    variations.map((v) => ({
       dimension: v.dimension,
       pricePerDay: v.pricePerDay,
       salePrice: v.salePrice || null,
       stock: v.stock,
+      existingImages: (v.existingImages || []).map((img) => ({
+        public_id: img.public_id,
+        url: img.url,
+      })),
     }))
-  ));
+  )
+);
+
 
  variations.forEach((v, i) => {
   (v.images || []).forEach((img) => {
