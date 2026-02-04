@@ -646,38 +646,99 @@ console.log("🚀 SENDING API REQUEST TO:", endpoint);
           </div>
           </div>
           {productType === "rental" && rentalSubType === "variable" && (
-  <div className="bg-[#FAF7F5] p-6 rounded-xl border">
-    <label className="font-medium">
-      How many variations do you want?
-    </label>
-   <input
-  type="number"
-  min="1"
-  max="20"
-  value={variationCount}
-  disabled={isEditMode}
-  onChange={(e) => {
-    if (isEditMode) return;
-    const count = Number(e.target.value);
-    setVariationCount(count);
-    setVariations(
-      Array.from({ length: count }, (_, i) => ({
-        id: i,
-        dimension: "",
-        pricePerDay: "",
-        salePrice: "",
-        stock: 1,
-        images: [],
-        previews: [],
-        existingImages: [],
-      }))
-    );
-  }}
-/>
+  <div className="bg-[#FAF7F5] p-6 rounded-xl border space-y-4">
+    {/* Title */}
+    <div>
+      <label className="block text-lg font-semibold text-[#2D2926]">
+        Number of Variations
+      </label>
+      <p className="text-sm text-gray-600 mt-1">
+        Variations represent different sizes, dimensions, or configurations
+        of the same rental product.
+      </p>
+    </div>
 
+    {/* Stepper Input */}
+    <div className="flex items-center gap-4 max-w-xs">
+      <button
+        type="button"
+        disabled={variationCount <= 1 || isEditMode}
+        onClick={() => {
+          const n = Math.max(1, variationCount - 1);
+          setVariationCount(n);
+          setVariations((prev) => prev.slice(0, n));
+        }}
+        className="w-10 h-10 rounded-lg border text-xl font-medium
+                   disabled:opacity-40 disabled:cursor-not-allowed
+                   hover:bg-gray-100 transition"
+      >
+        −
+      </button>
+
+      <input
+        type="number"
+        min="1"
+        max="20"
+        value={variationCount}
+        disabled={isEditMode}
+        onChange={(e) => {
+          if (isEditMode) return;
+          const count = Math.max(
+            1,
+            Math.min(20, Number(e.target.value) || 1)
+          );
+          setVariationCount(count);
+          setVariations(
+            Array.from({ length: count }, (_, i) => ({
+              id: i,
+              dimension: "",
+              pricePerDay: "",
+              salePrice: "",
+              stock: 1,
+              images: [],
+              previews: [],
+              existingImages: [],
+            }))
+          );
+        }}
+        className="w-24 text-center p-2 border rounded-lg
+                   text-lg font-medium focus:ring-2 focus:ring-black"
+      />
+
+      <button
+        type="button"
+        disabled={variationCount >= 20 || isEditMode}
+        onClick={() => {
+          const n = Math.min(20, variationCount + 1);
+          setVariationCount(n);
+          setVariations(
+            Array.from({ length: n }, (_, i) => ({
+              id: i,
+              dimension: "",
+              pricePerDay: "",
+              salePrice: "",
+              stock: 1,
+              images: [],
+              previews: [],
+              existingImages: [],
+            }))
+          );
+        }}
+        className="w-10 h-10 rounded-lg border text-xl font-medium
+                   disabled:opacity-40 disabled:cursor-not-allowed
+                   hover:bg-gray-100 transition"
+      >
+        +
+      </button>
+    </div>
+
+    {/* Helper Note */}
+    <p className="text-xs text-gray-500">
+      Example: 10×10, 10×15, and 10×20 would be 3 variations.
+    </p>
   </div>
-  
 )}
+
 {productType === "rental" &&
   rentalSubType === "variable" &&
   variations.map((v, index) => (
