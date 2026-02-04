@@ -509,51 +509,63 @@ const product = await Product.findById(req.params.id)
 };
 
 // ----------------------------------------------
-// GET Single Product
+// Get Single Product (Public)
+// ----------------------------------------------
 exports.getSingleProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
-      .populate("attributes.groupId")
+      .populate("category")
+      .populate({
+        path: "attributes.groupId",
+        populate: { path: "options" },
+      })
+      .populate({
+        path: "addons.optionId",
+        model: "Attribute",
+      })
       .lean();
 
-    if (!product) return res.status(404).json({ message: "Product not found" });
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
 
-    const addonGroups = await Attribute.find({ type: "addon" }).lean();
+    // ===============================
+    // NORMALIZE VARIABLE RENTAL DATA
+    // ===============================
+    if (
+      product.productType === "rental" &&
+      product.productSubType === "variable"
+    ) {
+      product.variations = (product.variations || []).map((v) => ({
+        _id: v._id,
+        dimension: v.dimension || "",
+        pricePerDay: Number(v.pricePerDay),
+        salePrice:
+          v.salePrice !== null && v.salePrice !== undefined
+            ? Number(v.salePrice)
+            : null,
+        stock: Number(v.stock || 0),
 
-    const optionMap = {};
-    addonGroups.forEach((g) => {
-      g.options.forEach((o) => {
-        optionMap[String(o._id)] = {
-          label: o.label,
-          priceDelta: o.priceDelta || 0,
-          groupName: g.name,
-          tier: o.tier, // Include tier for shelving addons
-        };
-      });
-    });
+        // ✅ ensure frontend ALWAYS receives array
+        images: Array.isArray(v.images)
+          ? v.images.map((img) => ({
+              url: img.url,
+              public_id: img.public_id,
+            }))
+          : [],
+      }));
 
-   product.addons = (product.addons || []).map((a) => ({
-  ...a,
-  option: optionMap[String(a.optionId)] || null,
+      // 🔒 Important:
+      // Variable rentals should NEVER expose base images
+      product.images = [];
+      product.pricePerDay = undefined;
+      product.availabilityCount = 0;
+    }
 
-  // Shelving (existing)
-  shelvingData:
-    a.shelvingTier || a.shelvingSize || a.shelvingQuantity
-      ? {
-          tier: a.shelvingTier || "",
-          size: a.shelvingSize || "",
-          quantity: a.shelvingQuantity || 1,
-        }
-      : null,
-
-  // Pedestals (NEW)
-  pedestals: Array.isArray(a.pedestals) ? a.pedestals : [],
-}));
-
-
-    res.json(product);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.json({ product });
+  } catch (error) {
+    console.error("❌ getSingleProduct error:", error);
+    res.status(500).json({ message: "Failed to load product" });
   }
 };
 

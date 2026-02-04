@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { api } from "../../utils/api";
 import AddToCartModal from "../../components/cart/AddToCartModal";
@@ -49,23 +49,31 @@ const isRental = product?.productType === "rental";
 
 const isVariableRental =
   isRental && (product?.productSubType === "variable" || product?.variations?.length > 0);
+// ====================
+// DERIVED SELECTED VARIATION (FIX)
+// ====================
+const selectedVariation = useMemo(() => {
+  if (!isVariableRental) return null;
+
+  const vars = product?.variations || [];
+  return vars[selectedVariationIndex] || null;
+}, [isVariableRental, product?.variations, selectedVariationIndex]);
 
 
   // 🔑 Helper: get lowest priced variation (salePrice > price)
-  const getLowestPriceVariation = (variations = []) => {
-    if (!variations.length) return null;
+const getLowestPriceVariation = (variations = []) => {
+  if (!variations.length) return null;
 
-    return [...variations].sort((a, b) => {
-      const aPrice = a.salePrice ?? a.price ?? Infinity;
-      const bPrice = b.salePrice ?? b.price ?? Infinity;
-      return aPrice - bPrice;
-    })[0];
-  };
+  return [...variations].sort((a, b) => {
+    const aPrice = a.salePrice ?? a.pricePerDay ?? Infinity;
+    const bPrice = b.salePrice ?? b.pricePerDay ?? Infinity;
+    return aPrice - bPrice;
+  })[0];
+};
 
   const [selectedVarOptions, setSelectedVarOptions] = useState({});
   // shape: { [groupId]: optionId }
 
-  const [selectedVariation, setSelectedVariation] = useState(null);
 
   const [loadingProduct, setLoadingProduct] = useState(true);
   const [productError, setProductError] = useState("");
@@ -136,26 +144,19 @@ const isVariableRental =
         : 0;
 
 
-  // ⭐ THIS IS WHERE THE HOOKS MUST GO
+
   // Product images from backend
-  // Base product images
-  const baseProductImages = product?.images?.map((img) => img.url) || [];
+// ====================
+// PRODUCT IMAGES (FIXED FOR VARIATIONS)
+// ====================
+const productImages = isVariableRental
+  ? (selectedVariation?.images || []).map((img) => img.url)
+  : (product?.images || []).map((img) => img.url);
 
-  // Variation image (if selected)
-  const variationImageUrl =
-    selectedVariation?.image?.url || null;
-  // Reset main image when variation changes
-  useEffect(() => {
-    if (variationImageUrl) {
-      setActiveImage(0);
-    }
-  }, [variationImageUrl]);
-
-  // Final images to display
-  const productImages =
-    variationImageUrl
-      ? [variationImageUrl, ...baseProductImages]
-      : baseProductImages;
+// Reset gallery when variation changes
+useEffect(() => {
+  setActiveImage(0);
+}, [selectedVariationIndex]);
 
   const [activeImage, setActiveImage] = useState(0);
 
@@ -230,11 +231,12 @@ const isVariableRental =
   // priority: use date range if selected, else manual days input
   const totalRentalDays = selectedDays;
   // Use salePrice if available, else fallback to regular price
-  const effectivePricePerDay = Number(
-    isVariableRental
-      ? (selectedVariation?.salePrice ?? selectedVariation?.price ?? 0)
-      : (product?.salePrice ?? product?.pricePerDay ?? 0)
-  );
+const effectivePricePerDay = Number(
+  isVariableRental
+    ? (selectedVariation?.salePrice ?? selectedVariation?.pricePerDay ?? 0)
+    : (product?.salePrice ?? product?.pricePerDay ?? 0)
+);
+
 
   // ====================
   //  RELATED PRODUCTS TOTAL
@@ -301,56 +303,18 @@ const isVariableRental =
     if (id) fetchProduct();
   }, [id]);
   // Auto-select first options for each group (only for variable rental)
-  // ✅ Auto-select lowest priced variation (image + price + stock)
- useEffect(() => {
-  if (!isVariableRental || !product?.variations?.length) {
-    setSelectedVariation(null);
-    return;
-  }
+useEffect(() => {
+  if (!isVariableRental || !product?.variations?.length) return;
 
   const lowest = getLowestPriceVariation(product.variations);
   const index = product.variations.findIndex(
-    (v) => v._id === lowest._id
+    (v) => String(v._id) === String(lowest?._id)
   );
 
   setSelectedVariationIndex(index >= 0 ? index : 0);
-  setSelectedVariation(lowest);
-}, [isVariableRental, product]);
+}, [isVariableRental, product?._id]);
 
-// 🔄 Sync selectedVariation when index changes (dimension click)
-useEffect(() => {
-  if (!isVariableRental) return;
 
-  const vars = product?.variations || [];
-  setSelectedVariation(vars[selectedVariationIndex] || null);
-}, [selectedVariationIndex, product, isVariableRental]);
-
-  // Find matching variation whenever selection changes
-  useEffect(() => {
-    if (!isVariableRental) return;
-
-    const vars = product?.variations || [];
-    if (vars.length === 0) {
-      setSelectedVariation(null);
-      return;
-    }
-
-    const match = vars.find((v) => {
-      const attrs = v.attributes || [];
-      // every selected group must match the optionId in this variation
-      return Object.entries(selectedVarOptions).every(([groupId, optionId]) =>
-        attrs.some(
-          (a) =>
-            String(a.groupId?._id || a.groupId) === String(groupId) &&
-            String(a.optionId?._id || a.optionId) === String(optionId)
-        )
-      );
-    });
-
-    setSelectedVariation(match || null);
-  }, [isVariableRental, selectedVarOptions, product]);
-
-  console.log("PRODUCT ADDONS:", product?.addons);
 
   // ====================
   // PRICING CHART LOGIC
@@ -439,7 +403,6 @@ const attributeGroupsForUI =
 
   if (!isRental) {
     setSelectedVarOptions({});
-    setSelectedVariation(null);
     return;
   }
 
@@ -459,40 +422,9 @@ const attributeGroupsForUI =
     Object.keys(prev).length > 0 ? prev : defaults
   );
 
-  // ✅ For rental single, no variation matching
-  if (!isVariableRental) {
-    setSelectedVariation(null);
-  }
 }, [isRental, isVariableRental, product?._id, attributeGroupsForUI.length]);
 
  // re-run when product changes
-
-  // Find matching variation whenever selection changes
-  useEffect(() => {
-    if (!isVariableRental) return;
-
-    const vars = product?.variations || [];
-    if (vars.length === 0) {
-      setSelectedVariation(null);
-      return;
-    }
-
-    const match = vars.find((v) => {
-      const attrs = v.attributes || [];
-      // every selected group must match the optionId in this variation
-      return Object.entries(selectedVarOptions).every(([groupId, optionId]) =>
-        attrs.some(
-          (a) =>
-            String(a.groupId?._id || a.groupId) === String(groupId) &&
-            String(a.optionId?._id || a.optionId) === String(optionId)
-        )
-      );
-    });
-
-    setSelectedVariation(match || null);
-  }, [isVariableRental, selectedVarOptions, product]);
-
-  console.log("PRODUCT ADDONS:", product?.addons);
 
   // ====================
   //  SYNC QTY WITH STOCK
@@ -987,25 +919,28 @@ next[addon.optionId] = {
                 selectedVariation?.salePrice ? (
                   <>
                     <span className="text-xl text-gray-500 line-through">
-                      $ {selectedVariation?.price} / day
-                    </span>
+  $ {selectedVariation?.pricePerDay} / day
+</span>
+
                     <span className="text-3xl font-semibold text-red-600">
                       $ {selectedVariation?.salePrice} / day
                     </span>
                   </>
                 ) : (
                   <span className="text-3xl font-semibold text-black">
-                    $ {selectedVariation?.price ?? 0} / day
-                  </span>
+  $ {selectedVariation?.pricePerDay ?? 0} / day
+</span>
+
                 )
               ) : product.salePrice ? (
                 <>
-                  <span className="text-xl text-gray-500 line-through">
-                    $ {product.pricePerDay} / day
-                  </span>
-                  <span className="text-3xl font-semibold text-red-600">
-                    $ {product.salePrice} / day
-                  </span>
+                 <span className="text-xl text-gray-500 line-through">
+  $ {selectedVariation?.pricePerDay} / day
+</span>
+<span className="text-3xl font-semibold text-red-600">
+  $ {selectedVariation?.salePrice} / day
+</span>
+
                 </>
               ) : (
                 <span className="text-3xl font-semibold text-black">
@@ -2025,7 +1960,11 @@ next[addon.optionId] = {
       <PricingChartModal
         isOpen={openPricingChart}
         onClose={() => setOpenPricingChart(false)}
-        basePrice={product?.pricePerDay || product?.price || 100}
+basePrice={
+  isVariableRental
+    ? selectedVariation?.pricePerDay || 100
+    : product?.pricePerDay || 100
+}
       />
 
 

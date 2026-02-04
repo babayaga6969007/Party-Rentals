@@ -129,13 +129,28 @@ dimension: {
 },
 
 
-  // Variation images (up to 5)
-images: [
-  {
-    public_id: { type: String },
-    url: { type: String, required: true },
+// =========================
+// VARIATION IMAGES
+// =========================
+images: {
+  type: [
+    {
+      public_id: { type: String, trim: true },
+      url: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+    },
+  ],
+  default: [],
+  validate: {
+    validator: function (arr) {
+      return Array.isArray(arr) && arr.length <= 5;
+    },
+    message: "Each variation can have a maximum of 5 images",
   },
-],
+},
 
   },
   { _id: false }
@@ -277,5 +292,17 @@ featuredAt: {
   { timestamps: true }
 );
 
+productSchema.pre("validate", function (next) {
+  if (
+    this.productType === "rental" &&
+    this.productSubType === "variable"
+  ) {
+    // Variable rentals should NOT have base images or simple pricing
+    this.images = [];
+    this.pricePerDay = undefined;
+    this.availabilityCount = 0;
+  }
+  next();
+});
 
 module.exports = mongoose.model("Product", productSchema);
