@@ -9,6 +9,7 @@ import { api } from "../../utils/api";
 const today = new Date().toISOString().split("T")[0];
 
 // 🔑 Get lowest priced variation (salePrice preferred)
+// 🔑 Get lowest priced variation (salePrice preferred, then pricePerDay)
 const getLowestVariation = (product) => {
   if (
     product?.productType === "rental" &&
@@ -17,35 +18,54 @@ const getLowestVariation = (product) => {
     product.variations.length > 0
   ) {
     return [...product.variations].sort((a, b) => {
-      const aPrice = a.salePrice ?? a.price ?? Infinity;
-      const bPrice = b.salePrice ?? b.price ?? Infinity;
+      const aPrice = a.salePrice ?? a.pricePerDay ?? Infinity;
+      const bPrice = b.salePrice ?? b.pricePerDay ?? Infinity;
       return aPrice - bPrice;
     })[0];
   }
   return null;
 };
 
+
+// 🖼️ Get correct image for product card
 // 🖼️ Get correct image for product card
 const getProductCardImage = (product) => {
-  const lowestVar = getLowestVariation(product);
+  // Variable rental → first image of lowest priced variation
+  if (
+    product?.productType === "rental" &&
+    product?.productSubType === "variable" &&
+    Array.isArray(product.variations) &&
+    product.variations.length > 0
+  ) {
+    const lowestVar = getLowestVariation(product);
+    return (
+      lowestVar?.images?.[0]?.url ||
+      "/placeholder-product.png"
+    );
+  }
+
+  // Simple rental → base product image
   return (
-    lowestVar?.image?.url ||
-    product.images?.[0]?.url ||
+    product?.images?.[0]?.url ||
     "/placeholder-product.png"
   );
 };
 
-// 💰 Get correct price for product card
+
+
+//  Get correct price for product card
 const getProductCardPrice = (product) => {
   const lowestVar = getLowestVariation(product);
 
+  // Variable rental
   if (lowestVar) {
     return {
-      price: lowestVar.price,
+      price: lowestVar.pricePerDay,
       salePrice: lowestVar.salePrice,
     };
   }
 
+  // Simple rental
   return {
     price: product.pricePerDay,
     salePrice: product.salePrice,
