@@ -58,6 +58,9 @@ const [variations, setVariations] = useState([]);
   const [attributeGroups, setAttributeGroups] = useState([]);
   const [attrLoading, setAttrLoading] = useState(true);
 
+  // Submit loading (create/update product)
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   // Selections
   const [selectedAttrs, setSelectedAttrs] = useState({});
   const [selectedAddons, setSelectedAddons] = useState({});
@@ -357,7 +360,9 @@ if (data.productType === "rental" && data.productSubType === "variable") {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-console.log("✅ SUBMIT CLICKED");
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
     const formData = new FormData();
 
 
@@ -542,27 +547,30 @@ const missingImage = variations.some(
       : "/products/admin/add";
 
     const token = localStorage.getItem("admin_token");
-console.log("🚀 SENDING API REQUEST TO:", endpoint);
 
-    // 5️⃣ Submit
-    await api(endpoint, {
-      method: isEditMode ? "PUT" : "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
-    console.log("✅ API RESPONSE RECEIVED");
+    try {
+      // 5️⃣ Submit
+      await api(endpoint, {
+        method: isEditMode ? "PUT" : "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
 
-
-    if (isEditMode) {
-      // Store success message in sessionStorage for Products page to show toast
-      sessionStorage.setItem("productEdited", "true");
-    } else {
-      toast.success("Product added successfully!");
+      if (isEditMode) {
+        sessionStorage.setItem("productEdited", "true");
+      } else {
+        toast.success("Product added successfully!");
+      }
+      window.location.href = "/admin/products";
+    } catch (err) {
+      console.error("Product save failed:", err);
+      toast.error(err?.message || "Failed to save product. Please try again.");
     }
-    // Redirect to products page
-    window.location.href = "/admin/products";
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
 
@@ -1031,6 +1039,7 @@ const existingKeys = new Set(
 
       const isSingle = g.type === "select"; // single-select
       const isColor = g.type === "color";
+      const isPaint = g.type === "paint";
       const required = !!g.required;
 
       // current selection for normal groups
@@ -1067,6 +1076,7 @@ return { ...prev, [key]: nextList };
               {g.type === "multi" && "Multi-select"}
               {g.type === "select" && "Single-select"}
               {g.type === "color" && "Color"}
+              {g.type === "paint" && "Paint"}
               {g.type === "addon" && "Add-on"}
             </span>
           </div>
@@ -1352,19 +1362,34 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
                     type="button"
                     key={o._id}
                     onClick={() => toggleOption(o._id)}
-                    className={`px-4 py-2 rounded-lg border transition
-                      ${active ? "bg-black text-white border-black" : "bg-white border-gray-300 hover:bg-gray-100"}
+                    className={`rounded-xl border transition
+                      ${active ? "bg-black text-white border-black ring-2 ring-black ring-offset-1" : "bg-white border-gray-300 hover:bg-gray-100"}
+                      ${isPaint ? "flex flex-col items-center gap-1.5 p-2" : "inline-flex items-center gap-2 px-4 py-2"}
                     `}
+                    title={o.label}
                   >
-                    <span className="inline-flex items-center gap-2">
-                      {isColor && (
-                        <span
-                          className="w-4 h-4 rounded-full border"
-                          style={{ backgroundColor: o.hex || "#000" }}
-                        />
-                      )}
-                      {o.label}
-                    </span>
+                    {isPaint && (o.imageUrl || o.value) ? (
+                      <>
+                        <span className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 flex shrink-0">
+                          <img
+                            src={o.imageUrl || `/paint/${o.value}`}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        </span>
+                        <span className="text-xs font-medium text-center">{o.label}</span>
+                      </>
+                    ) : (
+                      <span className="inline-flex items-center gap-2">
+                        {isColor && (
+                          <span
+                            className="w-4 h-4 rounded-full border"
+                            style={{ backgroundColor: o.hex || "#000" }}
+                          />
+                        )}
+                        {o.label}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -1531,8 +1556,19 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
 
 
         {/* SUBMIT */}
-        <button className="w-full py-4 bg-black text-white rounded-xl text-lg font-medium hover:bg-gray-800 transition">
-          {isEditMode ? "Update Product" : "Add Product"}
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full py-4 bg-black text-white rounded-xl text-lg font-medium hover:bg-gray-800 transition disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {isSubmitting ? (
+            <>
+              <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              {isEditMode ? "Updating…" : "Creating…"}
+            </>
+          ) : (
+            isEditMode ? "Update Product" : "Add Product"
+          )}
         </button>
 
       </form>

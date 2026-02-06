@@ -1,66 +1,33 @@
-import { DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT } from "../context/SignageContext";
+import { DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT, getBoardBounds } from "../context/SignageContext";
 import { waitForFonts as waitForFontsUtil, preloadFontsWithFontFace } from "./fontLoader";
 
-/**
- * Captures a snapshot of the preview element and converts it to an image
- * Uses html2canvas if available, otherwise falls back to legacy canvas method
- * @param {HTMLElement} previewElement - The DOM element to capture (the preview div)
- * @param {Function} callback - Callback function that receives the data URL
- * @param {Object} fallbackData - Fallback data for legacy method if html2canvas fails
- */
-export const capturePreviewSnapshot = async (previewElement, callback, fallbackData = null) => {
-  if (!previewElement) {
-    console.error("Preview element not found");
-    if (fallbackData) {
-      // Use legacy method as fallback
-      createCanvasPreview(
-        fallbackData.backgroundType,
-        fallbackData.backgroundColor,
-        fallbackData.backgroundGradient,
-        fallbackData.backgroundImageUrl,
-        fallbackData.getTextsFromContent,
-        callback,
-        fallbackData.canvasWidth,
-        fallbackData.canvasHeight
-      );
-    } else {
-      callback(null);
-    }
-    return;
-  }
+const MAX_EXPORT_LONG_SIDE = 1200;
 
-  // Use canvas method directly - it's more reliable for text rendering
-  // html2canvas has issues with custom fonts in production environments
-  console.log("Using canvas method for preview generation (more reliable for text)...");
-  
-  if (!fallbackData) {
-    console.error("No fallback data provided - cannot generate preview");
+/**
+ * Captures a snapshot by drawing the design programmatically (background, board, text).
+ */
+export const capturePreviewSnapshot = async (containerElement, callback, fallbackData = null) => {
+  const data = fallbackData;
+  if (!data) {
     callback(null);
     return;
   }
-  
-  // Preload fonts before generating canvas
-  console.log("Preloading fonts with FontFace API...");
   await preloadFontsWithFontFace();
-  
-  // Wait for fonts to be loaded
-  if (document.fonts && document.fonts.ready) {
-    await document.fonts.ready;
-  }
-  
-  // Additional wait to ensure fonts are fully loaded
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  // Use canvas method directly (skips html2canvas entirely)
+  if (document.fonts && document.fonts.ready) await document.fonts.ready;
+  await new Promise((r) => setTimeout(r, 300));
+
   createCanvasPreview(
-    fallbackData.backgroundType,
-    fallbackData.backgroundColor,
-    fallbackData.backgroundGradient,
-    fallbackData.backgroundImageUrl,
-    fallbackData.getTextsFromContent,
+    data.backgroundType,
+    data.backgroundColor,
+    data.backgroundGradient,
+    data.backgroundImageUrl,
+    data.getTextsFromContent,
     callback,
-    fallbackData.canvasWidth,
-    fallbackData.canvasHeight
+    data.canvasWidth,
+    data.canvasHeight,
+    data.verticalBoardImageUrl,
+    null,
+    null
   );
 };
 
@@ -68,6 +35,23 @@ export const capturePreviewSnapshot = async (previewElement, callback, fallbackD
  * Legacy function - creates canvas preview by recreating the design
  * Kept for backward compatibility
  */
+/** Draw the vertical board image at the same position as in the preview. */
+const drawVerticalBoard = (ctx, canvasWidth, canvasHeight, verticalBoardImageUrl) => {
+  if (!verticalBoardImageUrl || !ctx) return Promise.resolve();
+  const b = getBoardBounds(canvasWidth, canvasHeight);
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, img.width, img.height, b.left, b.top, b.width, b.height);
+      resolve();
+    };
+    img.onerror = () => resolve(); // no board if load fails
+    const url = verticalBoardImageUrl.startsWith("/") ? window.location.origin + verticalBoardImageUrl : verticalBoardImageUrl;
+    img.src = url;
+  });
+};
+
 export const createCanvasPreview = (
   backgroundType,
   backgroundColor,
@@ -76,16 +60,53 @@ export const createCanvasPreview = (
   getTextsFromContent,
   callback,
   canvasWidth = DEFAULT_CANVAS_WIDTH,
-  canvasHeight = DEFAULT_CANVAS_HEIGHT
+  canvasHeight = DEFAULT_CANVAS_HEIGHT,
+  verticalBoardImageUrl = null,
+  outputWidth = null,
+  outputHeight = null
 ) => {
-  console.log("createCanvasPreview: Creating canvas with exact dimensions:", canvasWidth, "x", canvasHeight);
-  
+  const designW = canvasWidth;
+  const designH = canvasHeight;
+  const EXPORT_SIZE = 1200; // Export as 1200×1200 square
+  const outW = EXPORT_SIZE;
+  const outH = EXPORT_SIZE;
+  // Contain: scale so full design fits inside square (no cropping; may have letterboxing)
+  const scale = Math.min(outW / designW, outH / designH);
+  const offsetX = outW / (2 * scale) - designW / 2;
+  const offsetY = outH / (2 * scale) - designH / 2;
+  const useCrop = true;
+
+  console.log("createCanvasPreview: Design", designW, "x", designH, "→ Export", outW, "x", outH);
+
   const canvas = document.createElement("canvas");
-  canvas.width = canvasWidth;
-  canvas.height = canvasHeight;
+  canvas.width = outW;
+  canvas.height = outH;
   const ctx = canvas.getContext("2d");
-  
-  console.log("Canvas created with size:", canvas.width, "x", canvas.height);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, outW, outH);
+  ctx.save();
+  ctx.translate(offsetX, offsetY);
+  ctx.scale(scale, scale);
+  const useOutputSize = useCrop;
+
+  const finishExport = (sourceCanvas) => {
+    const w = sourceCanvas.width;
+    const h = sourceCanvas.height;
+    const longSide = Math.max(w, h);
+    if (longSide <= MAX_EXPORT_LONG_SIDE) {
+      callback(sourceCanvas.toDataURL("image/jpeg", 0.85));
+      return;
+    }
+    const scale = MAX_EXPORT_LONG_SIDE / longSide;
+    const outW = Math.round(w * scale);
+    const outH = Math.round(h * scale);
+    const out = document.createElement("canvas");
+    out.width = outW;
+    out.height = outH;
+    const outCtx = out.getContext("2d");
+    outCtx.drawImage(sourceCanvas, 0, 0, w, h, 0, 0, outW, outH);
+    callback(out.toDataURL("image/jpeg", 0.85));
+  };
 
   // Helper function to preload a font by creating a hidden element
   const preloadFont = (fontFamily) => {
@@ -176,19 +197,19 @@ export const createCanvasPreview = (
     
     // Now draw the texts
     if (texts && texts.length > 0) {
-      drawTexts(ctx, getTextsFromContent);
+      drawTexts(ctx, getTextsFromContent, designW, designH);
     } else {
       console.warn("No texts found to draw!");
     }
     
-    // Use JPEG with quality 0.85 to reduce file size significantly
-    callback(canvas.toDataURL("image/jpeg", 0.85));
+    if (useOutputSize) ctx.restore();
+    finishExport(canvas);
   };
 
-  // Draw background
+  // Draw background (in design space)
   if (backgroundType === "color") {
     if (backgroundGradient) {
-      const gradient = ctx.createLinearGradient(0, 0, canvasWidth, canvasHeight);
+      const gradient = ctx.createLinearGradient(0, 0, designW, designH);
       // Extract colors from gradient string
       if (backgroundGradient.includes("#667eea")) {
         gradient.addColorStop(0, "#667eea");
@@ -220,13 +241,14 @@ export const createCanvasPreview = (
         gradient.addColorStop(1, backgroundColor);
       }
       ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      ctx.fillRect(0, 0, designW, designH);
     } else {
       ctx.fillStyle = backgroundColor;
-      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      ctx.fillRect(0, 0, designW, designH);
     }
-    // Draw text on colored background
+    // Draw vertical board then text on colored background
     (async () => {
+      await drawVerticalBoard(ctx, designW, designH, verticalBoardImageUrl);
       await drawComplete();
     })();
     return;
@@ -246,52 +268,31 @@ export const createCanvasPreview = (
       
       if (texts && texts.length > 0) {
         console.log("drawTextAfterImage: Drawing texts on canvas...");
-        drawTexts(ctx, getTextsFromContent);
+        drawTexts(ctx, getTextsFromContent, designW, designH);
         
         // Verify text was drawn by checking canvas
-        const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+        const imageData = ctx.getImageData(0, 0, designW, designH);
         const hasNonBackgroundPixels = Array.from(imageData.data).some((pixel, index) => {
-          // Check if pixel is not background (not white/transparent)
-          if (index % 4 === 3) return false; // Skip alpha channel
-          return pixel < 250; // Not white/light background
+          if (index % 4 === 3) return false;
+          return pixel < 250;
         });
         console.log("drawTextAfterImage: Canvas has non-background pixels:", hasNonBackgroundPixels);
       } else {
         console.warn("drawTextAfterImage: No texts to draw!");
       }
       
-      // Verify canvas is exactly the right size before exporting
+      if (useOutputSize) ctx.restore();
       console.log("Final canvas size before export:", canvas.width, "x", canvas.height);
-      console.log("Expected size:", canvasWidth, "x", canvasHeight);
-      
-      if (canvas.width !== canvasWidth || canvas.height !== canvasHeight) {
-        console.error("Canvas size mismatch! Canvas:", canvas.width, "x", canvas.height, "Expected:", canvasWidth, "x", canvasHeight);
-      }
-      
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-      console.log("drawTextAfterImage: Generated preview image, length:", dataUrl.length);
-      
-      // Verify the exported image dimensions by creating a test image
-      const testImg = new Image();
-      testImg.onload = () => {
-        console.log("Exported image actual dimensions:", testImg.width, "x", testImg.height);
-          if (testImg.width !== canvasWidth || testImg.height !== canvasHeight) {
-            console.error("WARNING: Exported image size doesn't match preview size!");
-          }
-        };
-        testImg.src = dataUrl;
-        
-        callback(dataUrl);
+      finishExport(canvas);
       };
     
     img.onload = () => {
       console.log("Background image loaded, dimensions:", img.width, img.height);
-      console.log("Canvas dimensions:", canvasWidth, "x", canvasHeight);
+      console.log("Design dimensions:", designW, "x", designH);
       
-      // CRITICAL: Crop the background image to fit the canvas exactly
-      // Calculate how to crop the image to center it and fill the canvas
+      // CRITICAL: Crop the background image to fit the design area exactly
       const imgAspect = img.width / img.height;
-      const canvasAspect = canvasWidth / canvasHeight;
+      const canvasAspect = designW / designH;
       
       let sourceX = 0;
       let sourceY = 0;
@@ -333,46 +334,39 @@ export const createCanvasPreview = (
       const croppedAspect = sourceWidth / sourceHeight;
       console.log("Cropping image:", {
         "original": `${img.width}x${img.height} (aspect: ${imgAspect.toFixed(3)})`,
-        "canvas": `${canvasWidth}x${canvasHeight} (aspect: ${canvasAspect.toFixed(3)})`,
+        "design": `${designW}x${designH} (aspect: ${canvasAspect.toFixed(3)})`,
         "crop area": `${sourceWidth}x${sourceHeight} from (${sourceX}, ${sourceY})`,
         "cropped aspect": croppedAspect.toFixed(3),
         "matches canvas": Math.abs(croppedAspect - canvasAspect) < 0.01
       });
       
-      // Draw ONLY the cropped portion of the image to fill the canvas exactly
-      // The cropped portion has the same aspect ratio as the canvas, so it will fill perfectly
-      // This matches what object-fit: cover does in the preview
+      // Draw ONLY the cropped portion of the image to fill the design area exactly
       ctx.drawImage(
         img,
-        sourceX, sourceY, // Source: start position (cropped area from original image)
-        sourceWidth, sourceHeight, // Source: cropped size (matches canvas aspect ratio)
-        0, 0, // Destination: start at top-left of canvas
-        canvasWidth, canvasHeight // Destination: fill entire canvas (600x1200)
+        sourceX, sourceY,
+        sourceWidth, sourceHeight,
+        0, 0,
+        designW, designH
       );
       
-      // Verify the canvas is exactly the right size
       console.log("Background image drawn on canvas:", {
-        "canvas size": `${canvas.width}x${canvas.height}`,
-        "expected": `${canvasWidth}x${canvasHeight}`,
+        "export size": `${canvas.width}x${canvas.height}`,
+        "design size": `${designW}x${designH}`,
         "source crop": `${sourceWidth}x${sourceHeight} from (${sourceX}, ${sourceY})`,
         "original image": `${img.width}x${img.height}`
       });
       
-      // Double-check: the canvas should be exactly canvasWidth x canvasHeight
-      if (canvas.width !== canvasWidth || canvas.height !== canvasHeight) {
-        console.error("ERROR: Canvas size mismatch!", {
-          actual: `${canvas.width}x${canvas.height}`,
-          expected: `${canvasWidth}x${canvasHeight}`
-        });
-      }
-      // Draw text after image is loaded
-      drawTextAfterImage();
+      // Draw vertical board then text after background image is loaded
+      (async () => {
+        await drawVerticalBoard(ctx, designW, designH, verticalBoardImageUrl);
+        drawTextAfterImage();
+      })();
     };
     
     img.onerror = async () => {
       // If image fails to load, draw text on blank background
       ctx.fillStyle = "#FFFFFF";
-      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      ctx.fillRect(0, 0, designW, designH);
       await drawComplete();
     };
     
@@ -383,24 +377,26 @@ export const createCanvasPreview = (
     img.src = imageUrl;
     return;
   } else {
-    // No background - draw text on white background
+    // No background - draw board then text on white background
     ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    ctx.fillRect(0, 0, designW, designH);
     (async () => {
+      await drawVerticalBoard(ctx, designW, designH, verticalBoardImageUrl);
       await drawComplete();
     })();
     return;
   }
 };
 
-const drawTexts = (context, getTextsFromContent) => {
+const drawTexts = (context, getTextsFromContent, designWidth = null, designHeight = null) => {
   const texts = getTextsFromContent();
   if (!texts || texts.length === 0) {
     console.warn("drawTexts: No texts provided");
     return;
   }
-  
-  console.log("drawTexts: Drawing", texts.length, "text lines");
+  const cw = designWidth ?? context.canvas.width;
+  const ch = designHeight ?? context.canvas.height;
+  console.log("drawTexts: Drawing", texts.length, "text lines (design space:", cw, "x", ch, ")");
   
   texts.forEach((text, index) => {
     if (!text || !text.content) {
@@ -455,14 +451,13 @@ const drawTexts = (context, getTextsFromContent) => {
     context.shadowOffsetX = 2;
     context.shadowOffsetY = 2;
     
-    // Draw text with color - ensure it's visible
+    // Draw text with color - ensure it's visible (use design space for default center when provided)
     const textColor = text.color || "#000000";
     context.fillStyle = textColor;
-    const x = text.x !== undefined && text.x > 0 ? text.x : context.canvas.width / 2;
-    const y = text.y !== undefined && text.y > 0 ? text.y : context.canvas.height / 2;
+    const x = text.x !== undefined && text.x > 0 ? text.x : cw / 2;
+    const y = text.y !== undefined && text.y > 0 ? text.y : ch / 2;
     
     console.log(`drawTexts: Drawing "${text.content}" at (${x}, ${y}) with font ${fontString} and color ${textColor}`);
-    console.log(`drawTexts: Canvas dimensions: ${context.canvas.width}x${context.canvas.height}`);
     
     // Draw white stroke first for better visibility on any background
     context.save();
@@ -476,11 +471,15 @@ const drawTexts = (context, getTextsFromContent) => {
     context.fillText(text.content, x, y);
     context.restore();
     
-    // Verify the text was drawn by checking a pixel near the text position
-    const testX = Math.min(x + 10, context.canvas.width - 1);
-    const testY = Math.min(y + 10, context.canvas.height - 1);
-    const pixelData = context.getImageData(testX, testY, 1, 1).data;
-    console.log(`drawTexts: Pixel at (${testX}, ${testY}):`, pixelData);
+    // Verify the text was drawn (skip pixel read when transformed/landscape - coords are design space)
+    if (designWidth == null) {
+      const testX = Math.min(Math.max(0, x + 10), cw - 1);
+      const testY = Math.min(Math.max(0, y + 10), ch - 1);
+      try {
+        const pixelData = context.getImageData(testX, testY, 1, 1).data;
+        console.log(`drawTexts: Pixel at (${testX}, ${testY}):`, pixelData);
+      } catch (_) {}
+    }
     
     // Reset shadow and stroke
     context.shadowBlur = 0;

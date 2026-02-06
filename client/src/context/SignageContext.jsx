@@ -172,7 +172,7 @@ export const SignageProvider = ({ children }) => {
     y: 520, // A bit below top
   });
   
-  // Update text position when canvas dimensions are loaded (lower on board so text sits on pink area)
+  // Update text position when canvas dimensions are loaded: use board center, or snap into board if currently outside
   useEffect(() => {
     if (canvasWidth && canvasHeight && !configLoading) {
       const bounds = getBoardBounds(canvasWidth, canvasHeight);
@@ -180,6 +180,12 @@ export const SignageProvider = ({ children }) => {
       const centerY = bounds.top + bounds.height * 0.72;
       setTextPosition(prev => {
         if (prev.x === DEFAULT_CANVAS_WIDTH / 2 && prev.y === 520) {
+          return { x: centerX, y: centerY };
+        }
+        // If position is outside the board, snap it onto the board so "Hello" stays on the board
+        const inBoardX = prev.x >= bounds.left && prev.x <= bounds.left + bounds.width;
+        const inBoardY = prev.y >= bounds.top && prev.y <= bounds.top + bounds.height;
+        if (!inBoardX || !inBoardY) {
           return { x: centerX, y: centerY };
         }
         return prev;

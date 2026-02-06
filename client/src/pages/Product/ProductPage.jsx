@@ -394,6 +394,7 @@ const attributeGroupsForUI =
     .map((a) => ({
       groupId: String(a.groupId._id),
       name: a.groupId.name,
+      type: a.groupId.type,
       options: (a.groupId.options || []).filter((opt) =>
         (a.optionIds || []).some((oid) => String(oid) === String(opt._id))
       ),
@@ -1036,7 +1037,9 @@ if (addon.optionId === pedestalOptionId) {
 </h3>
 
 
-              {attributeGroupsForUI.map((g) => (
+              {attributeGroupsForUI.map((g) => {
+                const isPaint = g.type === "paint";
+                return (
                 <div key={g.groupId} className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {g.name}
@@ -1045,38 +1048,47 @@ if (addon.optionId === pedestalOptionId) {
                   <div className="flex flex-wrap gap-2">
                     {g.options.map((opt) => {
                       const selected = selectedVarOptions[g.groupId] === String(opt._id);
+                      const paintSrc = opt.imageUrl || (opt.value ? `/paint/${opt.value}` : null);
 
                       return (
                         <button
-  key={String(opt._id)}
-  type="button"
-  disabled={!isRental}
-  onClick={() => {
-    if (!isRental) return;
-
-    setSelectedVarOptions((prev) => ({
-      ...prev,
-      [g.groupId]: String(opt._id),
-    }));
-  }}
-  className={`px-4 py-2 rounded-lg border text-sm transition
-    ${
-      selected
-        ? "border-black bg-black text-white"
-        : "border-gray-300 bg-white hover:bg-gray-50"
-    }
-    ${!isRental ? "cursor-not-allowed opacity-60" : ""}
-  `}
->
-  {opt.label}
-</button>
-
-
+                          key={String(opt._id)}
+                          type="button"
+                          disabled={!isRental}
+                          onClick={() => {
+                            if (!isRental) return;
+                            setSelectedVarOptions((prev) => ({
+                              ...prev,
+                              [g.groupId]: String(opt._id),
+                            }));
+                          }}
+                          className={`rounded-xl border text-sm transition
+                            ${selected
+                              ? "border-black bg-black text-white ring-2 ring-black ring-offset-1"
+                              : "border-gray-300 bg-white hover:bg-gray-50"
+                            }
+                            ${!isRental ? "cursor-not-allowed opacity-60" : ""}
+                            ${isPaint ? "flex flex-col items-center gap-1.5 p-2" : "flex items-center gap-2 px-4 py-2"}
+                          `}
+                          title={opt.label}
+                        >
+                          {isPaint && paintSrc ? (
+                            <>
+                              <span className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 flex shrink-0">
+                                <img src={paintSrc} alt="" className="w-full h-full object-cover" />
+                              </span>
+                              <span className="text-xs font-medium text-center">{opt.label}</span>
+                            </>
+                          ) : (
+                            opt.label
+                          )}
+                        </button>
                       );
                     })}
                   </div>
                 </div>
-              ))}
+              );
+              })}
 
              {isVariableRental && !selectedVariation && (
               <p className="text-sm text-red-600">

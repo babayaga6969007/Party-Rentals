@@ -62,6 +62,7 @@ const SignageEditorContent = () => {
     widthInches,
     heightInches,
     configLoading,
+    verticalBoardImageUrl,
   } = useSignage();
 
   // Track if we've initialized the position for this session
@@ -407,57 +408,18 @@ const SignageEditorContent = () => {
 
       setIsAddingToCart(true);
       
-      // Get the preview element (the div with the preview content)
-      // The canvasRef points to the inner preview div that contains the background and text
-      // This is the div with border-2 and specific width/height (600x1200)
-      const previewElement = canvasRef?.current;
-      if (!previewElement) {
-        console.error("Preview element not found. canvasRef:", canvasRef);
-        toast.error("Preview element not found. Please try again.");
+      // Capture from the parent container so export matches what's on screen (size and framing)
+      const containerElement = previewRef?.current;
+      if (!containerElement) {
+        console.error("Preview container not found. previewRef:", previewRef);
+        toast.error("Preview not found. Please try again.");
         setIsAddingToCart(false);
         return;
       }
+      const containerWidth = containerElement.offsetWidth || Math.round(containerElement.getBoundingClientRect().width);
+      const containerHeight = containerElement.offsetHeight || Math.round(containerElement.getBoundingClientRect().height);
       
-      // Get the exact dimensions from the element's style (not computed, to avoid padding)
-      const elementStyle = window.getComputedStyle(previewElement);
-      const elementWidth = parseInt(elementStyle.width) || previewElement.offsetWidth;
-      const elementHeight = parseInt(elementStyle.height) || previewElement.offsetHeight;
-      
-      console.log("Preview element found:", previewElement);
-      console.log("Preview element dimensions:", {
-        styleWidth: elementStyle.width,
-        styleHeight: elementStyle.height,
-        offsetWidth: previewElement.offsetWidth,
-        offsetHeight: previewElement.offsetHeight,
-        clientWidth: previewElement.clientWidth,
-        clientHeight: previewElement.clientHeight,
-        padding: elementStyle.padding,
-        margin: elementStyle.margin,
-        border: elementStyle.borderWidth
-      });
-      
-      // Store exact dimensions for html2canvas
-      previewElement.dataset.captureWidth = elementWidth.toString();
-      previewElement.dataset.captureHeight = elementHeight.toString();
-      
-      // Check if text elements are present in the preview
-      const textElements = previewElement.querySelectorAll('[style*="absolute"]');
-      console.log("Text elements found in preview:", textElements.length);
-      textElements.forEach((el, idx) => {
-        const rect = el.getBoundingClientRect();
-        const parentRect = previewElement.getBoundingClientRect();
-        console.log(`Text element ${idx}:`, {
-          text: el.textContent,
-          left: el.style.left,
-          top: el.style.top,
-          relativeLeft: rect.left - parentRect.left,
-          relativeTop: rect.top - parentRect.top,
-          fontSize: el.style.fontSize,
-          color: el.style.color
-        });
-      });
-      
-    // Wait for fonts to load and ensure everything is rendered
+      // Wait for fonts to load and ensure everything is rendered
     // Use FontFace API for more reliable font loading in production
     if (texts && texts.length > 0) {
       const fontFamilies = [...new Set(texts.map(t => t.fontFamily || "'Farmhouse', cursive"))];
@@ -476,32 +438,9 @@ const SignageEditorContent = () => {
     // Additional wait to ensure fonts are fully rendered
     await new Promise(resolve => setTimeout(resolve, 500));
 
-      // DEBUG: Log text elements before capture
-      const textElementsDebug = previewElement.querySelectorAll('div[data-text-id]');
-      console.log("=== DEBUG: Text elements in preview ===");
-      textElementsDebug.forEach((el, idx) => {
-        const style = window.getComputedStyle(el);
-        console.log(`Text ${idx}:`, {
-          content: el.textContent,
-          fontFamily: style.fontFamily,
-          fontSize: style.fontSize,
-          color: style.color,
-          visibility: style.visibility,
-          display: style.display,
-          opacity: style.opacity,
-          zIndex: style.zIndex,
-          position: style.position,
-          left: style.left,
-          top: style.top,
-          transform: style.transform
-        });
-      });
-      
-      // Capture snapshot of the actual preview element
-      // Use the ACTUAL visible dimensions of the preview element, not context dimensions
-      // Provide fallback data in case html2canvas isn't available
+      // Capture from parent container so export matches on-screen size and framing
       capturePreviewSnapshot(
-        previewElement,
+        containerElement,
         (previewUrl) => {
           if (!previewUrl) {
             toast.error("Failed to capture preview. Please try again.");
@@ -546,10 +485,11 @@ const SignageEditorContent = () => {
           backgroundGradient,
           backgroundImageUrl,
           getTextsFromContent,
-          // Use ACTUAL visible dimensions from the preview element, not context dimensions
-          // The visible preview is 600x600, not the context canvasWidth/canvasHeight
-          canvasWidth: elementWidth,  // Use the actual element width (600)
-          canvasHeight: elementHeight  // Use the actual element height (600)
+          verticalBoardImageUrl,
+          canvasWidth,
+          canvasHeight,
+          containerWidth,
+          containerHeight
         }
       );
     } catch (error) {

@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useLayoutEffect, useImperativeHandle, forwardRef } from "react";
+import { useRef, useState, useEffect, useLayoutEffect, forwardRef } from "react";
 import { useSignage, getBoardBounds } from "../../context/SignageContext";
 
 const PADDING_X = 12;
@@ -81,7 +81,6 @@ const SignagePreview = forwardRef(({
     onScaleChange?.(scale);
   }, [scale, onScaleChange]);
 
-  useImperativeHandle(ref, () => ({}), []);
 
   const isDragging = propIsDragging;
   void isTextClicked; // reserved for future use
@@ -177,13 +176,21 @@ const SignagePreview = forwardRef(({
     setTextBoxHeight(newH);
   }, [displayText, selectedFont, effectiveFontSize, scale, setTextBoxWidth, setTextBoxHeight]);
 
+  const setContainerRef = (el) => {
+    containerRef.current = el;
+    if (typeof ref === "function") ref(el);
+    else if (ref) ref.current = el;
+  };
+
+  const s = hasSize ? scale : 1;
+
   return (
     <div
-      ref={containerRef}
-      className={`flex-1 flex relative min-h-[520px] ${className}`}
-      style={{ ...containerBackgroundStyle, overflow: "hidden" }}
+      ref={setContainerRef}
+      className={`flex-1 flex relative min-h-[520px] overflow-hidden ${className}`}
+      style={containerBackgroundStyle}
     >
-      {/* Hidden element to measure text size so container can align to text */}
+      {/* Hidden element to measure text */}
       <div
         ref={textMeasureRef}
         aria-hidden
@@ -203,83 +210,63 @@ const SignagePreview = forwardRef(({
       >
         {displayText}
       </div>
-      {/* Background image: full-bleed so it always spans container */}
+      {/* Background image */}
       {backgroundType === "image" && backgroundImageUrl && (
         <img
           src={backgroundImageUrl}
           alt=""
+          crossOrigin="anonymous"
           className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           style={{ zIndex: 0 }}
         />
       )}
+      {/* Canvas area: absolute, bottom-centered, scaled size */}
       <div
-        className="relative flex items-center justify-center"
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", minWidth: 0, minHeight: 0, zIndex: 1 }}
+        ref={actualRef}
+        className="absolute overflow-hidden"
+        style={{
+          left: "50%",
+          bottom: 0,
+          width: cw * s,
+          height: ch * s,
+          marginLeft: -(cw * s) / 2,
+          zIndex: 1,
+          backgroundColor: "transparent",
+        }}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
       >
+        {/* Board: absolute within canvas */}
         <div
+          className="absolute overflow-hidden"
           style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            overflow: "hidden",
+            left: b.left * s,
+            top: b.top * s,
+            width: b.width * s,
+            height: b.height * s,
+            zIndex: 2,
           }}
         >
-        <div
-          ref={actualRef}
-          className="relative overflow-hidden"
-          style={{
-            position: "absolute",
-            left: "50%",
-            bottom: 0,
-            width: `${cw}px`,
-            height: `${ch}px`,
-            marginLeft: -cw / 2,
-            transform: `scale(${scale})`,
-            transformOrigin: "center bottom",
-            backgroundColor: "transparent",
-          }}
-          onMouseMove={onMouseMove}
-          onMouseUp={onMouseUp}
-          onMouseLeave={onMouseUp}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
-        >
-          {/* Board only - text is rendered above as direct child of container */}
-          {(() => {
-            const b = getBoardBounds(cw, ch);
-            return (
-              <div
-                className="absolute overflow-hidden"
-                style={{
-                  left: b.left,
-                  top: b.top,
-                  width: b.width,
-                  height: b.height,
-                  zIndex: 2,
-                }}
-              >
-                <img
-                  src={verticalBoardImageUrl || "/signage/vertical-board.png"}
-                  alt="Board"
-                  className="w-full h-full object-contain object-bottom"
-                />
-              </div>
-            );
-          })()}
-        </div>
+          <img
+            src={verticalBoardImageUrl || "/signage/vertical-board.png"}
+            alt="Board"
+            crossOrigin="anonymous"
+            className="w-full h-full object-contain object-bottom"
+          />
         </div>
       </div>
-      {/* Clip to board: text can be moved all over the board; anything outside is clipped. */}
+      {/* Text overlay: absolute, clipped to board */}
       <div
-        className="absolute"
+        className="absolute overflow-hidden"
         style={{
           left: hasSize ? boardLeft : "50%",
           top: hasSize ? boardTop : "65%",
           width: hasSize ? boardWidth : "40%",
           height: hasSize ? boardHeight : "55%",
           transform: hasSize ? undefined : "translate(-50%, -50%)",
-          overflow: "hidden",
           zIndex: 9999,
           pointerEvents: "none",
         }}
@@ -315,21 +302,18 @@ const SignagePreview = forwardRef(({
           <span className="flex-1 flex items-center justify-center px-1" style={{ minHeight: 0 }}>
             {displayText}
           </span>
-          {/* Width on horizontal (bottom) border (inches) */}
           <div
-                className="absolute left-1/2 bottom-0 font-normal tabular-nums text-gray-700 bg-white -translate-x-1/2 translate-y-1/2 border border-gray-400 rounded shadow-sm"
-                style={{ pointerEvents: "none", fontSize: Math.max(10, 10 * scale), padding: `${2 * scale}px ${4 * scale}px` }}
-              >
-                {widthInches != null ? formatInches(widthInches) : Math.round(textBoxWidth) + " px"}
-              </div>
-              {/* Height on vertical (right) border (inches) */}
-              <div
-                className="absolute right-0 top-1/2 font-normal tabular-nums text-gray-700 bg-white -translate-y-1/2 translate-x-1/2 border border-gray-400 rounded shadow-sm whitespace-nowrap"
-                style={{ pointerEvents: "none", fontSize: Math.max(10, 10 * scale), padding: `${2 * scale}px ${4 * scale}px` }}
-              >
-                {heightInches != null ? formatInches(heightInches) : Math.round(textBoxHeight) + " px"}
-              </div>
-          {/* Resize handle at bottom-right */}
+            className="absolute left-1/2 bottom-0 font-normal tabular-nums text-gray-700 bg-white -translate-x-1/2 translate-y-1/2 border border-gray-400 rounded shadow-sm"
+            style={{ pointerEvents: "none", fontSize: Math.max(10, 10 * scale), padding: `${2 * scale}px ${4 * scale}px` }}
+          >
+            {widthInches != null ? formatInches(widthInches) : Math.round(textBoxWidth) + " px"}
+          </div>
+          <div
+            className="absolute right-0 top-1/2 font-normal tabular-nums text-gray-700 bg-white -translate-y-1/2 translate-x-1/2 border border-gray-400 rounded shadow-sm whitespace-nowrap"
+            style={{ pointerEvents: "none", fontSize: Math.max(10, 10 * scale), padding: `${2 * scale}px ${4 * scale}px` }}
+          >
+            {heightInches != null ? formatInches(heightInches) : Math.round(textBoxHeight) + " px"}
+          </div>
           {isEditable && textBoxWidthPx > 0 && textBoxHeightPx > 0 && (
             <div
               role="button"
