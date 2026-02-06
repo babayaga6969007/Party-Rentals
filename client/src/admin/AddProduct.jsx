@@ -46,6 +46,8 @@ const [variations, setVariations] = useState([]);
 
   // Show on homepage (featured) — rental only
   const [featured, setFeatured] = useState(false);
+  // Allow custom title — client can enter title text
+  const [allowCustomTitle, setAllowCustomTitle] = useState(false);
 
   // Categories
   const [categories, setCategories] = useState([]);
@@ -279,6 +281,7 @@ setRentalSubType(data.productSubType || "simple");
         setPricePerDay(data.pricePerDay || "");
         setSalePrice(data.salePrice || "");
         setFeatured(!!data.featured);
+        setAllowCustomTitle(!!data.allowCustomTitle);
 
         const attrSelections = {};
         data.attributes?.forEach((a) => {
@@ -390,6 +393,7 @@ console.log("📦 VARIATIONS APPENDED:", variations.length);
     if (productType === "rental") {
       formData.append("featured", featured);
     }
+    formData.append("allowCustomTitle", allowCustomTitle);
 
     const requiredGroups = attributeGroups.filter(
       (g) => g.required && g.type !== "addon"
@@ -989,6 +993,24 @@ const existingKeys = new Set(
         </button>
       </div>
     )}
+    <div className="flex items-center gap-3">
+      <label className="font-medium">Allow custom title</label>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={allowCustomTitle}
+        onClick={() => setAllowCustomTitle((v) => !v)}
+        className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 ${
+          allowCustomTitle ? "bg-black" : "bg-gray-300"
+        }`}
+      >
+        <span
+          className={`pointer-events-none absolute left-0.5 top-0.5 inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition ${
+            allowCustomTitle ? "translate-x-5" : "translate-x-0"
+          }`}
+        />
+      </button>
+    </div>
   </div>
 )}
 

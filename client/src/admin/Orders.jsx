@@ -588,6 +588,9 @@ const Orders = () => {
                           <div className="text-sm text-gray-600 space-y-1">
                             <p>Quantity: {item.qty}</p>
                             <p>Unit Price: ${item.unitPrice?.toFixed(2) || "0.00"}</p>
+                            {item.customTitle && item.customTitle.trim() && (
+                              <p className="font-medium text-[#2D2926]">Title: {item.customTitle}</p>
+                            )}
                             {item.productType === "rental" && item.days && (
                               <p>Days: {item.days}</p>
                             )}

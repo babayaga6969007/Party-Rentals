@@ -100,6 +100,8 @@ addons = (addons || []).map((a) => {
     // 4️⃣ Create product
    const featuredFlag =
   req.body.featured === "true" || req.body.featured === true;
+  const allowCustomTitleFlag =
+    req.body.allowCustomTitle === "true" || req.body.allowCustomTitle === true;
 
 const {
   title,
@@ -195,6 +197,7 @@ const basePayload = {
   tags,
   attributes,
   addons,
+  allowCustomTitle: allowCustomTitleFlag,
 
   dimensions: productSubType === "simple" ? dimensions : "",
   availabilityCount:
@@ -354,6 +357,10 @@ if (updates.productType === "sale") {
   updates.featuredAt = null;
 }
 
+if (req.body.allowCustomTitle !== undefined) {
+  updates.allowCustomTitle =
+    req.body.allowCustomTitle === "true" || req.body.allowCustomTitle === true;
+}
 
 // For SIMPLE rental only
 if (updates.productSubType !== "variable") {

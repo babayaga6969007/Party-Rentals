@@ -103,6 +103,7 @@ const getLowestPriceVariation = (variations = []) => {
   const [shelvingSize, setShelvingSize] = useState(""); // For Tier A
   const [shelvingQuantity, setShelvingQuantity] = useState(1); // 1-8 for A/B, 1 for C
   const [shelvingError, setShelvingError] = useState("");
+  const [customTitleText, setCustomTitleText] = useState(""); // e.g. telephone booth title
 
   const handleGoToCart = () => {
     setOpenModal(false);   // close modal
@@ -1008,6 +1009,22 @@ if (addon.optionId === pedestalOptionId) {
 
           </div>
 
+          {/* Custom title — when product allows it */}
+          {product?.allowCustomTitle && (
+            <div className="mt-4">
+              <label className="block font-medium text-lg mb-2 text-[#2D2926]">
+                Custom title
+              </label>
+              <input
+                type="text"
+                value={customTitleText}
+                onChange={(e) => setCustomTitleText(e.target.value)}
+                placeholder="e.g. Mr & Mrs, Smith Wedding"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-[#2D2926] focus:ring-2 focus:ring-black focus:border-transparent"
+                maxLength={80}
+              />
+            </div>
+          )}
 
           {/* PRODUCT ATTRIBUTES */}
 
@@ -1749,6 +1766,8 @@ if (addon.optionId === pedestalOptionId) {
                 days: totalRentalDays,
                 startDate,
                 endDate,
+
+                customTitle: product.allowCustomTitle ? (customTitleText || "").trim() : "",
 
                 addons: Object.entries(selectedAddons).map(([optionId, a]) => ({
   optionId: a.realOptionId ?? optionId,

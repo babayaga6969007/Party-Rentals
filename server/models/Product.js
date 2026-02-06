@@ -278,6 +278,12 @@ featuredAt: {
   default: null,
 },
 
+    /* Custom title (e.g. telephone booth) — when true, client can enter title text */
+    allowCustomTitle: {
+      type: Boolean,
+      default: false,
+    },
+
  
 
 

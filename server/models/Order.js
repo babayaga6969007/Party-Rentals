@@ -33,6 +33,9 @@ const orderItemSchema = new mongoose.Schema(
       backgroundImageUrl: { type: String, default: "" },
     },
 
+    // Custom title text (e.g. for telephone booth) when product allows it
+    customTitle: { type: String, default: "" },
+
     // Add-ons (for rental products)
     addons: [{
       optionId: { type: String },

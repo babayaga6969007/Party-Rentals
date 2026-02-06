@@ -113,6 +113,9 @@ key={index}
           <p className="text-sm font-medium text-gray-800">
             {item.name}
           </p>
+          {item.customTitle && item.customTitle.trim() && (
+            <p className="text-xs text-gray-600">Title: {item.customTitle}</p>
+          )}
            {/* ✅ RENTAL METADATA GOES HERE */}
   {item.productType === "rental" && (
     <p className="text-xs text-gray-500">

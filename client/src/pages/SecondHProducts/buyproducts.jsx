@@ -52,10 +52,12 @@ const [selectedOptionState, setSelectedOptionState] = useState({});
 const today = new Date().toISOString().split("T")[0]; // disable past dates
 
 const { addToCart, cartItems } = useCart();
+const [customTitleText, setCustomTitleText] = useState("");
 const isAlreadyInCart = cartItems.some(
   (item) =>
     item.productType === "purchase" &&
-    item.productId === product?._id
+    item.productId === product?._id &&
+    (item.customTitle || "").trim() === (product?.allowCustomTitle ? (customTitleText || "").trim() : "")
 );
 
 
@@ -199,6 +201,8 @@ const unitPrice = effectivePrice;
     qty: productQty,
     unitPrice,
     lineTotal,
+
+    customTitle: product.allowCustomTitle ? (customTitleText || "").trim() : "",
 
     image: productImages[activeImage],
     maxStock: product?.availabilityCount ?? 1,
@@ -499,8 +503,22 @@ if (!product) {
 
           </div>
 
-        
-
+          {/* Custom title — when product allows it */}
+          {product?.allowCustomTitle && (
+            <div className="mt-4">
+              <label className="block font-medium text-lg mb-2 text-[#2D2926]">
+                Custom title
+              </label>
+              <input
+                type="text"
+                value={customTitleText}
+                onChange={(e) => setCustomTitleText(e.target.value)}
+                placeholder="e.g. Mr & Mrs, Smith Wedding"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-[#2D2926] focus:ring-2 focus:ring-black focus:border-transparent"
+                maxLength={80}
+              />
+            </div>
+          )}
 
           {/* TOTAL */}
          <div className="mt-8 text-2xl font-semibold text-[#2D2926]">
