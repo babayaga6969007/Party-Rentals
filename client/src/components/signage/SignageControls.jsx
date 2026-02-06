@@ -1,9 +1,8 @@
 import { memo } from "react";
 import TextInputSection from "./TextInputSection";
-import TextSizeSelector from "./TextSizeSelector";
 import FontSelector from "./FontSelector";
 import TextColorPicker from "./TextColorPicker";
-import BackgroundOptions from "./BackgroundOptions";
+import VerticalBoardSelector from "./VerticalBoardSelector";
 import AddToCartButton from "./AddToCartButton";
 
 const SignageControls = memo(({ isSharedView, onAddToCart, isAddingToCart, product, productId, navigate }) => {
@@ -13,10 +12,9 @@ const SignageControls = memo(({ isSharedView, onAddToCart, isAddingToCart, produ
         {!isSharedView && (
           <>
             <TextInputSection />
-            <TextSizeSelector />
             <FontSelector />
             <TextColorPicker />
-            <BackgroundOptions />
+            <VerticalBoardSelector />
           </>
         )}
         {isSharedView && (

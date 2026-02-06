@@ -22,6 +22,12 @@ const signageConfigSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    // Price per 1" × 1" (square inch). Final price = pricePerSqInch × widthInches × heightInches
+    pricePerSqInch: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
 
     // Active status
     isActive: {
@@ -47,6 +53,7 @@ signageConfigSchema.statics.getConfig = async function () {
         { key: "extralarge", label: "Extra Large", fontSize: 80, price: 0 },
       ],
       basePrice: 0,
+      pricePerSqInch: 0,
     });
   }
   return config;

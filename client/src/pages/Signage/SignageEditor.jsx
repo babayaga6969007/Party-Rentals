@@ -4,11 +4,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { api } from "../../utils/api";
 import { useCart } from "../../context/CartContext";
-import { SignageProvider, useSignage } from "../../context/SignageContext";
+import { SignageProvider, useSignage, getBoardBounds } from "../../context/SignageContext";
 import SignagePreview from "../../components/signage/SignagePreview";
 import SignageHeader from "../../components/signage/SignageHeader";
 import SignageControls from "../../components/signage/SignageControls";
-import BackgroundImageOptions from "../../components/signage/BackgroundImageOptions";
 import { capturePreviewSnapshot } from "../../utils/signageCart";
 import { waitForFonts, preloadFontsWithFontFace } from "../../utils/fontLoader";
 
@@ -24,19 +23,20 @@ const SignageEditorContent = () => {
   const [loading, setLoading] = useState(true);
 
   const [isDragging, setIsDragging] = useState(false);
+  const [liveDragPosition, setLiveDragPosition] = useState(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isTextClicked, setIsTextClicked] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [previewScale, setPreviewScale] = useState(1);
-  const [canvasZoom, setCanvasZoom] = useState(1);
-  const ZOOM_MIN = 1;
-  const ZOOM_MAX = 2;
-  const ZOOM_STEP = 0.25;
 
   const {
     textContent,
     textPosition,
     setTextPosition,
+    textBoxWidth,
+    textBoxHeight,
+    setTextBoxWidth,
+    setTextBoxHeight,
     backgroundType,
     backgroundColor,
     backgroundGradient,
@@ -44,6 +44,10 @@ const SignageEditorContent = () => {
     backgroundImageUrl,
     textSize,
     fontSize,
+    effectiveTextSize,
+    effectiveFontSize,
+    userTextScale,
+    setUserTextScale,
     selectedFont,
     selectedTextColor,
     selectedSize,
@@ -55,21 +59,22 @@ const SignageEditorContent = () => {
     canvasHeight,
     widthFt,
     heightFt,
+    widthInches,
+    heightInches,
     configLoading,
   } = useSignage();
 
   // Track if we've initialized the position for this session
   const positionInitializedRef = useRef(false);
 
-  // Ensure text is horizontally centered on initial load (for all new signages, not shared ones)
+  // Ensure text is centered in banner on initial load (for all new signages, not shared ones)
   useEffect(() => {
     if (!token && !loading && !isSharedView && !configLoading && !positionInitializedRef.current && canvasWidth && canvasHeight) {
-      // Position horizontally centered, a bit below top
-      const centeredPosition = { 
-        x: canvasWidth / 2, // Horizontally centered
-        y: 520, // A bit below top
+      const bounds = getBoardBounds(canvasWidth, canvasHeight);
+      const centeredPosition = {
+        x: bounds.left + bounds.width / 2,
+        y: bounds.top + bounds.height * 0.72,
       };
-      
       setTextPosition(centeredPosition);
       positionInitializedRef.current = true;
     }
@@ -122,90 +127,273 @@ const SignageEditorContent = () => {
     if (isSharedView) return;
     e.preventDefault();
     e.stopPropagation();
+    removeDragListeners();
     const rect = canvasRef.current.getBoundingClientRect();
     const s = previewScale || 1;
-    setDragOffset({
+    const offset = {
       x: (e.clientX - rect.left) / s - textPosition.x,
       y: (e.clientY - rect.top) / s - textPosition.y,
-    });
+    };
+    dragOffsetRef.current = offset;
+    setDragOffset(offset);
+    isDraggingRef.current = true;
     setIsDragging(true);
     setIsTextClicked(true);
+    const onMove = (ev) => {
+      ev.preventDefault();
+      handleMouseMove(ev);
+    };
+    const onUp = () => {
+      removeDragListeners();
+      handleMouseUp();
+    };
+    const cleanup = () => {
+      document.removeEventListener("mousemove", onMove, { capture: true });
+      document.removeEventListener("mouseup", onUp, { capture: true });
+    };
+    dragListenersCleanupRef.current = cleanup;
+    document.addEventListener("mousemove", onMove, { capture: true });
+    document.addEventListener("mouseup", onUp, { capture: true });
   };
 
   const handleTextTouchStart = (e) => {
     if (isSharedView) return;
     e.preventDefault();
     e.stopPropagation();
+    removeDragListeners();
     const rect = canvasRef.current.getBoundingClientRect();
     const touch = e.touches[0];
     const s = previewScale || 1;
-    setDragOffset({
+    const offset = {
       x: (touch.clientX - rect.left) / s - textPosition.x,
       y: (touch.clientY - rect.top) / s - textPosition.y,
-    });
+    };
+    dragOffsetRef.current = offset;
+    setDragOffset(offset);
+    isDraggingRef.current = true;
     setIsDragging(true);
     setIsTextClicked(true);
+    const onTouchMove = (ev) => {
+      ev.preventDefault();
+      handleTouchMove(ev);
+    };
+    const onTouchEnd = () => {
+      removeDragListeners();
+      handleMouseUp();
+    };
+    const cleanup = () => {
+      document.removeEventListener("touchmove", onTouchMove, { capture: true, passive: false });
+      document.removeEventListener("touchend", onTouchEnd, { capture: true });
+      document.removeEventListener("touchcancel", onTouchEnd, { capture: true });
+    };
+    dragListenersCleanupRef.current = cleanup;
+    document.addEventListener("touchmove", onTouchMove, { capture: true, passive: false });
+    document.addEventListener("touchend", onTouchEnd, { capture: true });
+    document.addEventListener("touchcancel", onTouchEnd, { capture: true });
   };
 
   // Use ref for drag position to prevent rerenders - only update context on drag end
   const dragPositionRef = useRef(null);
+  const isDraggingRef = useRef(false);
+  const dragListenersCleanupRef = useRef(null);
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
+
+  const removeDragListeners = () => {
+    const cleanup = dragListenersCleanupRef.current;
+    if (cleanup) {
+      dragListenersCleanupRef.current = null;
+      cleanup();
+    }
+  };
 
   const handleMouseMove = (e) => {
-    if (!isDragging) return;
+    if (!isDraggingRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
     const s = previewScale || 1;
-    const newX = (e.clientX - rect.left) / s - dragOffset.x;
-    const newY = (e.clientY - rect.top) / s - dragOffset.y;
+    const offset = dragOffsetRef.current;
+    const newX = (e.clientX - rect.left) / s - offset.x;
+    const newY = (e.clientY - rect.top) / s - offset.y;
 
     const lines = textContent.split('\n').filter(line => line.trim());
-    const lineHeight = fontSize * 1.4;
+    const lineHeight = effectiveFontSize * 1.4;
     const dynamicHeight = Math.max(
-      textSize.height,
-      (lines.length - 1) * lineHeight + fontSize
+      effectiveTextSize.height,
+      (lines.length - 1) * lineHeight + effectiveFontSize
     );
     const cw = canvasWidth || 600;
     const ch = canvasHeight || 1200;
-    const clampedX = Math.max(textSize.width / 2, Math.min(newX, cw - textSize.width / 2));
-    const clampedY = Math.max(dynamicHeight / 2, Math.min(newY, ch - dynamicHeight / 2));
-    dragPositionRef.current = { x: clampedX, y: clampedY };
+    const b = getBoardBounds(cw, ch);
+    const minX = b.left;
+    const maxX = b.left + b.width;
+    const minY = b.top;
+    const maxY = b.top + b.height;
+    const clampedX = Math.max(minX, Math.min(newX, maxX));
+    const clampedY = Math.max(minY, Math.min(newY, maxY));
+    const pos = { x: clampedX, y: clampedY };
+    dragPositionRef.current = pos;
+    setLiveDragPosition(pos);
   };
 
   const handleTouchMove = (e) => {
-    if (!isDragging) return;
+    if (!isDraggingRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
     const touch = e.touches[0];
     const s = previewScale || 1;
-    const newX = (touch.clientX - rect.left) / s - dragOffset.x;
-    const newY = (touch.clientY - rect.top) / s - dragOffset.y;
+    const offset = dragOffsetRef.current;
+    const newX = (touch.clientX - rect.left) / s - offset.x;
+    const newY = (touch.clientY - rect.top) / s - offset.y;
 
     const lines = textContent.split('\n').filter(line => line.trim());
-    const lineHeight = fontSize * 1.4;
+    const lineHeight = effectiveFontSize * 1.4;
     const dynamicHeight = Math.max(
-      textSize.height,
-      (lines.length - 1) * lineHeight + fontSize
+      effectiveTextSize.height,
+      (lines.length - 1) * lineHeight + effectiveFontSize
     );
     const cw = canvasWidth || 600;
     const ch = canvasHeight || 1200;
-    const clampedX = Math.max(textSize.width / 2, Math.min(newX, cw - textSize.width / 2));
-    const clampedY = Math.max(dynamicHeight / 2, Math.min(newY, ch - dynamicHeight / 2));
-    dragPositionRef.current = { x: clampedX, y: clampedY };
+    const b = getBoardBounds(cw, ch);
+    const minX = b.left;
+    const maxX = b.left + b.width;
+    const minY = b.top;
+    const maxY = b.top + b.height;
+    const clampedX = Math.max(minX, Math.min(newX, maxX));
+    const clampedY = Math.max(minY, Math.min(newY, maxY));
+    const pos = { x: clampedX, y: clampedY };
+    dragPositionRef.current = pos;
+    setLiveDragPosition(pos);
   };
 
-  // Handle mouse/touch up
+  // Handle mouse/touch up — idempotent so double-firing (e.g. touch + synthetic mouse) doesn't break state
   const handleMouseUp = () => {
-    // Finalize position update from ref
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    removeDragListeners();
     const finalPosition = dragPositionRef.current;
+    dragPositionRef.current = null;
+    setLiveDragPosition(null);
     if (finalPosition) {
-      dragPositionRef.current = null;
-      // Batch all updates together - React 18 automatically batches these
       setTextPosition(finalPosition);
-      setIsDragging(false);
-      setTimeout(() => setIsTextClicked(false), 200);
-    } else {
-      // No position change, just clear drag state
-      setIsDragging(false);
-      setTimeout(() => setIsTextClicked(false), 200);
     }
+    setIsDragging(false);
+    setTimeout(() => setIsTextClicked(false), 200);
+  };
+
+  useEffect(() => {
+    const onBlur = () => {
+      if (isDraggingRef.current) handleMouseUp();
+      if (isResizingRef.current) endResize();
+    };
+    window.addEventListener("blur", onBlur);
+    return () => {
+      window.removeEventListener("blur", onBlur);
+      removeDragListeners();
+      removeResizeListeners();
+    };
+  }, []);
+
+  // Resize from bottom-right handle (anchor = top-left of box)
+  const [isResizing, setIsResizing] = useState(false);
+  const isResizingRef = useRef(false);
+  const resizeAnchorRef = useRef(null);
+  const resizeListenersRef = useRef(null);
+
+  const removeResizeListeners = () => {
+    const ref = resizeListenersRef.current;
+    if (ref?.cleanup) {
+      resizeListenersRef.current = null;
+      ref.cleanup();
+    }
+  };
+
+  const endResize = () => {
+    isResizingRef.current = false;
+    setIsResizing(false);
+    removeResizeListeners();
+  };
+
+  const handleResizeHandleMouseDown = (e) => {
+    if (isSharedView) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = canvasRef.current.getBoundingClientRect();
+    const s = previewScale || 1;
+    const anchorX = textPosition.x - textBoxWidth / 2;
+    const anchorY = textPosition.y - textBoxHeight / 2;
+    resizeAnchorRef.current = { anchorX, anchorY };
+    isResizingRef.current = true;
+    setIsResizing(true);
+
+    const onMove = (ev) => {
+      const canvasX = (ev.clientX - rect.left) / s;
+      const canvasY = (ev.clientY - rect.top) / s;
+      const newWidth = Math.max(40, canvasX - anchorX);
+      const newHeight = Math.max(24, canvasY - anchorY);
+      const cw = canvasWidth || 600;
+      const ch = canvasHeight || 1200;
+      const b = getBoardBounds(cw, ch);
+      const clampedW = Math.min(b.width, newWidth);
+      const clampedH = Math.min(b.height, newHeight);
+      const centerX = anchorX + clampedW / 2;
+      const centerY = anchorY + clampedH / 2;
+      setTextBoxWidth(clampedW);
+      setTextBoxHeight(clampedH);
+      setTextPosition({ x: centerX, y: centerY });
+    };
+    const onUp = () => {
+      removeResizeListeners();
+      endResize();
+    };
+    const cleanup = () => {
+      document.removeEventListener("mousemove", onMove, { capture: true });
+      document.removeEventListener("mouseup", onUp, { capture: true });
+    };
+    resizeListenersRef.current = { cleanup };
+    document.addEventListener("mousemove", onMove, { capture: true });
+    document.addEventListener("mouseup", onUp, { capture: true });
+  };
+
+  const handleResizeHandleTouchStart = (e) => {
+    if (isSharedView) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = canvasRef.current.getBoundingClientRect();
+    const s = previewScale || 1;
+    const anchorX = textPosition.x - textBoxWidth / 2;
+    const anchorY = textPosition.y - textBoxHeight / 2;
+    resizeAnchorRef.current = { anchorX, anchorY };
+    isResizingRef.current = true;
+    setIsResizing(true);
+
+    const onMove = (ev) => {
+      const touch = ev.touches[0];
+      const canvasX = (touch.clientX - rect.left) / s;
+      const canvasY = (touch.clientY - rect.top) / s;
+      const newWidth = Math.max(40, canvasX - anchorX);
+      const newHeight = Math.max(24, canvasY - anchorY);
+      const cw = canvasWidth || 600;
+      const ch = canvasHeight || 1200;
+      const b = getBoardBounds(cw, ch);
+      const clampedW = Math.min(b.width, newWidth);
+      const clampedH = Math.min(b.height, newHeight);
+      const centerX = anchorX + clampedW / 2;
+      const centerY = anchorY + clampedH / 2;
+      setTextBoxWidth(clampedW);
+      setTextBoxHeight(clampedH);
+      setTextPosition({ x: centerX, y: centerY });
+    };
+    const onEnd = () => {
+      removeResizeListeners();
+      endResize();
+    };
+    const cleanup = () => {
+      document.removeEventListener("touchmove", onMove, { capture: true, passive: false });
+      document.removeEventListener("touchend", onEnd, { capture: true });
+      document.removeEventListener("touchcancel", onEnd, { capture: true });
+    };
+    resizeListenersRef.current = { cleanup };
+    document.addEventListener("touchmove", onMove, { capture: true, passive: false });
+    document.addEventListener("touchend", onEnd, { capture: true });
+    document.addEventListener("touchcancel", onEnd, { capture: true });
   };
 
   // Add to cart (saves signage metadata directly in cart, no separate entity)
@@ -339,10 +527,10 @@ const SignageEditorContent = () => {
               backgroundImageUrl,
               textContent,
               fontFamily: selectedFont,
-              fontSize: fontSize,
+              fontSize: effectiveFontSize,
               textColor: selectedTextColor,
-              textWidth: textSize.width,
-              textHeight: textSize.height,
+              textWidth: effectiveTextSize.width,
+              textHeight: effectiveTextSize.height,
               size: selectedSize,
             },
           };
@@ -405,14 +593,16 @@ const SignageEditorContent = () => {
                 <h3 className="text-lg font-semibold text-[#2D2926]">
                   Preview
                 </h3>
-                <span className="text-sm text-gray-600" title="Physical sign size (set in admin)">
-                  {widthFt != null && heightFt != null ? `${Number(widthFt)} ft × ${Number(heightFt)} ft` : ""}
-                </span>
               </div>
               <div className="text-right">
                 <div className="text-sm text-gray-500">Price</div>
                 <div className="text-xl font-bold text-black">
-                  ${currentPrice || 0}
+                  ${Number(currentPrice || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                <div className="text-sm text-gray-600 mt-0.5" title="Text area size (updates with scale)">
+                  {widthInches != null && heightInches != null && (widthInches > 0 || heightInches > 0)
+                    ? `${Number(widthInches).toFixed(2)} in × ${Number(heightInches).toFixed(2)} in`
+                    : ""}
                 </div>
               </div>
             </div>
@@ -437,61 +627,16 @@ const SignageEditorContent = () => {
             />
 
             {/* RIGHT SIDE - CANVAS */}
-            <div className="lg:col-span-2 flex flex-col max-h-[calc(100vh-280px)] min-h-0">
+            <div className="lg:col-span-2 flex flex-col max-h-[calc(100vh-200px)] min-h-[560px]">
               <div className="bg-white p-5 rounded-xl shadow flex-1 min-h-0 flex flex-col overflow-hidden">
-                {!isSharedView && (
-                  <div className="flex items-center justify-between gap-2 mb-3 shrink-0">
-                    <span className="text-sm text-gray-600">Zoom</span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setCanvasZoom((z) => Math.max(ZOOM_MIN, z - ZOOM_STEP))}
-                        disabled={canvasZoom <= ZOOM_MIN}
-                        className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-lg"
-                        title="Zoom out"
-                      >
-                        −
-                      </button>
-                      <span className="min-w-16 text-center text-sm font-medium text-gray-700">
-                        {Math.round(canvasZoom * 100)}%
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setCanvasZoom((z) => Math.min(ZOOM_MAX, z + ZOOM_STEP))}
-                        disabled={canvasZoom >= ZOOM_MAX}
-                        className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-lg"
-                        title="Zoom in"
-                      >
-                        +
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setCanvasZoom(1)}
-                        className="px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
-                        title="Fit to view"
-                      >
-                        Fit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => previewRef.current?.recenter?.()}
-                        disabled={canvasZoom <= 1}
-                        className="px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                        title="Recenter image"
-                      >
-                        Recenter
-                      </button>
-                    </div>
-                  </div>
-                )}
                 <SignagePreview
                   ref={previewRef}
                   isEditable={!isSharedView}
                   canvasRef={canvasRef}
                   dragPositionRef={dragPositionRef}
+                  liveDragPosition={liveDragPosition}
                   isDragging={isDragging}
                   isTextClicked={isTextClicked}
-                  zoom={canvasZoom}
                   onScaleChange={setPreviewScale}
                   onTextMouseDown={handleTextMouseDown}
                   onMouseMove={handleMouseMove}
@@ -499,18 +644,13 @@ const SignageEditorContent = () => {
                   onTouchStart={handleTextTouchStart}
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleMouseUp}
+                  onResizeHandleMouseDown={handleResizeHandleMouseDown}
+                  onResizeHandleTouchStart={handleResizeHandleTouchStart}
                 />
                 {!isSharedView && (
                   <p className="text-sm text-gray-500 mt-4 text-center shrink-0">
                     Click and drag text to reposition
                   </p>
-                )}
-                
-                {/* Background Image Options - Show cart images if available */}
-                {!isSharedView && (
-                  <div className="mt-4 shrink-0">
-                    <BackgroundImageOptions cartItems={cartItems} />
-                  </div>
                 )}
               </div>
             </div>
