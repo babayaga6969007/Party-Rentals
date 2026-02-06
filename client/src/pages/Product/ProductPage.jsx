@@ -481,6 +481,18 @@ const attributeGroupsForUI =
   // helper: normalize strings for matching
   const normalize = (s = "") => s.toLowerCase().trim();
 
+  // Client-facing: only one shelving addon (one tier). If product has multiple shelving options, show only the first.
+  const isShelvingLike = (a) => {
+    const n = normalize(a.name);
+    return n === "shelving" || n.includes("shelving");
+  };
+  const addonsForDisplay =
+    renderedAddons?.filter((a, i, arr) => {
+      if (!isShelvingLike(a)) return true;
+      const firstShelvingIndex = arr.findIndex(isShelvingLike);
+      return i === firstShelvingIndex;
+    }) ?? [];
+
   // find signage addon from renderedAddons (if exists for this product)
   const signageAddon = renderedAddons.find((a) => {
     const n = normalize(a.name);
@@ -1116,7 +1128,7 @@ if (addon.optionId === pedestalOptionId) {
               <div className="space-y-3">
 
 
-                {renderedAddons.map((addon) => {
+                {addonsForDisplay.map((addon) => {
                   const selected = !!selectedAddons[addon.optionId];
                   const isSignage = addon.optionId === signageOptionId;
                   const isShelving = addon.optionId === shelvingOptionId;
@@ -1260,32 +1272,12 @@ if (addon.optionId === pedestalOptionId) {
     )}
   </div>
 )}
-              {/* Shelving: Tier A/B/C + size selection when available (customer-facing) */}
+              {/* Shelving: single tier from product addon (no tier selector on client) */}
               {shelvingOptionId && isShelvingSelected && (
                 <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <h4 className="font-semibold text-[#2D2926] mb-3">Shelving</h4>
-
-                  <div className="flex gap-3 mb-4">
-                    {["A", "B", "C"].map((tier) => (
-                      <button
-                        key={tier}
-                        type="button"
-                        onClick={() => {
-                          setShelvingTier(tier);
-                          setShelvingSize(tier === "A" ? (shelvingTierAOptions[0]?.size || "") : "yes");
-                          setShelvingQuantity(tier === "C" ? 1 : 1);
-                          setShelvingError("");
-                        }}
-                        className={`px-4 py-2 rounded-lg border-2 transition ${
-                          shelvingTier === tier
-                            ? "border-black bg-gray-100 text-black font-semibold"
-                            : "border-gray-300 hover:border-gray-400"
-                        }`}
-                      >
-                        Tier {tier}
-                      </button>
-                    ))}
-                  </div>
+                  <h4 className="font-semibold text-[#2D2926] mb-3">
+                    Shelving{shelvingTier ? ` (Tier ${shelvingTier})` : ""}
+                  </h4>
 
                   {/* Tier A: size dropdown when sizes available */}
                   {shelvingTier === "A" && shelvingTierAOptions.length > 0 && (

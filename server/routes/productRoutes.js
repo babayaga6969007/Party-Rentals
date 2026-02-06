@@ -52,7 +52,14 @@ router.put(
   productController.editProduct
 );
 
-
+// Upload images for a single variation (queue: one variation at a time)
+const uploadVariationImages = multer({ storage }).array("images", 5);
+router.put(
+  "/admin/edit/:id/variations/:variationIndex/images",
+  authAdmin,
+  uploadVariationImages,
+  productController.uploadVariationImages
+);
 
 // Delete product
 router.delete("/admin/delete/:id", authAdmin, productController.deleteProduct);

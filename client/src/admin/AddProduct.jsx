@@ -60,6 +60,8 @@ const [variations, setVariations] = useState([]);
 
   // Submit loading (create/update product)
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Variable rental: queue upload progress { total, completed }
+  const [variationUploadProgress, setVariationUploadProgress] = useState(null);
 
   // Selections
   const [selectedAttrs, setSelectedAttrs] = useState({});
@@ -107,6 +109,7 @@ const [variations, setVariations] = useState([]);
   }, []);
   
   const MAX_IMAGES = 8;
+  const MAX_VARIATION_IMAGES = 5;
 
   const totalImageCount = existingImages.length + previews.length;
 
@@ -366,32 +369,39 @@ if (data.productType === "rental" && data.productSubType === "variable") {
     const formData = new FormData();
 
 
-    if (productType === "rental" && rentalSubType === "variable") {
-  formData.append(
-  "variations",
-  JSON.stringify(
-    variations.map((v) => ({
-      dimension: v.dimension,
-      pricePerDay: v.pricePerDay,
-      salePrice: v.salePrice || null,
-      stock: v.stock,
-      existingImages: (v.existingImages || []).map((img) => ({
-        public_id: img.public_id,
-        url: img.url,
-      })),
-    }))
-  )
-);
+    const isVariableRental = productType === "rental" && rentalSubType === "variable";
+    const variationsWithNewImages = isVariableRental
+      ? variations
+          .map((v, i) => ({ index: i, files: v.images || [] }))
+          .filter((x) => x.files.length > 0)
+      : [];
+    const useVariationQueue = isVariableRental && variationsWithNewImages.length > 0;
 
-
- variations.forEach((v, i) => {
-  (v.images || []).forEach((img) => {
-    formData.append(`variationImages_${i}`, img);
-  });
-});
-
-}
-console.log("📦 VARIATIONS APPENDED:", variations.length);
+    if (isVariableRental) {
+      formData.append(
+        "variations",
+        JSON.stringify(
+          variations.map((v) => ({
+            dimension: v.dimension,
+            pricePerDay: v.pricePerDay,
+            salePrice: v.salePrice || null,
+            stock: v.stock,
+            existingImages: (v.existingImages || []).map((img) => ({
+              public_id: img.public_id,
+              url: img.url,
+            })),
+          }))
+        )
+      );
+      // Queue mode: do NOT append variation images here; upload one variation at a time after create/edit
+      if (!useVariationQueue) {
+        variations.forEach((v, i) => {
+          (v.images || []).forEach((img) => {
+            formData.append(`variationImages_${i}`, img);
+          });
+        });
+      }
+    }
 
     formData.append("productSubType", rentalSubType);
 
@@ -517,19 +527,30 @@ if (isEditMode) {
   formData.append("existingImages", JSON.stringify(existingImages));
 } else {
   // CREATE MODE
-  if (productType === "rental" && rentalSubType === "variable") {
-    // Each variation must have its own image
-const missingImage = variations.some(
-  (v) =>
-    (!v.images || v.images.length === 0) &&
-    (!v.existingImages || v.existingImages.length === 0)
-);
-
+  if (productType === "rental" && rentalSubType === "variable" && !useVariationQueue) {
+    // When not using queue, each variation must have its own image in this request
+    const missingImage = variations.some(
+      (v) =>
+        (!v.images || v.images.length === 0) &&
+        (!v.existingImages || v.existingImages.length === 0)
+    );
     if (missingImage) {
       alert("Each variation must have an image");
       return;
     }
-  } else {
+  }
+  if (productType === "rental" && rentalSubType === "variable" && useVariationQueue) {
+    const missingImage = variations.some(
+      (v) =>
+        (!v.images || v.images.length === 0) &&
+        (!v.existingImages || v.existingImages.length === 0)
+    );
+    if (missingImage) {
+      toast.error("Each variation must have at least one image");
+      return;
+    }
+  }
+  if (productType !== "rental" || rentalSubType !== "variable") {
     // Simple rental or sale → base images required
     if (images.length === 0) {
       alert("Upload at least one image");
@@ -538,25 +559,60 @@ const missingImage = variations.some(
   }
 }
 
+    // Variable rental: max 5 images per variation (existing + new)
+    if (isVariableRental) {
+      const overIndex = variations.findIndex(
+        (v) => (v.existingImages?.length || 0) + (v.images?.length || 0) > MAX_VARIATION_IMAGES
+      );
+      if (overIndex !== -1) {
+        toast.error(`Variation ${overIndex + 1} has more than ${MAX_VARIATION_IMAGES} images. Maximum ${MAX_VARIATION_IMAGES} per variation.`);
+        return;
+      }
+    }
 
     images.forEach((img) => formData.append("images", img));
 
-    // 4️⃣ Decide endpoint
     const endpoint = isEditMode
       ? `/products/admin/edit/${id}`
       : "/products/admin/add";
-
     const token = localStorage.getItem("admin_token");
 
     try {
-      // 5️⃣ Submit
-      await api(endpoint, {
+      // 5️⃣ First request: create or update product (no variation images when using queue)
+      const res = await api(endpoint, {
         method: isEditMode ? "PUT" : "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
+
+      const productId = isEditMode ? id : res?.product?._id;
+      if (!productId) {
+        toast.error("Could not get product id");
+        return;
+      }
+
+      // 6️⃣ Queue: upload variation images one by one
+      if (useVariationQueue && variationsWithNewImages.length > 0) {
+        setVariationUploadProgress({ total: variationsWithNewImages.length, completed: 0 });
+        for (let i = 0; i < variationsWithNewImages.length; i++) {
+          const { index: varIndex, files: varFiles } = variationsWithNewImages[i];
+          const fd = new FormData();
+          varFiles.forEach((file) => fd.append("images", file));
+          await api(
+            `/products/admin/edit/${productId}/variations/${varIndex}/images`,
+            {
+              method: "PUT",
+              headers: { Authorization: `Bearer ${token}` },
+              body: fd,
+            }
+          );
+          setVariationUploadProgress((prev) => ({
+            ...prev,
+            completed: (prev?.completed ?? 0) + 1,
+          }));
+        }
+        setVariationUploadProgress(null);
+      }
 
       if (isEditMode) {
         sessionStorage.setItem("productEdited", "true");
@@ -567,6 +623,7 @@ const missingImage = variations.some(
     } catch (err) {
       console.error("Product save failed:", err);
       toast.error(err?.message || "Failed to save product. Please try again.");
+      setVariationUploadProgress(null);
     }
     } finally {
       setIsSubmitting(false);
@@ -844,7 +901,14 @@ const missingImage = variations.some(
         }}
       />
 
-    {/* Variation Images (max 5) */}
+    <label className="block text-sm font-medium text-gray-700 mt-2">
+      Images <span className="text-gray-500 font-normal">(max {MAX_VARIATION_IMAGES} per variation)</span>
+      {(v.existingImages?.length || 0) + (v.images?.length || 0) > 0 && (
+        <span className="ml-1 text-gray-500">
+          — {(v.existingImages?.length || 0) + (v.images?.length || 0)}/{MAX_VARIATION_IMAGES}
+        </span>
+      )}
+    </label>
 <input
   type="file"
   accept="image/*"
@@ -852,30 +916,27 @@ const missingImage = variations.some(
   onChange={(e) => {
     const files = Array.from(e.target.files || []);
     const copy = [...variations];
-
-const existingKeys = new Set(
-  (copy[index].images || []).map(
-    (f) => `${f.name}_${f.size}`
-  )
-);
-
-
-    const filtered = files.filter(
-      (f) => !existingKeys.has(`${f.name}_${f.size}`)
+    const existingCount = (copy[index].existingImages?.length || 0) + (copy[index].images?.length || 0);
+    if (existingCount >= MAX_VARIATION_IMAGES) {
+      toast.error(`Maximum ${MAX_VARIATION_IMAGES} images per variation. Remove some to add more.`);
+      e.target.value = "";
+      return;
+    }
+    const existingKeys = new Set(
+      (copy[index].images || []).map((f) => `${f.name}_${f.size}`)
     );
-
-    const remaining = 5 - copy[index].images.length;
+    const filtered = files.filter((f) => !existingKeys.has(`${f.name}_${f.size}`));
+    const remaining = MAX_VARIATION_IMAGES - existingCount;
     const accepted = filtered.slice(0, remaining);
-
-    copy[index].images = [...copy[index].images, ...accepted];
+    if (filtered.length > remaining) {
+      toast.error(`Only ${remaining} more image(s) allowed for this variation (max ${MAX_VARIATION_IMAGES}).`);
+    }
+    copy[index].images = [...(copy[index].images || []), ...accepted];
     copy[index].previews = [
-      ...copy[index].previews,
+      ...(copy[index].previews || []),
       ...accepted.map((f) => URL.createObjectURL(f)),
     ];
-
     setVariations(copy);
-
-    // 🔒 prevent re-fire
     e.target.value = "";
   }}
 />
@@ -1555,6 +1616,23 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
 
 
 
+        {/* Variation upload progress (variable rental queue) */}
+        {variationUploadProgress != null && variationUploadProgress.total > 0 && (
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <p className="text-sm font-medium text-gray-700 mb-2">
+              Uploading variation images… {variationUploadProgress.completed} of {variationUploadProgress.total} completed
+            </p>
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-black transition-all duration-300"
+                style={{
+                  width: `${(variationUploadProgress.completed / variationUploadProgress.total) * 100}%`,
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* SUBMIT */}
         <button
           type="submit"
@@ -1564,7 +1642,11 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
           {isSubmitting ? (
             <>
               <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              {isEditMode ? "Updating…" : "Creating…"}
+              {variationUploadProgress != null
+                ? `Uploading variations… ${variationUploadProgress.completed}/${variationUploadProgress.total}`
+                : isEditMode
+                  ? "Updating…"
+                  : "Creating…"}
             </>
           ) : (
             isEditMode ? "Update Product" : "Add Product"

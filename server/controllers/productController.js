@@ -486,6 +486,50 @@ if (updates.featured === true) {
 
 
 // ----------------------------------------------
+// Upload images for a single variation (queue upload to avoid overloading server)
+// PUT /products/admin/:id/variations/:variationIndex/images
+// ----------------------------------------------
+exports.uploadVariationImages = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const variationIndex = Number(req.params.variationIndex);
+    const files = Array.isArray(req.files) ? req.files : [];
+
+    if (!Number.isInteger(variationIndex) || variationIndex < 0) {
+      return res.status(400).json({ message: "Invalid variation index" });
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    if (!product.variations || !Array.isArray(product.variations)) {
+      return res.status(400).json({ message: "Product has no variations" });
+    }
+    if (variationIndex >= product.variations.length) {
+      return res.status(400).json({ message: "Variation index out of range" });
+    }
+
+    const existingImages = product.variations[variationIndex].images || [];
+    let uploadedImages = [];
+    if (files.length > 0) {
+      uploadedImages = await uploadImagesToCloudinary(files);
+    }
+    product.variations[variationIndex].images = [...existingImages, ...uploadedImages];
+    await product.save();
+
+    res.json({
+      message: "Variation images uploaded",
+      product,
+      variationIndex,
+    });
+  } catch (error) {
+    console.error("uploadVariationImages error:", error);
+    res.status(500).json({ message: error.message || "Failed to upload variation images" });
+  }
+};
+
+// ----------------------------------------------
 // Delete Product
 // ----------------------------------------------
 exports.deleteProduct = async (req, res) => {
