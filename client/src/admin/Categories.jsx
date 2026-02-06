@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { FiPlus, FiEdit2, FiTrash2 } from "react-icons/fi";
 import AdminLayout from "./AdminLayout";
 import { api } from "../utils/api";
-
+import toast from "react-hot-toast";
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);
@@ -187,6 +187,11 @@ setPreview("");
   accept="image/*"
   onChange={(e) => {
     const file = e.target.files?.[0] || null;
+    if (file && file.size > 3 * 1024 * 1024) {
+      toast.error("Image is too large. Maximum size is 3MB per image.");
+      e.target.value = "";
+      return;
+    }
     setNewImage(file);
     setPreview(file ? URL.createObjectURL(file) : "");
   }}

@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { api } from "../../utils/api";
+import toast from "react-hot-toast";
 import AddToCartModal from "../../components/cart/AddToCartModal";
 import ShippingRatesModal from "../../components/ShippingRatesModal";
 import PricingChartModal from "../../components/PricingChartModal";
@@ -213,8 +214,11 @@ useEffect(() => {
 
 
 
+  // For variable rental, show selected variation's description when set, else product description
   const fullDescription =
-    product?.description || "No description available.";
+    isVariableRental && selectedVariation?.description?.trim()
+      ? selectedVariation.description.trim()
+      : (product?.description || "No description available.");
 
 
 
@@ -1511,6 +1515,11 @@ if (addon.optionId === pedestalOptionId) {
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
+                              if (file.size > 3 * 1024 * 1024) {
+                                toast.error("Image is too large. Maximum size is 3MB per image.");
+                                e.target.value = "";
+                                return;
+                              }
                               setVinylImageFile(file);
                               setVinylImagePreview(URL.createObjectURL(file));
                               setVinylImageUrl("");

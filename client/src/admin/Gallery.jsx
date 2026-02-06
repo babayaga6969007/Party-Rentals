@@ -4,6 +4,8 @@ import AdminLayout from "./AdminLayout";
 import { api } from "../utils/api";
 import toast from "react-hot-toast";
 
+const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024; // 3MB
+
 const Gallery = () => {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,7 +70,11 @@ const Gallery = () => {
   const handleImageChange = (e, isEdit = false) => {
     const file = e.target.files[0];
     if (!file) return;
-
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      toast.error("Image is too large. Maximum size is 3MB per image.");
+      e.target.value = "";
+      return;
+    }
     if (isEdit) {
       setEditingImage(file);
       setEditingPreview(URL.createObjectURL(file));

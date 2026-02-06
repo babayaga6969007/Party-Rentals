@@ -110,6 +110,7 @@ const [variations, setVariations] = useState([]);
   
   const MAX_IMAGES = 8;
   const MAX_VARIATION_IMAGES = 5;
+  const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024; // 3MB per image
 
   const totalImageCount = existingImages.length + previews.length;
 
@@ -313,6 +314,7 @@ if (data.productType === "rental" && data.productSubType === "variable") {
   pricePerDay: v.pricePerDay || "",
   salePrice: v.salePrice || "",
   stock: v.stock || 1,
+  description: v.description != null ? String(v.description) : "",
 
   // IMPORTANT: existing images stay ONLY here
   existingImages: Array.isArray(v.images) ? v.images : [],
@@ -345,6 +347,11 @@ if (data.productType === "rental" && data.productSubType === "variable") {
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
+    const tooLarge = files.filter((f) => f.size > MAX_IMAGE_SIZE_BYTES);
+    if (tooLarge.length > 0) {
+      toast.error(`Some images are over 3MB and were skipped. Max size per image: 3MB.`);
+    }
+    const withinSize = files.filter((f) => f.size <= MAX_IMAGE_SIZE_BYTES);
 
     const remainingSlots = MAX_IMAGES - totalImageCount;
     if (remainingSlots <= 0) {
@@ -352,7 +359,7 @@ if (data.productType === "rental" && data.productSubType === "variable") {
       return;
     }
 
-    const acceptedFiles = files.slice(0, remainingSlots);
+    const acceptedFiles = withinSize.slice(0, remainingSlots);
 
     setImages((prev) => [...prev, ...acceptedFiles]);
     setPreviews((prev) => [
@@ -386,6 +393,7 @@ if (data.productType === "rental" && data.productSubType === "variable") {
             pricePerDay: v.pricePerDay,
             salePrice: v.salePrice || null,
             stock: v.stock,
+            description: (v.description && String(v.description).trim()) ? String(v.description).trim() : "",
             existingImages: (v.existingImages || []).map((img) => ({
               public_id: img.public_id,
               url: img.url,
@@ -796,6 +804,7 @@ if (isEditMode) {
               pricePerDay: "",
               salePrice: "",
               stock: 1,
+              description: "",
               images: [],
               previews: [],
               existingImages: [],
@@ -824,6 +833,7 @@ if (isEditMode) {
           pricePerDay: "",
           salePrice: "",
           stock: 1,
+          description: "",
           images: [],
           previews: [],
           existingImages: [],
@@ -901,6 +911,23 @@ if (isEditMode) {
         }}
       />
 
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+        <textarea
+          placeholder="e.g. Perfect for small gatherings, includes setup."
+          className="w-full p-3 border border-gray-400 rounded-lg min-h-[80px] resize-y"
+          value={v.description ?? ""}
+          onChange={(e) => {
+            const copy = [...variations];
+            copy[index].description = e.target.value;
+            setVariations(copy);
+          }}
+          maxLength={2000}
+          rows={3}
+        />
+        <p className="text-xs text-gray-500 mt-0.5">Shown on product page when this variation is selected. Max 2000 characters.</p>
+      </div>
+
     <label className="block text-sm font-medium text-gray-700 mt-2">
       Images <span className="text-gray-500 font-normal">(max {MAX_VARIATION_IMAGES} per variation)</span>
       {(v.existingImages?.length || 0) + (v.images?.length || 0) > 0 && (
@@ -915,6 +942,11 @@ if (isEditMode) {
   multiple
   onChange={(e) => {
     const files = Array.from(e.target.files || []);
+    const tooLarge = files.filter((f) => f.size > MAX_IMAGE_SIZE_BYTES);
+    if (tooLarge.length > 0) {
+      toast.error(`Some images are over 3MB and were skipped. Max size per image: 3MB.`);
+    }
+    const withinSize = files.filter((f) => f.size <= MAX_IMAGE_SIZE_BYTES);
     const copy = [...variations];
     const existingCount = (copy[index].existingImages?.length || 0) + (copy[index].images?.length || 0);
     if (existingCount >= MAX_VARIATION_IMAGES) {
@@ -925,7 +957,7 @@ if (isEditMode) {
     const existingKeys = new Set(
       (copy[index].images || []).map((f) => `${f.name}_${f.size}`)
     );
-    const filtered = files.filter((f) => !existingKeys.has(`${f.name}_${f.size}`));
+    const filtered = withinSize.filter((f) => !existingKeys.has(`${f.name}_${f.size}`));
     const remaining = MAX_VARIATION_IMAGES - existingCount;
     const accepted = filtered.slice(0, remaining);
     if (filtered.length > remaining) {

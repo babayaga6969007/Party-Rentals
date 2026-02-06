@@ -184,6 +184,7 @@ const finalVariations =
         pricePerDay: Number(v.pricePerDay),
         salePrice: v.salePrice ? Number(v.salePrice) : null,
         stock: Number(v.stock),
+        description: (v.description && String(v.description).trim()) ? String(v.description).trim() : "",
         images: variationImagesMap[i] || [],
       }))
     : [];
@@ -332,6 +333,7 @@ updates.variations = parsedVariations.map((v, i) => {
     pricePerDay: Number(v.pricePerDay),
     salePrice: v.salePrice ? Number(v.salePrice) : null,
     stock: Number(v.stock),
+    description: (v.description != null && String(v.description).trim()) ? String(v.description).trim() : (existingVar.description || ""),
     images: [
       ...keptImages,
       ...(variationImagesMap[i] || []),
@@ -652,6 +654,7 @@ exports.getSingleProduct = async (req, res) => {
             ? Number(v.salePrice)
             : null,
         stock: Number(v.stock || 0),
+        description: v.description != null ? String(v.description) : "",
 
         // ✅ ensure frontend ALWAYS receives array
         images: Array.isArray(v.images)

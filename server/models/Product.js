@@ -128,6 +128,13 @@ dimension: {
   default: "",
 },
 
+    // Optional description for this variation (e.g. "10x10 - Perfect for small gatherings")
+    description: {
+      type: String,
+      trim: true,
+      default: "",
+      maxlength: 2000,
+    },
 
 // =========================
 // VARIATION IMAGES
