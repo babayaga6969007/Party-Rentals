@@ -458,18 +458,23 @@ const attributeGroupsForUI =
   // ====================
   // ADD-ONS (safe even when product is null during loading)
   // ====================
+  // Each addon gets a unique key (optionId + index) so Shelving and Pedestal never share the same key
   const renderedAddons =
     product?.addons
       ?.filter((a) => a.option)
-      .map((a) => ({
-        optionId: String(a.optionId),
-        name: a.option.label,
-        finalPrice:
-          a.overridePrice !== null && a.overridePrice !== undefined
-            ? a.overridePrice
-            : a.option.priceDelta || 0,
-        tier: a.option.tier, // Include tier for shelving addons
-      })) || [];
+      .map((a, index) => {
+        const rawId = a.optionId != null ? String(a.optionId) : null;
+        return {
+          optionId: `${rawId ?? "addon"}-${index}`,
+          realOptionId: rawId,
+          name: a.option.label,
+          finalPrice:
+            a.overridePrice !== null && a.overridePrice !== undefined
+              ? a.overridePrice
+              : a.option.priceDelta || 0,
+          tier: a.option.tier,
+        };
+      }) || [];
 
   // helper: normalize strings for matching
   const normalize = (s = "") => s.toLowerCase().trim();
@@ -533,8 +538,8 @@ const isPedestalSelected = pedestalOptionId
   ? !!selectedAddons[pedestalOptionId]
   : false;
 const pedestalItems =
-  pedestalOptionId && Array.isArray(product?.addons)
-    ? (product.addons.find((a) => String(a.optionId) === String(pedestalOptionId))?.pedestals || [])
+  pedestalAddon && Array.isArray(product?.addons)
+    ? (product.addons.find((a) => String(a.optionId) === String(pedestalAddon.realOptionId))?.pedestals || [])
     : [];
 
   // Shelving config state
@@ -628,8 +633,20 @@ const pedestalItems =
     if (shelvingOptionId && renderedAddons.length > 0) {
       const newTier = renderedAddons.find(a => a.optionId === shelvingOptionId)?.tier || "A";
       setShelvingTier(newTier);
+      if (newTier !== "A") {
+        setShelvingSize("yes");
+        setShelvingQuantity(1);
+      }
     }
   }, [shelvingOptionId, renderedAddons]);
+
+  // Default Tier A size when shelving selected so price displays (Tier A needs a size)
+  useEffect(() => {
+    if (isShelvingSelected && shelvingTier === "A" && !shelvingSize && shelvingTierAOptions?.[0]?.size) {
+      setShelvingSize(shelvingTierAOptions[0].size);
+      setShelvingQuantity(1);
+    }
+  }, [isShelvingSelected, shelvingTier, shelvingSize, shelvingTierAOptions]);
 
   // Clear shelving selections when shelving addon gets deselected
   useEffect(() => {
@@ -720,12 +737,11 @@ if (addon.optionId === pedestalOptionId) {
 }
 
       } else {
-    // select
-next[addon.optionId] = {
-  name: addon.name,
-  price: addon.optionId === pedestalOptionId ? 0 : addon.finalPrice, // pedestal price comes from dropdown
-};
-
+        next[addon.optionId] = {
+          name: addon.name,
+          price: addon.optionId === pedestalOptionId ? 0 : addon.finalPrice,
+          realOptionId: addon.realOptionId ?? addon.optionId,
+        };
       }
 
       return next;
@@ -1215,127 +1231,101 @@ next[addon.optionId] = {
     )}
   </div>
 )}
-              {/* Shelving Configuration (only if shelving addon is selected) */}
+              {/* Shelving: Tier A/B/C + size selection when available (customer-facing) */}
               {shelvingOptionId && isShelvingSelected && (
                 <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
                   <h4 className="font-semibold text-[#2D2926] mb-3">Shelving</h4>
 
-                  {/* Simplified: Shelves Select Option */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Add Shelving?
-                    </label>
-                    <select
-                      value={shelvingSize || ""}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setShelvingSize(value);
-                        if (value === "no") {
-                          setShelvingQuantity(0);
-                        } else if (value === "yes") {
-                          // Auto-set quantity based on tier
-                          const maxQty = shelvingTier === "C" ? 1 : 1; // Start with 1, user can adjust
-                          setShelvingQuantity(maxQty);
-                        }
-                        setShelvingError("");
-                      }}
-                      className="w-full p-2 border rounded-lg"
-                    >
-                      <option value="">Select</option>
-                      <option value="yes">Yes</option>
-                      <option value="no">No</option>
-                    </select>
+                  <div className="flex gap-3 mb-4">
+                    {["A", "B", "C"].map((tier) => (
+                      <button
+                        key={tier}
+                        type="button"
+                        onClick={() => {
+                          setShelvingTier(tier);
+                          setShelvingSize(tier === "A" ? (shelvingTierAOptions[0]?.size || "") : "yes");
+                          setShelvingQuantity(tier === "C" ? 1 : 1);
+                          setShelvingError("");
+                        }}
+                        className={`px-4 py-2 rounded-lg border-2 transition ${
+                          shelvingTier === tier
+                            ? "border-black bg-gray-100 text-black font-semibold"
+                            : "border-gray-300 hover:border-gray-400"
+                        }`}
+                      >
+                        Tier {tier}
+                      </button>
+                    ))}
                   </div>
 
-                  {/* Size Selection (only for Tier A, after selecting Yes) */}
-                  {shelvingTier === "A" && shelvingSize === "yes" && (
+                  {/* Tier A: size dropdown when sizes available */}
+                  {shelvingTier === "A" && shelvingTierAOptions.length > 0 && (
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Select Size
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Size</label>
                       <select
-                        value={shelvingSize === "yes" ? "" : shelvingSize}
+                        value={shelvingSize || ""}
                         onChange={(e) => {
                           setShelvingSize(e.target.value);
                           setShelvingError("");
                         }}
-                        className="w-full p-2 border rounded-lg"
+                        className="w-full p-2 border border-gray-300 rounded-lg bg-white"
                       >
                         <option value="">Select a size</option>
                         {shelvingTierAOptions.map((opt) => (
                           <option key={opt.size} value={opt.size}>
-                            {opt.size} - {opt.dimensions} (${opt.price}/shelf)
+                            {opt.size} — {opt.dimensions} (${opt.price}/shelf)
                           </option>
                         ))}
                       </select>
                     </div>
                   )}
 
-                  {/* Preview Option - Show selected configuration */}
-                  {((shelvingTier === "A" && shelvingSize && shelvingSize !== "yes" && shelvingSize !== "no") || 
-                    (shelvingTier !== "A" && shelvingSize === "yes")) && (
-                    <div className="mb-4 p-3 bg-white rounded-lg border">
-                      <p className="text-xs text-gray-600">
-                        {shelvingTier === "A" && (
-                          <>Size: {shelvingSize} - {shelvingTierAOptions.find(opt => opt.size === shelvingSize)?.dimensions}</>
-                        )}
-                        {shelvingTier === "B" && (
-                          <>Dimensions: {shelvingConfig?.tierB?.dimensions || "43\" wide x 11.5\" deep x 1.5\" thick"}</>
-                        )}
-                        {shelvingTier === "C" && (
-                          <>Dimensions: {shelvingConfig?.tierC?.dimensions || "75\" wide x 25\" deep x 1.5\" thick"} (Max 1 shelf)</>
-                        )}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Quantity Selection */}
-                  {((shelvingTier === "A" && shelvingSize && shelvingSize !== "yes" && shelvingSize !== "no") || 
-                    (shelvingTier !== "A" && shelvingSize === "yes")) && (
+                  {/* Quantity: Tier A (1–8), Tier B (1–8), Tier C fixed at 1 */}
+                  {shelvingTier && (shelvingTier === "C" || (shelvingTier === "A" && shelvingSize) || (shelvingTier === "B" && shelvingSize === "yes")) && (
                     <div className="mb-4">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Quantity {shelvingTier === "C" ? "(Max 1)" : `(Max ${shelvingTier === "A" ? 8 : 8})`}
+                        Quantity {shelvingTier === "C" ? "(max 1)" : "(max 8)"}
                       </label>
                       <input
                         type="number"
                         min="1"
-                        max={shelvingTier === "C" ? 1 : shelvingTier === "A" ? 8 : 8}
+                        max={shelvingTier === "C" ? 1 : 8}
                         value={shelvingQuantity}
                         onChange={(e) => {
-                          const qty = parseInt(e.target.value) || 1;
-                          const max = shelvingTier === "C" ? 1 : shelvingTier === "A" ? 8 : 8;
+                          const qty = parseInt(e.target.value, 10) || 1;
+                          const max = shelvingTier === "C" ? 1 : 8;
                           setShelvingQuantity(Math.min(Math.max(1, qty), max));
                           setShelvingError("");
                         }}
-                        className="w-full p-2 border rounded-lg"
+                        className="w-full p-2 border border-gray-300 rounded-lg"
                       />
                     </div>
                   )}
 
-                  {/* Price Display */}
-                  {calculateShelvingPrice(shelvingTier, shelvingSize, shelvingQuantity, isShelvingSelected) > 0 && (
-                    <div className="mt-4 p-3 bg-white rounded-lg border border-black">
+                  {/* Info for selected tier */}
+                  {shelvingTier && (
+                    <div className="mb-4 p-3 bg-white rounded-lg border border-gray-200 text-sm text-gray-600">
+                      {shelvingTier === "A" && shelvingSize && (
+                        <>Selected: {shelvingTierAOptions.find(o => o.size === shelvingSize)?.dimensions ?? shelvingSize} — ${shelvingTierAOptions.find(o => o.size === shelvingSize)?.price ?? 0}/shelf</>
+                      )}
+                      {shelvingTier === "B" && (
+                        <>{shelvingConfig?.tierB?.dimensions || "43\" wide x 11.5\" deep x 1.5\" thick"} — ${shelvingConfig?.tierB?.price ?? 29}/shelf</>
+                      )}
+                      {shelvingTier === "C" && (
+                        <>{shelvingConfig?.tierC?.dimensions || "75\" wide x 25\" deep x 1.5\" thick"} — ${shelvingConfig?.tierC?.price ?? 50}/shelf (max 1)</>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Price */}
+                  {shelvingTier && calculateShelvingPrice(shelvingTier, shelvingSize, shelvingQuantity, true) > 0 && (
+                    <div className="p-3 bg-white rounded-lg border border-black">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-gray-700">Shelving Total:</span>
+                        <span className="text-sm font-medium text-gray-700">Shelving</span>
                         <span className="text-lg font-bold text-black">
-                          ${calculateShelvingPrice(shelvingTier, shelvingSize, shelvingQuantity, isShelvingSelected)}
+                          $ {calculateShelvingPrice(shelvingTier, shelvingSize, shelvingQuantity, true)}
                         </span>
                       </div>
-                      {shelvingTier === "A" && shelvingSize && shelvingSize !== "yes" && shelvingSize !== "no" && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          {shelvingQuantity} shelf(s) × ${shelvingTierAOptions.find(opt => opt.size === shelvingSize)?.price}/shelf
-                        </p>
-                      )}
-                      {shelvingTier === "B" && shelvingSize === "yes" && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          {shelvingQuantity} shelf(s) × ${shelvingConfig?.tierB?.price || 29}/shelf
-                        </p>
-                      )}
-                      {shelvingTier === "C" && shelvingSize === "yes" && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          {shelvingQuantity} shelf(s) × ${shelvingConfig?.tierC?.price || 50}/shelf
-                        </p>
-                      )}
                     </div>
                   )}
 
@@ -1761,7 +1751,7 @@ next[addon.optionId] = {
                 endDate,
 
                 addons: Object.entries(selectedAddons).map(([optionId, a]) => ({
-  optionId,
+  optionId: a.realOptionId ?? optionId,
   name: a.name,
   price: a.price,
 
