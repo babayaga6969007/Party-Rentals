@@ -525,10 +525,7 @@ exports.getSingleProduct = async (req, res) => {
         path: "attributes.groupId",
         populate: { path: "options" },
       })
-      .populate({
-        path: "addons.optionId",
-        model: "Attribute",
-      })
+      
       .lean();
 
     if (!product) {

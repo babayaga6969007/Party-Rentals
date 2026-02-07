@@ -453,23 +453,66 @@ const attributeGroupsForUI =
     };
   });
 
+const [allAttributes, setAllAttributes] = useState([]);
+useEffect(() => {
+  const fetchAttributes = async () => {
+    try {
+     const res = await api("/admin/attributes");
+const data = res?.data ?? res; 
+setAllAttributes(Array.isArray(data) ? data : []);
+
+    } catch (err) {
+      console.error("Failed to load attributes", err);
+    }
+  };
+
+  fetchAttributes();
+}, []);
+const addonOptionMap = useMemo(() => {
+  const map = {};
+
+allAttributes.forEach((group) => {
+  (group?.options || []).forEach((opt) => {
+    map[String(opt._id)] = opt;
+  });
+});
+
+
+  return map;
+}, [allAttributes]);
+
+
 
 
   // ====================
   // ADD-ONS (safe even when product is null during loading)
-  // ====================
-  const renderedAddons =
-    product?.addons
-      ?.filter((a) => a.option)
-      .map((a) => ({
-        optionId: String(a.optionId),
-        name: a.option.label,
+const renderedAddons =
+  product?.addons
+    ?.map((a) => {
+const normalizedOptionId =
+  typeof a.optionId === "string"
+    ? a.optionId
+    : a.optionId?._id
+    ? String(a.optionId._id)
+    : null;
+
+if (!normalizedOptionId) return null;
+
+const opt = addonOptionMap[normalizedOptionId];
+if (!opt) return null;
+      if (!opt) return null;
+
+      return {
+  optionId: normalizedOptionId,
+        name: opt.label,
         finalPrice:
           a.overridePrice !== null && a.overridePrice !== undefined
             ? a.overridePrice
-            : a.option.priceDelta || 0,
-        tier: a.option.tier, // Include tier for shelving addons
-      })) || [];
+            : opt.priceDelta || 0,
+        tier: opt.tier,
+      };
+    })
+    .filter(Boolean) || [];
 
   // helper: normalize strings for matching
   const normalize = (s = "") => s.toLowerCase().trim();
@@ -534,8 +577,17 @@ const isPedestalSelected = pedestalOptionId
   : false;
 const pedestalItems =
   pedestalOptionId && Array.isArray(product?.addons)
-    ? (product.addons.find((a) => String(a.optionId) === String(pedestalOptionId))?.pedestals || [])
+    ? (product.addons.find((a) => {
+        const oid =
+          typeof a.optionId === "string"
+            ? a.optionId
+            : a.optionId?._id
+            ? String(a.optionId._id)
+            : "";
+        return oid === String(pedestalOptionId);
+      })?.pedestals || [])
     : [];
+
 
   // Shelving config state
   const [shelvingConfig, setShelvingConfig] = useState(null);

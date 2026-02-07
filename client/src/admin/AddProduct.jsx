@@ -462,9 +462,9 @@ formData.append("isEditMode", String(isEditMode));
     formData.append("availabilityCount", availabilityCount);
 
     formData.append("attributes", JSON.stringify(attributesPayload));
-    if (addonsPayload.length > 0) {
-      formData.append("addons", JSON.stringify(addonsPayload));
-    }
+    //  Always send addons (even empty array) so edit can clear them
+formData.append("addons", JSON.stringify(addonsPayload));
+
 
 
 

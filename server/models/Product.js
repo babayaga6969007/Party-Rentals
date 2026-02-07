@@ -26,10 +26,10 @@ const ProductAttributeSchema = new mongoose.Schema(
 const ProductAddonSchema = new mongoose.Schema(
   {
     optionId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Attribute",
-      required: true,
-    },
+  type: mongoose.Schema.Types.ObjectId,
+  required: true,
+},
+
 
     // Optional override for flat addons
     overridePrice: {
