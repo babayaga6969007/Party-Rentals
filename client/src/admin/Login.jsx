@@ -23,9 +23,9 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FFF7F0] p-6">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
       <div className="bg-white p-10 rounded-2xl shadow-xl max-w-md w-full">
-        <h1 className="text-3xl font-semibold text-center text-[#8B5C42] mb-6">
+        <h1 className="text-3xl font-semibold text-center text-black mb-6">
           Admin Login
         </h1>
 
@@ -54,7 +54,7 @@ const AdminLogin = () => {
             />
           </div>
 
-          <button className="w-full py-3 bg-[#8B5C42] text-white rounded-lg hover:bg-[#704A36]">
+          <button className="w-full py-3 bg-black text-white rounded-lg hover:bg-gray-800">
             Login
           </button>
         </form>

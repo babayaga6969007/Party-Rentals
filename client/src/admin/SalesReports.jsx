@@ -37,7 +37,7 @@ const addDaysISO = (baseISO, delta) => {
   return d.toISOString().slice(0, 10);
 };
 
-const PIE_COLORS = ["#8B5C42", "#2D2926", "#CFAF9B", "#EAD9C7", "#A77C63", "#6B5B53"];
+const PIE_COLORS = ["#000000", "#2D2926", "#374151", "#6b7280", "#9ca3af", "#d1d5db"];
 
 function inRange(d, start, end) {
   if (!start && !end) return true;
@@ -501,7 +501,7 @@ const categoryRevenue = useMemo(() => {
 
           <button
             onClick={exportCSV}
-            className="sm:ml-2 px-4 py-2 rounded-lg bg-[#8B5C42] text-white text-sm hover:bg-[#704A36] transition"
+            className="sm:ml-2 px-4 py-2 rounded-lg bg-black text-white text-sm hover:bg-gray-800 transition"
             disabled={loading}
           >
             Export CSV
@@ -565,15 +565,15 @@ const categoryRevenue = useMemo(() => {
                   <AreaChart data={filteredDaily}>
                     <defs>
                       <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8B5C42" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="#8B5C42" stopOpacity={0.02} />
+                        <stop offset="5%" stopColor="#000000" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#000000" stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} />
                     <Tooltip formatter={(v) => CURRENCY(v)} />
-                    <Area type="monotone" dataKey="revenue" stroke="#8B5C42" fill="url(#revFill)" />
+                    <Area type="monotone" dataKey="revenue" stroke="#000000" fill="url(#revFill)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -644,12 +644,12 @@ const categoryRevenue = useMemo(() => {
                       }}
                     />
                     <Line yAxisId="left" type="monotone" dataKey="orders" stroke="#2D2926" strokeWidth={2} dot={false} />
-                    <Line yAxisId="right" type="monotone" dataKey="aov" stroke="#8B5C42" strokeWidth={2} dot={false} />
+                    <Line yAxisId="right" type="monotone" dataKey="aov" stroke="#000000" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
 
-              <div className="mt-4 bg-[#FAF7F5] border rounded-xl p-4 text-sm text-gray-700">
+              <div className="mt-4 bg-gray-100 border rounded-xl p-4 text-sm text-gray-700">
                 <p className="font-medium text-[#2D2926] mb-1">Interpretation</p>
                 <ul className="list-disc ml-5 space-y-1">
                   <li>When orders rise but AOV drops: add bundles and add-ons.</li>
@@ -680,7 +680,7 @@ const categoryRevenue = useMemo(() => {
                           className="h-full rounded-full"
                           style={{
                             width: `${pct}%`,
-                            background: idx < 2 ? "#2D2926" : "#8B5C42",
+                            background: idx < 2 ? "#2D2926" : "#000000",
                           }}
                         />
                       </div>
@@ -704,7 +704,7 @@ const categoryRevenue = useMemo(() => {
 
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-[#FAF7F5] border-b">
+                <thead className="bg-gray-100 border-b">
                   <tr className="text-left">
                     <th className="py-3 px-4">Product</th>
                     <th className="py-3 px-4">Revenue</th>
@@ -743,7 +743,7 @@ const categoryRevenue = useMemo(() => {
               {insights.map((t, i) => (
                 <div
                   key={i}
-                  className="bg-[#FFF7F0] border border-[#EAD9C7] rounded-xl p-4 text-sm text-[#2D2926]"
+                  className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm text-[#2D2926]"
                 >
                   {t}
                 </div>

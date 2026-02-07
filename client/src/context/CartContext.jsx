@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 const CartContext = createContext(null);
 
 // 🔑 rental items must be uniquely identified by dates + addons (including vinyl color vs image)
+// 🔑 purchase items with different customTitle (e.g. telephone booth) are separate lines
 const buildCartKey = (item) => {
   if (item.productType === "rental") {
     const addonKey = Array.isArray(item.addons)
@@ -13,9 +14,11 @@ const buildCartKey = (item) => {
           )
           .join("|")
       : "";
-    return `${item.productId}__${item.startDate}__${item.endDate}__${addonKey}`;
+    const titleKey = (item.customTitle && String(item.customTitle).trim()) ? String(item.customTitle).trim() : "";
+    return `${item.productId}__${item.startDate}__${item.endDate}__${addonKey}__${titleKey}`;
   }
-  return `${item.productId}__purchase`;
+  const titleKey = (item.customTitle && String(item.customTitle).trim()) ? String(item.customTitle).trim() : "";
+  return `${item.productId}__purchase__${titleKey}`;
 };
 
 export const CartProvider = ({ children }) => {
@@ -52,6 +55,9 @@ export const CartProvider = ({ children }) => {
 
       // signage-only
       signageData: payload.signageData || null,
+
+      // Custom title when product allows it
+      customTitle: payload.customTitle ? String(payload.customTitle).trim() : "",
 
       image: payload.image || "",
       maxStock: Number(payload.maxStock || 1),

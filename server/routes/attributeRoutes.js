@@ -80,7 +80,7 @@ router.delete("/:groupId", async (req, res) => {
  */
 router.post("/:groupId/options", async (req, res) => {
   try {
-    const { label, hex, priceDelta = 0, tier } = req.body;
+    const { label, value, hex, imageUrl, priceDelta = 0, tier } = req.body;
     if (!label) {
       return res.status(400).json({ message: "label is required" });
     }
@@ -103,12 +103,15 @@ router.post("/:groupId/options", async (req, res) => {
     const isShelving = group.type === "addon" && 
       (label.toLowerCase().includes("shelving") || label.toLowerCase().includes("shelf"));
 
-    group.options.push({
+    const opt = {
       label: label.trim(),
       hex: group.type === "color" ? hex || "#000000" : undefined,
       priceDelta: group.type === "addon" ? Number(priceDelta) : 0,
       tier: isShelving && tier ? tier : undefined, // Only set tier for shelving addons
-    });
+    };
+    if (value != null && String(value).trim()) opt.value = String(value).trim();
+    if (imageUrl != null && String(imageUrl).trim()) opt.imageUrl = String(imageUrl).trim();
+    group.options.push(opt);
 
     await group.save();
     res.status(201).json(group);

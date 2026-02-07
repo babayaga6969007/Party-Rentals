@@ -32,10 +32,40 @@ export const DEFAULT_TEXT_SIZES = {
   extralarge: { width: 450, height: 100, fontSize: 80 },
 };
 
-// Default canvas dimensions (will be overridden by config)
-// Portrait orientation for better signage display
+// Pixels per foot for canvas (so physical size in ft maps to display size)
+const PX_PER_FT = 150;
+// Reference canvas height for text size scaling (font sizes in config are at this height)
+const REFERENCE_CANVAS_HEIGHT = 1200;
+
+// Default canvas dimensions (will be overridden by config from widthFt/heightFt)
 export const DEFAULT_CANVAS_WIDTH = 600;
 export const DEFAULT_CANVAS_HEIGHT = 1200;
+
+// Vertical board: centered, attached to bottom. Text can only be moved within this area.
+export const BOARD_WIDTH_RATIO = 0.58;
+export const BOARD_HEIGHT_RATIO = 0.72;
+export const VERTICAL_BOARD_IMAGE_URL = "/signage/vertical-board.png";
+
+export const VERTICAL_BOARD_OPTIONS = [
+  { label: "Default", path: "/signage/vertical-board.png" },
+  { label: "Style 1", path: "/signage/vertical-board-1.png" },
+  { label: "Style 2", path: "/signage/vertical-board-2.png" },
+  { label: "Style 3", path: "/signage/vertical-board-3.png" },
+];
+
+export const getBoardBounds = (cw, ch) => {
+  const width = Math.round(cw * BOARD_WIDTH_RATIO);
+  const height = Math.round(ch * BOARD_HEIGHT_RATIO);
+  return {
+    left: Math.round((cw - width) / 2),
+    top: ch - height,
+    width,
+    height,
+  };
+};
+
+// Backward compatibility alias
+export const getBannerBounds = getBoardBounds;
 
 const SignageContext = createContext();
 
@@ -56,6 +86,9 @@ export const SignageProvider = ({ children }) => {
   const [backgroundGradients, setBackgroundGradients] = useState(BACKGROUND_GRADIENTS);
   const [canvasWidth, setCanvasWidth] = useState(DEFAULT_CANVAS_WIDTH);
   const [canvasHeight, setCanvasHeight] = useState(DEFAULT_CANVAS_HEIGHT);
+  const [widthFt, setWidthFt] = useState(4);
+  const [heightFt, setHeightFt] = useState(8);
+  const [pricePerSqInch, setPricePerSqInch] = useState(0);
   const [configLoading, setConfigLoading] = useState(true);
 
   // Fetch config from backend
@@ -80,7 +113,16 @@ export const SignageProvider = ({ children }) => {
           // Store raw sizes config (with labels)
           setTextSizesConfig(res.config.sizes || []);
           
-          // Convert sizes array to object format
+          // Background dimensions in feet (admin-configurable)
+          const wFt = Number(res.config.widthFt) || 4;
+          const hFt = Number(res.config.heightFt) || 8;
+          setWidthFt(wFt);
+          setHeightFt(hFt);
+          // Derive canvas pixels from physical size (ft) so aspect ratio and scale are correct
+          setCanvasWidth(Math.round(wFt * PX_PER_FT));
+          setCanvasHeight(Math.round(hFt * PX_PER_FT));
+          
+          // Convert sizes array to object format (width/height scaled in the computed textSize below)
           const sizesObj = {};
           (res.config.sizes || []).forEach((size) => {
             sizesObj[size.key] = {
@@ -103,14 +145,9 @@ export const SignageProvider = ({ children }) => {
           if (res.config.backgroundGradients && res.config.backgroundGradients.length > 0) {
             setBackgroundGradients(res.config.backgroundGradients);
           }
-          
-          // Canvas dimensions from config
-          if (res.config.canvasWidth) {
-            setCanvasWidth(res.config.canvasWidth);
-          }
-          if (res.config.canvasHeight) {
-            setCanvasHeight(res.config.canvasHeight);
-          }
+          // Price per square inch (1" × 1") for scale-based pricing
+          const ppi = Number(res.config.pricePerSqInch);
+          setPricePerSqInch(Number.isFinite(ppi) && ppi >= 0 ? ppi : 0);
         }
       } catch (err) {
         console.error("Failed to load signage config:", err);
@@ -129,23 +166,27 @@ export const SignageProvider = ({ children }) => {
   const [selectedSize, setSelectedSize] = useState("medium");
   
   // Text position (single position for entire text block)
-  // Initialize at center horizontally, top vertically
+  // Initialize at center horizontally, a bit below top
   const [textPosition, setTextPosition] = useState({ 
     x: DEFAULT_CANVAS_WIDTH / 2, // Horizontally centered
-    y: 200, // Near top
+    y: 520, // A bit below top
   });
   
-  // Update text position when canvas dimensions are loaded (horizontally centered)
+  // Update text position when canvas dimensions are loaded: use board center, or snap into board if currently outside
   useEffect(() => {
     if (canvasWidth && canvasHeight && !configLoading) {
+      const bounds = getBoardBounds(canvasWidth, canvasHeight);
+      const centerX = bounds.left + bounds.width / 2;
+      const centerY = bounds.top + bounds.height * 0.72;
       setTextPosition(prev => {
-        // Only update if position hasn't been manually set (still at default)
-        if (prev.x === DEFAULT_CANVAS_WIDTH / 2 && prev.y === 200) {
-          // Position horizontally centered, near top
-          return {
-            x: canvasWidth / 2, // Horizontally centered
-            y: 200, // Near top with padding
-          };
+        if (prev.x === DEFAULT_CANVAS_WIDTH / 2 && prev.y === 520) {
+          return { x: centerX, y: centerY };
+        }
+        // If position is outside the board, snap it onto the board so "Hello" stays on the board
+        const inBoardX = prev.x >= bounds.left && prev.x <= bounds.left + bounds.width;
+        const inBoardY = prev.y >= bounds.top && prev.y <= bounds.top + bounds.height;
+        if (!inBoardX || !inBoardY) {
+          return { x: centerX, y: centerY };
         }
         return prev;
       });
@@ -159,8 +200,18 @@ export const SignageProvider = ({ children }) => {
     "linear-gradient(135deg, #FFE5B4 0%, #FFCCCB 50%, #FFDAB9 100%)"
   );
   const [backgroundImage, setBackgroundImage] = useState(null);
-  const [backgroundImageUrl, setBackgroundImageUrl] = useState("/signage/8X8WALLPINK.jpeg");
+  const [backgroundImageUrl, setBackgroundImageUrl] = useState("/signage/garden-bg.jpg");
   const [customBackgroundColor, setCustomBackgroundColor] = useState("#F8F9FA");
+
+  // Vertical board image (changeable; background is fixed)
+  const [verticalBoardImageUrl, setVerticalBoardImageUrl] = useState(VERTICAL_BOARD_IMAGE_URL);
+
+  // User-adjustable text scale (0.5 = 50%, 2 = 200%)
+  const [userTextScale, setUserTextScale] = useState(1);
+
+  // Text box dimensions (visible on canvas; synced from size preset, updated when user resizes from handle)
+  const [textBoxWidth, setTextBoxWidth] = useState(250);
+  const [textBoxHeight, setTextBoxHeight] = useState(60);
 
   // Drag state (moved to local in SignageEditor, but kept here for compatibility)
   const [isDragging, setIsDragging] = useState(false);
@@ -168,21 +219,60 @@ export const SignageProvider = ({ children }) => {
   const [isTextHovered, setIsTextHovered] = useState(false);
   const [isTextClicked, setIsTextClicked] = useState(false);
 
-  // Get current text size from selected size (with safe fallbacks)
-  const textSize = (textSizes && Object.keys(textSizes).length > 0)
-    ? (textSizes[selectedSize] || textSizes.medium || DEFAULT_TEXT_SIZES.medium)
-    : DEFAULT_TEXT_SIZES.medium;
+  // Scale factor: text sizes in config are at REFERENCE_CANVAS_HEIGHT; scale by actual canvas height so text looks relative to sign size
+  const textScale = canvasHeight > 0 ? canvasHeight / REFERENCE_CANVAS_HEIGHT : 1;
+  const baseTextSize = (textSizes && Object.keys(textSizes).length > 0)
+    ? (textSizes[selectedSize] || textSizes.medium)
+    : null;
+  const baseDefault = DEFAULT_TEXT_SIZES[selectedSize] || DEFAULT_TEXT_SIZES.medium;
+  const textSize = baseTextSize
+    ? {
+        width: (baseDefault.width ?? 250) * textScale,
+        height: (baseDefault.height ?? 60) * textScale,
+        fontSize: (baseTextSize.fontSize ?? 48) * textScale,
+        price: baseTextSize.price ?? 0,
+      }
+    : {
+        ...baseDefault,
+        fontSize: (baseDefault.fontSize ?? 48) * textScale,
+        width: (baseDefault.width ?? 250) * textScale,
+        height: (baseDefault.height ?? 60) * textScale,
+      };
   const fontSize = textSize?.fontSize || 48;
-  
-  // Get current price based on selected size
-  const currentPrice = (textSizes && Object.keys(textSizes).length > 0)
-    ? (textSizes[selectedSize]?.price || textSizes.medium?.price || 0)
-    : 0;
+  const effectiveFontSize = fontSize * userTextScale;
+  const baseEffective = textSize
+    ? { ...textSize, width: textSize.width * userTextScale, height: textSize.height * userTextScale, fontSize: effectiveFontSize }
+    : { width: 250 * userTextScale, height: 60 * userTextScale, fontSize: 48 * userTextScale };
+  const effectiveTextSize = {
+    ...baseEffective,
+    width: textBoxWidth,
+    height: textBoxHeight,
+  };
+
+  // Get current price: scale-based (pricePerSqInch × widthIn × heightIn) when pricePerSqInch is set; else fallback to size-based
+  const widthInches = canvasWidth > 0 ? (textBoxWidth * widthFt * 12) / canvasWidth : 0;
+  const heightInches = canvasHeight > 0 ? (textBoxHeight * heightFt * 12) / canvasHeight : 0;
+  const scaleBasedPrice = (pricePerSqInch || 0) * widthInches * heightInches;
+  const currentPrice =
+    pricePerSqInch > 0
+      ? Math.round(scaleBasedPrice * 100) / 100
+      : (textSizes && Object.keys(textSizes).length > 0)
+        ? (textSizes[selectedSize]?.price ?? textSizes.medium?.price ?? 0)
+        : 0;
+
+  // Sync text box dimensions when size preset (Small/Medium/Large) or scale changes
+  useEffect(() => {
+    const base = textSize
+      ? { w: textSize.width * userTextScale, h: textSize.height * userTextScale }
+      : { w: 250 * userTextScale, h: 60 * userTextScale };
+    setTextBoxWidth(base.w);
+    setTextBoxHeight(base.h);
+  }, [selectedSize, userTextScale, textSize?.width, textSize?.height]);
 
   // Memoize functions to prevent rerenders
   const memoizedGetLinePositions = useCallback(() => {
     const lines = textContent.split('\n').filter(line => line.trim());
-    const lineHeight = fontSize * 1.4;
+    const lineHeight = effectiveFontSize * 1.4;
     const totalHeight = (lines.length - 1) * lineHeight;
     const startY = textPosition.y - (totalHeight / 2);
     
@@ -190,7 +280,7 @@ export const SignageProvider = ({ children }) => {
       x: textPosition.x,
       y: startY + (index * lineHeight),
     }));
-  }, [textContent, textPosition, fontSize]);
+  }, [textContent, textPosition, effectiveFontSize]);
 
   const memoizedGetTextLines = useCallback(() => {
     if (!textContent.trim()) return [];
@@ -207,33 +297,36 @@ export const SignageProvider = ({ children }) => {
       content: line.trim(),
       x: linePositions[index].x,
       y: linePositions[index].y,
-      fontSize: fontSize,
+      fontSize: effectiveFontSize,
       fontFamily: selectedFont,
       color: selectedTextColor,
     }));
-  }, [textContent, memoizedGetLinePositions, fontSize, selectedFont, selectedTextColor]);
+  }, [textContent, memoizedGetLinePositions, effectiveFontSize, selectedFont, selectedTextColor]);
 
   const memoizedResetSignage = useCallback(() => {
     setTextContent("Hello");
     setSelectedFont("'Farmhouse', cursive");
-    setSelectedTextColor("#000000"); // Black by default
+    setSelectedTextColor("#000000");
     setSelectedSize("medium");
-    // Position horizontally centered, near top
-    setTextPosition({ 
-      x: canvasWidth / 2, // Horizontally centered
-      y: 200, // Near top
+    setUserTextScale(1);
+    // textBoxWidth/textBoxHeight will sync from size preset via useEffect
+    const bounds = getBoardBounds(canvasWidth, canvasHeight);
+    setTextPosition({
+      x: bounds.left + bounds.width / 2,
+      y: bounds.top + bounds.height * 0.72,
     });
     setBackgroundType("image");
     setBackgroundColor("#F8F9FA");
     setBackgroundGradient("linear-gradient(135deg, #FFE5B4 0%, #FFCCCB 50%, #FFDAB9 100%)");
     setBackgroundImage(null);
-    setBackgroundImageUrl("/signage/8X8WALLPINK.jpeg");
+    setBackgroundImageUrl("/signage/garden-bg.jpg");
     setCustomBackgroundColor("#F8F9FA");
+    setVerticalBoardImageUrl(VERTICAL_BOARD_IMAGE_URL);
     setIsDragging(false);
     setDragOffset({ x: 0, y: 0 });
     setIsTextHovered(false);
     setIsTextClicked(false);
-  }, [canvasWidth]);
+  }, [canvasWidth, canvasHeight]);
 
   const memoizedLoadSignage = useCallback((signageData) => {
     if (signageData.texts && signageData.texts.length > 0) {
@@ -287,6 +380,10 @@ export const SignageProvider = ({ children }) => {
     setBackgroundImage,
     setBackgroundImageUrl,
     setCustomBackgroundColor,
+    setVerticalBoardImageUrl,
+    setUserTextScale,
+    setTextBoxWidth,
+    setTextBoxHeight,
     setIsDragging,
     setDragOffset,
     setIsTextHovered,
@@ -322,6 +419,7 @@ export const SignageProvider = ({ children }) => {
     backgroundImage,
     backgroundImageUrl,
     customBackgroundColor,
+    verticalBoardImageUrl,
     isDragging,
     dragOffset,
     isTextHovered,
@@ -335,13 +433,22 @@ export const SignageProvider = ({ children }) => {
     backgroundGradients,
     canvasWidth,
     canvasHeight,
+    widthFt,
+    heightFt,
     currentPrice,
+    widthInches,
+    heightInches,
     configLoading,
     
     // Computed
     textSize,
     fontSize,
-    
+    userTextScale,
+    effectiveFontSize,
+    effectiveTextSize,
+    textBoxWidth,
+    textBoxHeight,
+
     // Stable setters
     ...stableSetters,
     
@@ -359,12 +466,18 @@ export const SignageProvider = ({ children }) => {
     backgroundImage,
     backgroundImageUrl,
     customBackgroundColor,
+    verticalBoardImageUrl,
     isDragging,
     dragOffset,
     isTextHovered,
     isTextClicked,
     textSize,
     fontSize,
+    userTextScale,
+    effectiveFontSize,
+    effectiveTextSize,
+    textBoxWidth,
+    textBoxHeight,
     fonts,
     textSizes,
     textSizesConfig,
@@ -372,7 +485,11 @@ export const SignageProvider = ({ children }) => {
     backgroundGradients,
     canvasWidth,
     canvasHeight,
+    widthFt,
+    heightFt,
     currentPrice,
+    widthInches,
+    heightInches,
     configLoading,
     stableSetters,
     stableFunctions,

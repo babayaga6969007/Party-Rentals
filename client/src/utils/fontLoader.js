@@ -23,7 +23,11 @@ export const preloadFontsWithFontFace = async () => {
     return false;
   }
 
-  const fontPromises = FONT_DEFINITIONS.map(async (fontDef) => {
+  const loadableFonts = FONT_DEFINITIONS.filter(
+    (fontDef) => fontDef.format !== 'truetype-collection'
+  );
+
+  const fontPromises = loadableFonts.map(async (fontDef) => {
     try {
       // Check if font is already loaded
       const fontString = `16px "${fontDef.name}"`;
@@ -31,7 +35,7 @@ export const preloadFontsWithFontFace = async () => {
         return true;
       }
 
-      // Load font using FontFace API
+      // Load font using FontFace API (skip .ttc collections; not widely supported)
       const fontFace = new FontFace(
         fontDef.name,
         `url(${window.location.origin}${fontDef.url}) format('${fontDef.format}')`

@@ -53,6 +53,7 @@ if (!customer?.addressLine) {
         startDate: item.startDate || "",
         endDate: item.endDate || "",
         image: item.image || "",
+        customTitle: (item.customTitle && String(item.customTitle).trim()) ? String(item.customTitle).trim() : "",
         // Explicitly preserve addons array
         addons: item.addons && Array.isArray(item.addons) ? item.addons.map(addon => ({
           optionId: addon.optionId || "",

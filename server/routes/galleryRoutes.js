@@ -16,7 +16,8 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage });
+const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
+const upload = multer({ storage, limits: { fileSize: MAX_FILE_SIZE } });
 
 // ============ PUBLIC ROUTES ============
 router.get("/", galleryController.getGalleryImages);

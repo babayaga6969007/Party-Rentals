@@ -174,6 +174,10 @@ className="w-20 h-20 rounded-lg object-cover border border-gray-300"
     </div>
   )}
 
+  {item.customTitle && item.customTitle.trim() && (
+    <p className="mt-1 text-xs text-gray-600">Title: {item.customTitle}</p>
+  )}
+
   <p className="mt-1 text-sm font-medium text-gray-900">
     ${item.lineTotal.toFixed(2)}
   </p>

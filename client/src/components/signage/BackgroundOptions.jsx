@@ -1,4 +1,5 @@
 import { memo } from "react";
+import toast from "react-hot-toast";
 import { useSignage, BACKGROUND_GRADIENTS as DEFAULT_GRADIENTS } from "../../context/SignageContext";
 
 // Default images from public/signage folder
@@ -37,6 +38,11 @@ const BackgroundOptions = memo(({ onImageUpload }) => {
   const handleBackgroundImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 3 * 1024 * 1024) {
+        toast.error("Image is too large. Maximum size is 3MB per image.");
+        e.target.value = "";
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (event) => {
         setBackgroundImageUrl(event.target.result);

@@ -9,7 +9,26 @@ function getAdminToken() {
   return localStorage.getItem("admin_token") || localStorage.getItem("token") || "";
 }
 
-const pill = "px-3 py-1 rounded-full text-sm bg-[#FAF7F5] text-[#2D2926] border border-[#D9C7BE]";
+const pill = "px-3 py-1 rounded-full text-sm bg-gray-100 text-[#2D2926] border border-gray-300";
+
+// Paint options from public/paint/ – no seed needed; pick from this list when adding options
+const PAINT_OPTIONS = [
+  { label: "Black", file: "BLACK.png" },
+  { label: "Blue", file: "BLUE.png" },
+  { label: "Cream", file: "CREAM.png" },
+  { label: "Gray", file: "GRAY.png" },
+  { label: "Green", file: "GREEN.png" },
+  { label: "Khaki", file: "KHAKI.png" },
+  { label: "Lavender", file: "LAVENDER.png" },
+  { label: "Light Blue", file: "LIGHT BLUE.png" },
+  { label: "Light Pink", file: "LIGHT PINK.png" },
+  { label: "Light Green", file: "LIGHTGREEN.png" },
+  { label: "Orange", file: "ORANGE.png" },
+  { label: "Pink", file: "PINK.png" },
+  { label: "Red", file: "RED.png" },
+  { label: "White", file: "WHITE.png" },
+  { label: "Yellow", file: "YELLOW.png" },
+];
 
 const Attributes = () => {
   const [groups, setGroups] = useState([]);
@@ -61,45 +80,39 @@ const Attributes = () => {
   async function createGroup() {
     if (!newGroupName.trim()) return alert("Group name required");
     try {
-      const res = await axios.post(
-        `${API}/admin/attributes`,
-        {
+      const created = await api("/admin/attributes", {
+        method: "POST",
+        body: JSON.stringify({
           name: newGroupName.trim(),
           type: newGroupType,
           required: newGroupRequired,
-        },
-        headers
-      );
-      setGroups((prev) => [res.data, ...prev]);
+        }),
+        headers: headers.headers,
+      });
+      setGroups((prev) => [created, ...prev]);
       setCreateOpen(false);
       setNewGroupName("");
       setNewGroupType("multi");
       setNewGroupRequired(false);
     } catch (e) {
       console.error(e);
-      alert(e?.response?.data?.message || "Failed to create group");
+      alert(e?.message || "Failed to create group");
     }
   }
 
-  async function deleteGroup(groupId) {
+async function deleteGroup(groupId) {
   const ok = confirm("Delete this attribute group?");
   if (!ok) return;
 
   try {
-    await axios.delete(
-      `${API}/admin/attributes/${groupId}`,
-      {
-        headers: headers.headers, // ✅ THIS IS THE FIX
-      }
-    );
-
+    await api(`/admin/attributes/${groupId}`, {
+      method: "DELETE",
+      headers: headers.headers,
+    });
     setGroups((prev) => prev.filter((g) => g._id !== groupId));
   } catch (e) {
     console.error(e);
-    alert(
-      e?.response?.data?.message ||
-      "Failed to delete group"
-    );
+    alert(e?.message || "Failed to delete group");
   }
 }
 
@@ -120,33 +133,39 @@ const Attributes = () => {
       (d.label?.toLowerCase().includes("shelving") || d.label?.toLowerCase().includes("shelf"));
 
     try {
-      const res = await axios.post(
-        `${API}/admin/attributes/${gId}/options`,
-        {
-          label: d.label.trim(),
-          hex: group.type === "color" ? d.hex || "#000000" : undefined,
-          priceDelta: group.type === "addon" ? Number(d.priceDelta || 0) : 0,
-          tier: isShelving ? (d.tier || "A") : undefined, // Add tier for shelving addons
-        },
-        headers
-      );
+      const payload = {
+        label: d.label.trim(),
+        hex: group.type === "color" ? d.hex || "#000000" : undefined,
+        priceDelta: group.type === "addon" ? Number(d.priceDelta || 0) : 0,
+        tier: isShelving ? (d.tier || "A") : undefined,
+      };
+      if (group.type === "paint" && (d.value || "").trim()) {
+        const filename = String(d.value).trim().replace(/^\/paint\//, "");
+        payload.value = filename;
+        payload.imageUrl = `/paint/${filename}`;
+      }
+      const updatedGroup = await api(`/admin/attributes/${gId}/options`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+        headers: headers.headers,
+      });
 
       // backend returns full group
-      setGroups((prev) => prev.map((x) => (x._id === gId ? res.data : x)));
-      setDraft(gId, { label: "", hex: "#000000", priceDelta: "", tier: "A" });
+      setGroups((prev) => prev.map((x) => (x._id === gId ? updatedGroup : x)));
+      setDraft(gId, { label: "", hex: "#000000", priceDelta: "", tier: "A", value: "" });
     } catch (e) {
       console.error(e);
-      alert(e?.response?.data?.message || "Failed to add option");
+      alert(e?.message || "Failed to add option");
     }
   }
 
   async function removeOption(groupId, optionId) {
     try {
-      const res = await axios.delete(
-        `${API}/admin/attributes/${groupId}/options/${optionId}`,
-        headers
+      const updatedGroup = await api(
+        `/admin/attributes/${groupId}/options/${optionId}`,
+        { method: "DELETE", headers: headers.headers }
       );
-      setGroups((prev) => prev.map((x) => (x._id === groupId ? res.data : x)));
+      setGroups((prev) => prev.map((x) => (x._id === groupId ? updatedGroup : x)));
     } catch (e) {
       console.error(e);
       alert("Failed to delete option");
@@ -157,8 +176,9 @@ const Attributes = () => {
     { name: "Sizes", type: "multi" },
     { name: "Tags", type: "multi" },
     { name: "Colors", type: "color" },
+    { name: "Paint", type: "paint" },
     { name: "Add-ons", type: "addon" },
-    { name: "Materials", type: "multi" },     
+    { name: "Materials", type: "multi" },
     { name: "Themes", type: "multi" },
   ];
 
@@ -219,6 +239,7 @@ const Attributes = () => {
                     <p className="text-sm text-gray-500">
                       Type: <span className="font-medium">{group.type}</span>
                       {group.required ? " • Required" : ""}
+                      {group.type === "paint" ? " (image swatches)" : ""}
                     </p>
                   </div>
 
@@ -232,34 +253,67 @@ const Attributes = () => {
                 </div>
 
                 {/* Add Option Row */}
-                <div className="border rounded-xl p-4 bg-[#FAF7F5] border-[#D9C7BE] mb-5">
+                <div className="border rounded-xl p-4 bg-gray-100 border-gray-300 mb-5">
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                    <div className="md:col-span-6">
-                      <label className="block text-sm text-[#2D2926] mb-1">Option label</label>
-                      <input
-                        value={d.label || ""}
-                        onChange={(e) => setDraft(group._id, { label: e.target.value })}
-                        className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
-                        placeholder={
-                          group.type === "addon"
-                            ? "e.g. Extra balloons"
-                            : group.type === "color"
-                            ? "e.g. Rose Gold"
-                            : "e.g. Large"
-                        }
-                      />
-                    </div>
-
-                    {group.type === "color" && (
-                      <div className="md:col-span-3">
-                        <label className="block text-sm text-[#2D2926] mb-1">Color</label>
-                        <input
-                          type="color"
-                          value={d.hex || "#000000"}
-                          onChange={(e) => setDraft(group._id, { hex: e.target.value })}
-                          className="w-full h-[46px] rounded-lg border border-[#D9C7BE] bg-white px-2"
-                        />
+                    {group.type === "paint" ? (
+                      <div className="md:col-span-9">
+                        <label className="block text-sm text-[#2D2926] mb-1">Choose paint color (from public/paint/)</label>
+                        <select
+                          value={d.value ?? ""}
+                          onChange={(e) => {
+                            const file = e.target.value;
+                            const found = PAINT_OPTIONS.find((p) => p.file === file);
+                            setDraft(group._id, found ? { label: found.label, value: found.file } : { label: "", value: "" });
+                          }}
+                          className="w-full p-3 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
+                        >
+                          <option value="">Select a color to add…</option>
+                          {(() => {
+                            const available = PAINT_OPTIONS.filter(
+                              (p) => !activeOptions.some((o) => o.label === p.label || o.value === p.file)
+                            );
+                            return available.length === 0 ? (
+                              <option value="" disabled>All paint colors added</option>
+                            ) : (
+                              available.map((p) => (
+                                <option key={p.file} value={p.file}>
+                                  {p.label}
+                                </option>
+                              ))
+                            );
+                          })()}
+                        </select>
                       </div>
+                    ) : (
+                      <>
+                        <div className="md:col-span-6">
+                          <label className="block text-sm text-[#2D2926] mb-1">Option label</label>
+                          <input
+                            value={d.label || ""}
+                            onChange={(e) => setDraft(group._id, { label: e.target.value })}
+                            className="w-full p-3 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
+                            placeholder={
+                              group.type === "addon"
+                                ? "e.g. Extra balloons"
+                                : group.type === "color"
+                                ? "e.g. Rose Gold"
+                                : "e.g. Large"
+                            }
+                          />
+                        </div>
+
+                        {group.type === "color" && (
+                          <div className="md:col-span-3">
+                            <label className="block text-sm text-[#2D2926] mb-1">Color</label>
+                            <input
+                              type="color"
+                              value={d.hex || "#000000"}
+                              onChange={(e) => setDraft(group._id, { hex: e.target.value })}
+                              className="w-full h-[46px] rounded-lg border border-gray-300 bg-white px-2"
+                            />
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {group.type === "addon" && (
@@ -270,7 +324,7 @@ const Attributes = () => {
                             type="number"
                             value={d.priceDelta ?? ""}
                             onChange={(e) => setDraft(group._id, { priceDelta: e.target.value })}
-                            className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
+                            className="w-full p-3 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
                             placeholder="e.g. 150"
                             min="0"
                             step="1"
@@ -283,7 +337,7 @@ const Attributes = () => {
                             <select
                               value={d.tier || "A"}
                               onChange={(e) => setDraft(group._id, { tier: e.target.value })}
-                              className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
+                              className="w-full p-3 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
                             >
                               <option value="A">Tier A</option>
                               <option value="B">Tier B</option>
@@ -326,6 +380,15 @@ const Attributes = () => {
                                 style={{ backgroundColor: opt.hex || "#000000" }}
                                 title={opt.hex}
                               />
+                            )}
+                            {group.type === "paint" && (opt.imageUrl || opt.value) && (
+                              <span className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-300 flex shrink-0">
+                                <img
+                                  src={opt.imageUrl || `/paint/${opt.value}`}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              </span>
                             )}
 
                             <div className="flex flex-col">
@@ -382,7 +445,7 @@ const Attributes = () => {
                 <input
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
-                  className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
+                  className="w-full p-3 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
                   placeholder="e.g. Sizes"
                 />
               </div>
@@ -392,15 +455,16 @@ const Attributes = () => {
                 <select
                   value={newGroupType}
                   onChange={(e) => setNewGroupType(e.target.value)}
-                  className="w-full p-3 rounded-lg border border-[#D9C7BE] bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
+                  className="w-full p-3 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-1 focus:ring-black/40"
                 >
                   <option value="multi">Multi-select (tags, sizes)</option>
                   <option value="select">Single-select</option>
                   <option value="color">Color (shows swatches)</option>
+                  <option value="paint">Paint (image swatches from /paint/)</option>
                   <option value="addon">Add-on with pricing</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  Use <b>Add-on</b> for paid extras. Use <b>Color</b> for swatches.
+                  Use <b>Add-on</b> for paid extras. Use <b>Color</b> for hex swatches. Use <b>Paint</b> for paint images from public/paint/.
                 </p>
               </div>
 
@@ -422,7 +486,7 @@ const Attributes = () => {
                 </button>
                 <button
                   onClick={() => setCreateOpen(false)}
-                  className="px-5 py-3 rounded-lg border border-[#D9C7BE] hover:bg-gray-50 transition"
+                  className="px-5 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 transition"
                 >
                   Cancel
                 </button>

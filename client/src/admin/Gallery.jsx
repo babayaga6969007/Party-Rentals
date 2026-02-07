@@ -4,6 +4,8 @@ import AdminLayout from "./AdminLayout";
 import { api } from "../utils/api";
 import toast from "react-hot-toast";
 
+const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024; // 3MB
+
 const Gallery = () => {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,7 +70,11 @@ const Gallery = () => {
   const handleImageChange = (e, isEdit = false) => {
     const file = e.target.files[0];
     if (!file) return;
-
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      toast.error("Image is too large. Maximum size is 3MB per image.");
+      e.target.value = "";
+      return;
+    }
     if (isEdit) {
       setEditingImage(file);
       setEditingPreview(URL.createObjectURL(file));
@@ -235,7 +241,7 @@ const Gallery = () => {
           <h1 className="text-3xl font-semibold">Visual Showcase Management</h1>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#8B5C42] text-white rounded-lg hover:bg-[#704A36] transition"
+            className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition"
           >
             <FiPlus /> Add Image
           </button>
@@ -409,7 +415,7 @@ const Gallery = () => {
                   <button
                     onClick={addImage}
                     disabled={uploading}
-                    className="flex-1 px-4 py-2 bg-[#8B5C42] text-white rounded-lg hover:bg-[#704A36] transition disabled:opacity-50"
+                    className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
                   >
                     {uploading ? "Uploading..." : "Upload"}
                   </button>
@@ -512,7 +518,7 @@ const Gallery = () => {
                   <button
                     onClick={updateImage}
                     disabled={uploading}
-                    className="flex-1 px-4 py-2 bg-[#8B5C42] text-white rounded-lg hover:bg-[#704A36] transition disabled:opacity-50"
+                    className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
                   >
                     {uploading ? "Updating..." : "Update"}
                   </button>

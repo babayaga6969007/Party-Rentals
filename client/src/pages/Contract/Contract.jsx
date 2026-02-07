@@ -1,5 +1,5 @@
 import NavbarTransparent from "../../components/layout/NavbarTransparent";
-import logo from "../../assets/logo.png";
+import logo from "../../assets/Logo-black.png";
 
 const Contract = () => {
   return (

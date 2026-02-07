@@ -40,10 +40,10 @@ const SignageStaticPreview = ({
     if (texts && texts[index] && texts[index].x !== undefined && texts[index].y !== undefined) {
       return { x: texts[index].x, y: texts[index].y };
     }
-    // Default centered position
+    // Default centered position (matches editor default)
     return {
       x: canvasWidth / 2,
-      y: 200 + (index * lineHeight)
+      y: 520 + (index * lineHeight)
     };
   };
 

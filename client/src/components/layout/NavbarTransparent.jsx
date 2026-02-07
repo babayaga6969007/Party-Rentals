@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { FiMail, FiInstagram, FiMenu, FiShoppingCart } from "react-icons/fi";
-import logo from "../../assets/logo.png";
+import logo from "../../assets/Logo-black.png";
 import { useCart } from "../../context/CartContext";
+import { useContactFormModal } from "../../context/ContactFormModalContext";
 
 const NavbarTransparent = () => {
   const { pathname } = useLocation();
@@ -28,6 +29,7 @@ const iconHoverClass =
      CART STATE (TOP LEVEL)
   ====================== */
   const { cartItems } = useCart();
+  const { openModal: openContactFormModal } = useContactFormModal();
   const cartCount = cartItems.reduce((sum, item) => sum + item.qty, 0);
   const [animateCart, setAnimateCart] = useState(false);
 
@@ -169,20 +171,20 @@ const iconHoverClass =
             )}
           </Link>
 
-          {/* CUSTOM ENQUIRY */}
-          <Link
-  to="/contact"
-  className={`hidden md:block px-5 py-2 rounded-full text-sm font-medium
-    transition-all duration-200 ease-out
-    hover:scale-105 active:scale-95
-    ${scrolled
-      ? "bg-black text-white hover:bg-[#222]"
-      : "bg-white/20 text-white hover:bg-white/40"}
-  `}
->
-
+          {/* CUSTOM ENQUIRY - opens form modal (no navigation) */}
+          <button
+            type="button"
+            onClick={openContactFormModal}
+            className={`hidden md:block px-5 py-2 rounded-full text-sm font-medium
+              transition-all duration-200 ease-out
+              hover:scale-105 active:scale-95
+              ${scrolled
+                ? "bg-black text-white hover:bg-[#222]"
+                : "bg-white/20 text-white hover:bg-white/40"}
+            `}
+          >
             Custom Inquiry
-          </Link>
+          </button>
 
           {/* MOBILE MENU */}
           <button

@@ -5,6 +5,7 @@ const AttributeOptionSchema = new mongoose.Schema(
     label: { type: String, required: true, trim: true },
     value: { type: String, trim: true },
     hex: { type: String, trim: true },
+    imageUrl: { type: String, trim: true }, // e.g. /paint/BLACK.png for paint options
     priceDelta: { type: Number, default: 0 },
     tier: { type: String, enum: ["A", "B", "C"], default: undefined }, // For shelving addons: Tier A, B, or C
     isActive: { type: Boolean, default: true },
@@ -19,7 +20,7 @@ const AttributeSchema = new mongoose.Schema(
     slug: { type: String, required: true, unique: true, lowercase: true },
     type: {
       type: String,
-      enum: ["select", "multi", "color", "addon"],
+      enum: ["select", "multi", "color", "addon", "paint"],
       default: "multi",
     },
     required: { type: Boolean, default: false },

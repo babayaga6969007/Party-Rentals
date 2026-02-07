@@ -128,6 +128,16 @@ app.use("/api/gallery", galleryRoutes);
 app.use("/api/upload", uploadRoutes);
 
 /* =========================
+   ERROR HANDLER (e.g. multer LIMIT_FILE_SIZE)
+========================= */
+app.use((err, req, res, next) => {
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res.status(413).json({ message: "Image too large. Maximum size is 3MB per image." });
+  }
+  next(err);
+});
+
+/* =========================
    404 HANDLER
 ========================= */
 app.use((req, res) => {

@@ -52,10 +52,12 @@ const [selectedOptionState, setSelectedOptionState] = useState({});
 const today = new Date().toISOString().split("T")[0]; // disable past dates
 
 const { addToCart, cartItems } = useCart();
+const [customTitleText, setCustomTitleText] = useState("");
 const isAlreadyInCart = cartItems.some(
   (item) =>
     item.productType === "purchase" &&
-    item.productId === product?._id
+    item.productId === product?._id &&
+    (item.customTitle || "").trim() === (product?.allowCustomTitle ? (customTitleText || "").trim() : "")
 );
 
 
@@ -200,6 +202,8 @@ const unitPrice = effectivePrice;
     unitPrice,
     lineTotal,
 
+    customTitle: product.allowCustomTitle ? (customTitleText || "").trim() : "",
+
     image: productImages[activeImage],
     maxStock: product?.availabilityCount ?? 1,
   });
@@ -259,6 +263,7 @@ const attributeGroupsForUI =
     .map((a) => ({
       groupId: String(a.groupId._id),
       name: a.groupId.name,
+      type: a.groupId.type,
       options: (a.groupId.options || []).filter((opt) =>
         (a.optionIds || []).some(
           (oid) => String(oid) === String(opt._id)
@@ -351,7 +356,7 @@ if (!product) {
         src={img}
         onClick={() => setActiveImage(i)}
         className={`w-full h-20 object-cover rounded-xl shadow cursor-pointer transition border-2 ${
-          i === activeImage ? "border-[#8B5C42]" : "border-transparent"
+          i === activeImage ? "border-black" : "border-transparent"
         }`}
         alt="Thumbnail"
       />
@@ -388,7 +393,7 @@ if (!product) {
                   <span>{addons.lights}</span>
                   <button
                     onClick={() => handleAddonChange("lights", 1)}
-                    className="px-3 py-1 bg-[#8B5C42] text-white rounded"
+                    className="px-3 py-1 bg-black text-white rounded hover:bg-gray-800"
                   >
                     +
                   </button>
@@ -414,7 +419,7 @@ if (!product) {
                   <span>{addons.flowers}</span>
                   <button
                     onClick={() => handleAddonChange("flowers", 1)}
-                    className="px-3 py-1 bg-[#8B5C42] text-white rounded"
+                    className="px-3 py-1 bg-black text-white rounded hover:bg-gray-800"
                   >
                     +
                   </button>
@@ -446,7 +451,7 @@ if (!product) {
       </span>
     </>
   ) : (
-    <span className="text-3xl font-semibold text-[#8B5C42]">
+    <span className="text-3xl font-semibold text-black">
       $ {regularPrice}
     </span>
   )}
@@ -455,10 +460,10 @@ if (!product) {
 
 
   {/* Stock — beside price on desktop, below on mobile */}
-  <div className="mt-2 md:mt-0 bg-[#FFF7F0] border border-[#E5DED6] rounded-lg px-4 py-2 inline-block">
+  <div className="mt-2 md:mt-0 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 inline-block">
     <p className="text-sm font-medium text-[#2D2926]">
      Stock Availability:{" "}
-<span className="text-[#8B5C42] font-semibold">
+<span className="text-black font-semibold">
   {product?.availabilityCount ?? 0}
 </span>
 
@@ -490,7 +495,7 @@ if (!product) {
     ${
       productQty >= maxStock
         ? "bg-gray-400 cursor-not-allowed"
-        : "bg-[#8B5C42] hover:bg-[#704A36]"
+        : "bg-black hover:bg-gray-800"
     }
   `}
 >
@@ -499,8 +504,22 @@ if (!product) {
 
           </div>
 
-        
-
+          {/* Custom title — when product allows it */}
+          {product?.allowCustomTitle && (
+            <div className="mt-4">
+              <label className="block font-medium text-lg mb-2 text-[#2D2926]">
+                Custom title
+              </label>
+              <input
+                type="text"
+                value={customTitleText}
+                onChange={(e) => setCustomTitleText(e.target.value)}
+                placeholder="e.g. Mr & Mrs, Smith Wedding"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-[#2D2926] focus:ring-2 focus:ring-black focus:border-transparent"
+                maxLength={80}
+              />
+            </div>
+          )}
 
           {/* TOTAL */}
          <div className="mt-8 text-2xl font-semibold text-[#2D2926]">
@@ -544,39 +563,53 @@ if (!product) {
       Available Options
     </h3>
 
-    {attributeGroupsForUI.map((g) => (
+    {attributeGroupsForUI.map((g) => {
+      const isPaint = g.type === "paint";
+      return (
       <div key={g.groupId} className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           {g.name}
         </label>
 
         <div className="flex flex-wrap gap-2">
-          {g.options.map((opt) => (
+          {g.options.map((opt) => {
+            const paintSrc = opt.imageUrl || (opt.value ? `/paint/${opt.value}` : null);
+            return (
             <button
-  key={String(opt._id)}
-  type="button"
-  onClick={() => {
-    // UI-only selection for sale products
-    setSelectedOptionState((prev) => ({
-      ...prev,
-      [g.groupId]: String(opt._id),
-    }));
-  }}
-  className={`px-4 py-2 rounded-lg border text-sm transition
-    ${
-      selectedOptionState?.[g.groupId] === String(opt._id)
-        ? "border-black bg-black text-white"
-        : "border-gray-300 bg-white hover:bg-gray-50"
-    }
-  `}
->
-  {opt.label}
-</button>
-
-          ))}
+              key={String(opt._id)}
+              type="button"
+              onClick={() => {
+                setSelectedOptionState((prev) => ({
+                  ...prev,
+                  [g.groupId]: String(opt._id),
+                }));
+              }}
+              className={`rounded-xl border text-sm transition
+                ${selectedOptionState?.[g.groupId] === String(opt._id)
+                  ? "border-black bg-black text-white ring-2 ring-black ring-offset-1"
+                  : "border-gray-300 bg-white hover:bg-gray-50"
+                }
+                ${isPaint ? "flex flex-col items-center gap-1.5 p-2" : "flex items-center gap-2 px-4 py-2"}
+              `}
+              title={opt.label}
+            >
+              {isPaint && paintSrc ? (
+                <>
+                  <span className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 flex shrink-0">
+                    <img src={paintSrc} alt="" className="w-full h-full object-cover" />
+                  </span>
+                  <span className="text-xs font-medium text-center">{opt.label}</span>
+                </>
+              ) : (
+                opt.label
+              )}
+            </button>
+          );
+          })}
         </div>
       </div>
-    ))}
+    );
+    })}
   </div>
 )}
 
@@ -603,7 +636,7 @@ if (!product) {
 
     <button
       onClick={() => setShowFullDesc(!showFullDesc)}
-      className="mt-2 text-[#8B5C42] font-medium underline"
+      className="mt-2 text-black font-medium underline hover:text-gray-800"
     >
       {showFullDesc ? "Read Less" : "Read More"}
     </button>
@@ -613,7 +646,7 @@ if (!product) {
   <div className="bg-white p-5 rounded-xl shadow">
     <a
       href="/contract"
-      className="font-semibold text-lg text-[#8B5C42] underline hover:text-[#704A36]"
+      className="font-semibold text-lg text-black underline hover:text-gray-800"
     >
       Terms & Conditions
     </a>
@@ -626,14 +659,14 @@ if (!product) {
 
       {/* ⭐ TRUST BADGE STRIP — FULL WIDTH, ABOVE FOOTER */}
       <div className="max-w-7xl mx-auto px-6 mt-16 mb-16">
-        <div className="bg-[#FAF7F5] border border-[#E5DED6] rounded-2xl py-6 px-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+        <div className="bg-gray-50 border border-gray-200 rounded-2xl py-6 px-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
 
           {trustBadges.map((item, index) => {
             const Icon = item.icon;
             return (
               <div key={index} className="flex items-center gap-3">
-                <div className="w-12 h-12 flex items-center justify-center rounded-full bg-[#8B5C42]/10">
-                  <Icon className="text-[#8B5C42]" size={26} />
+                <div className="w-12 h-12 flex items-center justify-center rounded-full bg-black/10">
+                  <Icon className="text-black" size={26} />
                 </div>
                 <span className="text-[#2D2926] font-medium text-[16px]">
                   {item.label}
@@ -696,7 +729,7 @@ if (!product) {
         </button>
 <Link to="/cart" className="flex-1">
 
-          <button className="w-full py-3 rounded-full bg-[#8B5C42] text-white hover:bg-[#704A36]">
+          <button className="w-full py-3 rounded-full bg-black text-white hover:bg-gray-800">
             Bag & Checkout →
           </button>
         </Link>
@@ -720,7 +753,7 @@ if (!product) {
 
       <button
         type="button"
-        className="w-full py-1.5 text-sm rounded-md bg-[#8B5C42] text-white hover:bg-[#704A36] transition"
+        className="w-full py-1.5 text-sm rounded-md bg-black text-white hover:bg-gray-800 transition"
         onClick={() => {
           // future: add to cart / addons
           console.log("Add Warm LED Lights");
@@ -742,7 +775,7 @@ if (!product) {
 
       <button
         type="button"
-        className="w-full py-1.5 text-sm rounded-md bg-[#8B5C42] text-white hover:bg-[#704A36] transition"
+        className="w-full py-1.5 text-sm rounded-md bg-black text-white hover:bg-gray-800 transition"
         onClick={() => {
           // future: add to cart / addons
           console.log("Add Flower Garland Set");

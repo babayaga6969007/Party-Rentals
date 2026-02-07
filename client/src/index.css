@@ -2,6 +2,14 @@
 
 @import "tailwindcss";
 
+/* All buttons use pointer cursor */
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
 /* Signage Fonts from public/fonts */
 @font-face {
   font-family: 'BlackMango-Bold';
@@ -33,7 +41,7 @@
 
 @font-face {
   font-family: 'Futura';
-  src: url('/fonts/Futura.ttc') format('truetype-collection');
+  src: local('Futura'), local('Futura Std'), local('Futura-Medium');
   font-weight: normal;
   font-style: normal;
 }
@@ -47,7 +55,7 @@
 
 @font-face {
   font-family: 'SignPainter';
-  src: url('/fonts/SignPainter.ttc') format('truetype-collection');
+  src: local('SignPainter'), local('SignPainter-HouseScript'), local('SignPainter Script');
   font-weight: normal;
   font-style: normal;
 }

@@ -367,11 +367,11 @@ return inCategory && inPrice && inTags;
                     : [...prev, cat.value]
                 )
               }
-              className="flex flex-col items-center group focus:outline-none"
+              className="flex flex-col items-center group focus:outline-none w-[100px]"
             >
               <div
                 className={`
-                  w-20 h-20 rounded-full overflow-hidden shadow-md
+                  w-20 h-20 shrink-0 rounded-full overflow-hidden shadow-md
                   transition-all duration-300
                   ${
                     selectedCategories.includes(cat.value)
@@ -381,14 +381,13 @@ return inCategory && inPrice && inTags;
                 `}
               >
                 <img
-  src={cat.img || "/placeholder-category.png"}
-  alt={cat.label}
-  className="w-full h-full object-cover"
-/>
-
+                  src={cat.img || "/placeholder-category.png"}
+                  alt={cat.label}
+                  className="w-full h-full object-cover"
+                />
               </div>
 
-              <span className="mt-2 text-xs text-[#2D2926] group-hover:text-black">
+              <span className="mt-2 text-xs text-[#2D2926] group-hover:text-black text-center min-h-10 flex items-center justify-center leading-tight px-0.5">
                 {cat.label}
               </span>
             </button>

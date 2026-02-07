@@ -40,11 +40,11 @@ addons = (addons || []).map((a) => {
         : Number(a.overridePrice),
   };
 
-  // Shelving
-  if (a.shelvingTier) {
-    addonData.shelvingTier = a.shelvingTier;
-    addonData.shelvingSize = a.shelvingSize || "";
-    addonData.shelvingQuantity = a.shelvingQuantity || 1;
+  // Shelving (persist whenever present)
+  if (a.shelvingTier != null && a.shelvingTier !== "") {
+    addonData.shelvingTier = String(a.shelvingTier);
+    addonData.shelvingSize = a.shelvingSize != null ? String(a.shelvingSize) : "";
+    addonData.shelvingQuantity = Math.max(0, Number(a.shelvingQuantity)) || 1;
   }
 
   // Pedestals
@@ -100,6 +100,8 @@ addons = (addons || []).map((a) => {
     // 4️⃣ Create product
    const featuredFlag =
   req.body.featured === "true" || req.body.featured === true;
+  const allowCustomTitleFlag =
+    req.body.allowCustomTitle === "true" || req.body.allowCustomTitle === true;
 
 const {
   title,
@@ -182,6 +184,7 @@ const finalVariations =
         pricePerDay: Number(v.pricePerDay),
         salePrice: v.salePrice ? Number(v.salePrice) : null,
         stock: Number(v.stock),
+        description: (v.description && String(v.description).trim()) ? String(v.description).trim() : "",
         images: variationImagesMap[i] || [],
       }))
     : [];
@@ -195,6 +198,7 @@ const basePayload = {
   tags,
   attributes,
   addons,
+  allowCustomTitle: allowCustomTitleFlag,
 
   dimensions: productSubType === "simple" ? dimensions : "",
   availabilityCount:
@@ -329,6 +333,7 @@ updates.variations = parsedVariations.map((v, i) => {
     pricePerDay: Number(v.pricePerDay),
     salePrice: v.salePrice ? Number(v.salePrice) : null,
     stock: Number(v.stock),
+    description: (v.description != null && String(v.description).trim()) ? String(v.description).trim() : (existingVar.description || ""),
     images: [
       ...keptImages,
       ...(variationImagesMap[i] || []),
@@ -354,6 +359,10 @@ if (updates.productType === "sale") {
   updates.featuredAt = null;
 }
 
+if (req.body.allowCustomTitle !== undefined) {
+  updates.allowCustomTitle =
+    req.body.allowCustomTitle === "true" || req.body.allowCustomTitle === true;
+}
 
 // For SIMPLE rental only
 if (updates.productSubType !== "variable") {
@@ -396,11 +405,11 @@ if (updates.productSubType !== "variable") {
         : Number(a.overridePrice),
   };
 
-  // Shelving
-  if (a.shelvingTier) {
-    addonData.shelvingTier = a.shelvingTier;
-    addonData.shelvingSize = a.shelvingSize || "";
-    addonData.shelvingQuantity = a.shelvingQuantity || 1;
+  // Shelving (persist whenever present so shelving addon config is saved)
+  if (a.shelvingTier != null && a.shelvingTier !== "") {
+    addonData.shelvingTier = String(a.shelvingTier);
+    addonData.shelvingSize = a.shelvingSize != null ? String(a.shelvingSize) : "";
+    addonData.shelvingQuantity = Math.max(0, Number(a.shelvingQuantity)) || 1;
   }
 
   // Pedestals
@@ -479,6 +488,50 @@ if (updates.featured === true) {
 
 
 // ----------------------------------------------
+// Upload images for a single variation (queue upload to avoid overloading server)
+// PUT /products/admin/:id/variations/:variationIndex/images
+// ----------------------------------------------
+exports.uploadVariationImages = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const variationIndex = Number(req.params.variationIndex);
+    const files = Array.isArray(req.files) ? req.files : [];
+
+    if (!Number.isInteger(variationIndex) || variationIndex < 0) {
+      return res.status(400).json({ message: "Invalid variation index" });
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    if (!product.variations || !Array.isArray(product.variations)) {
+      return res.status(400).json({ message: "Product has no variations" });
+    }
+    if (variationIndex >= product.variations.length) {
+      return res.status(400).json({ message: "Variation index out of range" });
+    }
+
+    const existingImages = product.variations[variationIndex].images || [];
+    let uploadedImages = [];
+    if (files.length > 0) {
+      uploadedImages = await uploadImagesToCloudinary(files);
+    }
+    product.variations[variationIndex].images = [...existingImages, ...uploadedImages];
+    await product.save();
+
+    res.json({
+      message: "Variation images uploaded",
+      product,
+      variationIndex,
+    });
+  } catch (error) {
+    console.error("uploadVariationImages error:", error);
+    res.status(500).json({ message: error.message || "Failed to upload variation images" });
+  }
+};
+
+// ----------------------------------------------
 // Delete Product
 // ----------------------------------------------
 exports.deleteProduct = async (req, res) => {
@@ -533,6 +586,58 @@ exports.getSingleProduct = async (req, res) => {
     }
 
     // ===============================
+    // NORMALIZE ADDONS for frontend (option label, priceDelta, tier)
+    // Admin stores option subdocument _id in addons.optionId; populate(Attribute) doesn't find it.
+    // Resolve: if not populated, find Attribute that contains this option and use that option's label.
+    // ===============================
+    product.addons = await Promise.all(
+      (product.addons || []).map(async (a) => {
+        let attr = a.optionId;
+        let matchedOption = null;
+        const rawId = attr?._id ?? a.optionId;
+        if (!rawId) {
+          return {
+            ...a,
+            optionId: a.optionId,
+            option: { label: "Add-on", priceDelta: 0, tier: undefined },
+          };
+        }
+        if (!attr || typeof attr !== "object" || !Array.isArray(attr.options)) {
+          const byId = await Attribute.findById(rawId).lean();
+          if (byId) {
+            attr = byId;
+            matchedOption = byId.options?.[0];
+          } else {
+            const parent = await Attribute.findOne({ "options._id": rawId }).lean();
+            if (parent) {
+              attr = parent;
+              matchedOption = parent.options?.find((o) => String(o._id) === String(rawId));
+            }
+          }
+        } else {
+          matchedOption = attr.options?.[0];
+        }
+        const firstOption = matchedOption ?? attr?.options?.[0];
+        const option = firstOption
+          ? {
+              label: firstOption.label,
+              priceDelta: firstOption.priceDelta ?? 0,
+              tier: firstOption.tier,
+            }
+          : {
+              label: attr?.name ?? "Add-on",
+              priceDelta: 0,
+              tier: undefined,
+            };
+        return {
+          ...a,
+          optionId: attr?._id ?? a.optionId,
+          option,
+        };
+      })
+    );
+
+    // ===============================
     // NORMALIZE VARIABLE RENTAL DATA
     // ===============================
     if (
@@ -548,6 +653,7 @@ exports.getSingleProduct = async (req, res) => {
             ? Number(v.salePrice)
             : null,
         stock: Number(v.stock || 0),
+        description: v.description != null ? String(v.description) : "",
 
         // ✅ ensure frontend ALWAYS receives array
         images: Array.isArray(v.images)

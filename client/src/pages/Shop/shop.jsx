@@ -464,61 +464,10 @@ width: `${((priceRange[1] - priceRange[0]) / PRICE_MAX) * 100}%`,
           {/* ====================== */}
 
          <main>
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
-    {/* Custom Signage Design Card - First Position */}
-    <div
-      className="
-        block border-2 border-black
-        rounded-xl shadow-lg
-        transition-all duration-300 
-        group hover:shadow-xl hover:scale-[1.02]
-        bg-gradient-to-br from-gray-50 to-gray-100
-      "
-    >
-      {/* IMAGE */}
-      <div className="h-40 rounded-t-xl overflow-hidden bg-gradient-to-br from-black to-gray-800 flex items-center justify-center">
-        <div className="text-center text-white">
-          <svg 
-            className="w-12 h-12 mx-auto mb-1" 
-            fill="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-          </svg>
-          <p className="text-xs font-semibold">Custom Signage</p>
-        </div>
-      </div>
-
-      {/* CONTENT */}
-      <div className="p-4">
-        {/* NAME */}
-        <h3 className="font-bold text-base text-[#2D2926]">
-          Custom Signage Design
-        </h3>
-
-        {/* DESCRIPTION */}
-        <p className="text-sm text-gray-600 mt-2 line-clamp-2">
-          Create personalized signage with custom text, fonts, colors, and backgrounds for your events.
-        </p>
-
-        {/* BUTTON */}
-        <div className="mt-3 
-             opacity-100 md:opacity-0 
-             md:group-hover:opacity-100 
-             transition-opacity duration-300">
-          <button 
-            onClick={() => navigate("/signage")}
-            className="w-full bg-black text-white px-4 py-2 rounded-lg text-sm shadow-md hover:bg-gray-800 transition"
-          >
-            Create Signage
-          </button>
-        </div>
-      </div>
-    </div>
-
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 min-h-[260px] items-start">
     {/* Loading State */}
     {loadingProducts ? (
-      <div className="col-span-full flex items-center justify-center py-20">
+      <div className="col-span-full flex items-center justify-center py-16 min-h-[200px]">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-black mb-4"></div>
           <p className="text-gray-600">Loading products...</p>
@@ -526,76 +475,75 @@ width: `${((priceRange[1] - priceRange[0]) / PRICE_MAX) * 100}%`,
       </div>
     ) : (
       <>
-        {filteredProducts.map((product) => (
-      <a
-href={`/buyproducts/${product._id}`}
-        className="
-          block border border-gray-300 hover:border-gray-500
-          rounded-xl shadow 
-          transition-all duration-300 
-          group hover:shadow-lg hover:scale-[1.02]
-        "
-      >
-
-        {/* IMAGE — NOW FULL WIDTH, NO PADDING */}
-        <div className="h-40 rounded-t-xl overflow-hidden">
-          <img
-src={product.images?.[0]?.url || hero1}
-            alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        </div>
-
-        {/* CONTENT */}
-        <div className="p-4">
-
-          {/* NAME */}
-          <h3 className="font-bold text-base text-[#2D2926] line-clamp-2">
-            {product.title}
-          </h3>
-
-          {/* PRICE SECTION */}
-<div className="mt-2 flex items-center gap-2">
-  {product.salePrice ? (
-    <>
-      {/* Original price */}
-      <span className="text-gray-500 line-through text-xs">
-        $ {product.pricePerDay}
-      </span>
-
-      {/* Sale price */}
-      <span className="text-red-600 font-bold text-base">
-        $ {product.salePrice}
-      </span>
-    </>
-  ) : (
-    <span className="text-black font-semibold text-base">
-      $ {product.pricePerDay}
-    </span>
-  )}
-</div>
-
-
-          {/* CATEGORY */}
-          <p className="text-xs text-gray-600 mt-1">
-  Category: {getCategoryNameById(product.category)}
-</p>
-
-
-
-          {/* BUTTON */}
-<div className="mt-3 
-     opacity-100 md:opacity-0 
-     md:group-hover:opacity-100 
-     transition-opacity duration-300">
-            <button className="w-full bg-black text-white px-4 py-2 rounded-lg text-sm shadow-md hover:bg-[#222222] transition">
-              View Product
-            </button>
+        {/* Custom Signage Design Card - First Position */}
+        <div
+          className="flex flex-col h-full border-2 border-black rounded-xl shadow-lg
+            transition-all duration-300 group hover:shadow-xl hover:scale-[1.02]
+            bg-gradient-to-br from-gray-50 to-gray-100"
+        >
+          <div className="h-40 shrink-0 rounded-t-xl overflow-hidden bg-gradient-to-br from-black to-gray-800 flex items-center justify-center">
+            <div className="text-center text-white">
+              <svg className="w-12 h-12 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+              </svg>
+              <p className="text-xs font-semibold">Custom Signage</p>
+            </div>
           </div>
-
+          <div className="p-4 flex flex-col flex-1 min-h-0">
+            <h3 className="font-bold text-base text-[#2D2926]">
+              Custom Signage Design
+            </h3>
+            <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+              Create personalized signage with custom text, fonts, colors, and backgrounds for your events.
+            </p>
+            <div className="mt-auto pt-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
+              <button
+                onClick={(e) => { e.preventDefault(); navigate("/signage"); }}
+                className="w-full bg-black text-white px-4 py-2 rounded-lg text-sm shadow-md hover:bg-gray-800 transition"
+              >
+                Create Signage
+              </button>
+            </div>
+          </div>
         </div>
-      </a>
-    ))}
+        {filteredProducts.map((product) => (
+          <a
+            href={`/buyproducts/${product._id}`}
+            className="flex flex-col h-full border border-gray-300 hover:border-gray-500
+              rounded-xl shadow transition-all duration-300 group hover:shadow-lg hover:scale-[1.02]"
+          >
+            <div className="h-40 shrink-0 rounded-t-xl overflow-hidden">
+              <img
+                src={product.images?.[0]?.url || hero1}
+                alt={product.name}
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+            </div>
+            <div className="p-4 flex flex-col flex-1 min-h-0">
+              <h3 className="font-bold text-base text-[#2D2926] line-clamp-2">
+                {product.title}
+              </h3>
+              <div className="mt-2 flex items-center gap-2">
+                {product.salePrice ? (
+                  <>
+                    <span className="text-gray-500 line-through text-xs">$ {product.pricePerDay}</span>
+                    <span className="text-red-600 font-bold text-base">$ {product.salePrice}</span>
+                  </>
+                ) : (
+                  <span className="text-black font-semibold text-base">$ {product.pricePerDay}</span>
+                )}
+              </div>
+              <p className="text-xs text-gray-600 mt-1">
+                Category: {getCategoryNameById(product.category)}
+              </p>
+              <div className="mt-auto pt-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
+                <button type="button" className="w-full bg-black text-white px-4 py-2 rounded-lg text-sm shadow-md hover:bg-[#222222] transition">
+                  View Product
+                </button>
+              </div>
+            </div>
+          </a>
+        ))}
       </>
     )}
 

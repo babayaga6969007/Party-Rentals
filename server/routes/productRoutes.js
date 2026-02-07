@@ -19,7 +19,8 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage });
+const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB per file
+const upload = multer({ storage, limits: { fileSize: MAX_FILE_SIZE } });
 const uploadFields = upload.fields([
   { name: "images", maxCount: 10 },
 
@@ -52,7 +53,14 @@ router.put(
   productController.editProduct
 );
 
-
+// Upload images for a single variation (queue: one variation at a time)
+const uploadVariationImages = multer({ storage, limits: { fileSize: MAX_FILE_SIZE } }).array("images", 5);
+router.put(
+  "/admin/edit/:id/variations/:variationIndex/images",
+  authAdmin,
+  uploadVariationImages,
+  productController.uploadVariationImages
+);
 
 // Delete product
 router.delete("/admin/delete/:id", authAdmin, productController.deleteProduct);
