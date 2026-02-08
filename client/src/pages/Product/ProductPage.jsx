@@ -1862,7 +1862,7 @@ next[addon.optionId] = {
     hover:shadow-md
   "
             >
-              Shipping Rates
+              Delivery Rates
             </button>
 
 

@@ -233,7 +233,7 @@ onClick={() => removeItem(item.cartKey)}
             {/* SHIPPING */}
             <div className="mt-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-500 text-sm">Shipping</span>
+                <span className="text-gray-500 text-sm">Delivery</span>
                 {shippingCost > 0 ? (
                   <span className="font-medium">${shippingCost.toFixed(2)}</span>
                 ) : (

@@ -264,7 +264,7 @@ const ShippingRatesModal = ({ isOpen, onClose, onShippingCalculated }) => {
 
           {/* HEADER */}
           <h2 className="text-2xl font-semibold text-[#2D2926] pr-8">
-            Shipping Rates
+            Delivery Rates
           </h2>
 
           <p className="mt-2 text-sm text-gray-600">
@@ -286,7 +286,7 @@ const ShippingRatesModal = ({ isOpen, onClose, onShippingCalculated }) => {
             <input
               type="text"
               value={addressInput}
-              placeholder="Enter address, city, or ZIP code"
+              placeholder="Enter ZIP code"
               className="w-full p-3 border rounded-lg"
               onChange={(e) => {
                 const value = e.target.value;
