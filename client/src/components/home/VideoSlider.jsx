@@ -28,7 +28,10 @@ const VideoSlider = () => {
   const trackRef = useRef(null);
 
 const visibleCards = window.innerWidth < 768 ? 1 : 4;
-const cardWidth = 284; // 260 width + 24 margin
+const cardWidth =
+  window.innerWidth < 768
+    ? Math.min(window.innerWidth * 0.9 + 24, 384) // frame + margin
+    : 284;
 
   useEffect(() => {
     // Looping logic: jump without animation
@@ -102,8 +105,8 @@ const handleTouchEnd = (e) => {
         </button>
 
         {/* Slider only – no arrow overlap */}
-        <div
-  className="flex-1 min-w-0 overflow-hidden max-w-[1136px]"
+        <div className="flex-1 min-w-0 overflow-hidden max-w-[1136px] relative"
+
   onTouchStart={handleTouchStart}
   onTouchEnd={handleTouchEnd}
 >
@@ -116,10 +119,27 @@ const handleTouchEnd = (e) => {
             }}
           >
             {videos.map((video, i) => (
-              <div
-                key={i}
-                className="w-[260px] h-[400px] mx-3 flex-shrink-0 rounded-xl overflow-hidden shadow-lg"
-              >
+             <div
+  key={i}
+  className="
+    w-[90vw] max-w-[360px]
+    h-[420px]
+    mx-3
+    flex-shrink-0
+    rounded-2xl
+    overflow-hidden
+    shadow-xl
+    border border-black/10
+    bg-white
+  "
+>
+{/* Mobile swipe hint arrow */}
+<div className="md:hidden absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+  <div className="w-8 h-8 rounded-full bg-[#C8A45D]/90 flex items-center justify-center shadow-md animate-pulse">
+    <FiChevronRight className="text-white" size={18} />
+  </div>
+</div>
+
                 <a
                   href={instaLinks[i % instaLinks.length]}
                   target="_blank"
