@@ -112,6 +112,7 @@ a: "Yes. Our professional team manages all logistics regarding the setup of the 
     }
   ],
 
+
   "Cancellations & Changes": [
     {
       q: "What is your cancellation policy?",

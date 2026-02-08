@@ -33,12 +33,13 @@ const Partners = () => {
     <div className="py-14 bg-white overflow-hidden">
       {/* TEXT SECTION */}
       <p
-        className="max-w-3xl mx-auto text-center text-[32px] text-[#2D2926] mb-6 leading-relaxed"
-        style={{ fontFamily: '"Cormorant Garamond", serif' }}
-      >
-        You shouldn't have to compromise the unique style of your event – with our
-        customizable rentals and tailored fabrications, you don't.
-      </p>
+  className="max-w-3xl mx-auto text-center text-[32px] text-[#2D2926] mb-12 leading-relaxed"
+  style={{ fontFamily: '"Cormorant Garamond", serif' }}
+>
+  You shouldn't have to compromise the unique style of your event – with our
+  customizable rentals and tailored fabrications, you don't.
+</p>
+
 
       {/* SLIDER */}
       <div className="relative overflow-hidden px-6">

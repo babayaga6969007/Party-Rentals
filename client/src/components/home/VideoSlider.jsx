@@ -28,7 +28,7 @@ const VideoSlider = () => {
   const trackRef = useRef(null);
 
 const visibleCards = window.innerWidth < 768 ? 1 : 4;
-const cardWidth = window.innerWidth < 768 ? 300 : 284;
+const cardWidth = 284; // 260 width + 24 margin
 
   useEffect(() => {
     // Looping logic: jump without animation
@@ -55,6 +55,24 @@ const cardWidth = window.innerWidth < 768 ? 300 : 284;
     trackRef.current.style.transition = "transform 0.35s ease";
     setIndex((prev) => prev - 1);
   };
+const startX = useRef(0);
+
+const handleTouchStart = (e) => {
+  startX.current = e.touches[0].clientX;
+};
+
+const handleTouchEnd = (e) => {
+  const endX = e.changedTouches[0].clientX;
+  const diff = startX.current - endX;
+
+  if (Math.abs(diff) > 50) {
+    if (diff > 0) {
+      next(); // swipe left
+    } else {
+      prev(); // swipe right
+    }
+  }
+};
 
   return (
     <section className="w-full py-16 bg-white relative">
@@ -84,7 +102,12 @@ const cardWidth = window.innerWidth < 768 ? 300 : 284;
         </button>
 
         {/* Slider only – no arrow overlap */}
-        <div className="flex-1 min-w-0 overflow-hidden max-w-[1136px]">
+        <div
+  className="flex-1 min-w-0 overflow-hidden max-w-[1136px]"
+  onTouchStart={handleTouchStart}
+  onTouchEnd={handleTouchEnd}
+>
+
           <div
             ref={trackRef}
             className="flex transition-transform duration-300 ease-out"
