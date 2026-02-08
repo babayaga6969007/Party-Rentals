@@ -35,7 +35,8 @@ const faqData = {
     },
     {
       q: "What is included in the rental price?",
-      a: "Rental pricing includes the décor piece and standard wear. Delivery, installation, styling, and pickup are quoted separately unless otherwise stated."
+      a: "Rental pricing includes the décor piece and standard wear. Delivery, installation, lavish styling, and pickup are quoted separately unless otherwise stated."
+
     },
     {
       q: "Can rentals be customized?",
@@ -76,11 +77,11 @@ const faqData = {
   "Delivery, Installation & Pickup": [
     {
       q: "Do you handle delivery and installation?",
-      a: "Yes. Our professional team manages delivery, installation, and breakdown for all décor we provide."
+a: "Yes. Our professional team manages delivery, installation, and breakdown for all décor we provide. We do not install décor sourced from outside vendors such as florals, neon signs, or lighting unless otherwise agreed."
     },
     {
       q: "Is there a minimum for delivery services?",
-      a: "A minimum order subtotal of $1000 (before tax) is required for delivery services."
+      a: "Our minimum purchase price is $1000 (before taxes)."
     },
     {
       q: "What are your labor and delivery charges?",
