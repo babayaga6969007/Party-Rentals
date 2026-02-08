@@ -1042,35 +1042,46 @@ if (isEditMode) {
     <div>
       <label>Price Per Day</label>
       <input
-        type="number"
-        className="w-full p-3 border border-gray-400 rounded-lg"
-        value={pricePerDay}
-        onChange={(e) => setPricePerDay(e.target.value)}
-        required
-      />
+  type="text"
+  inputMode="numeric"
+  pattern="[0-9]*"
+  className="w-full p-3 border border-gray-400 rounded-lg"
+  value={pricePerDay}
+  onChange={(e) => setPricePerDay(e.target.value.replace(/\D/g, ""))}
+  required
+/>
+
     </div>
 
     <div>
       <label>Sale Price</label>
       <input
-        type="number"
-        className="w-full p-3 border border-gray-400 rounded-lg"
-        value={salePrice}
-        onChange={(e) => setSalePrice(e.target.value)}
-        placeholder="Optional discounted price"
-        min="0"
-      />
+  type="text"
+  inputMode="numeric"
+  pattern="[0-9]*"
+  className="w-full p-3 border border-gray-400 rounded-lg"
+  value={salePrice}
+  onChange={(e) => setSalePrice(e.target.value.replace(/\D/g, ""))}
+  placeholder="Optional discounted price"
+/>
+
     </div>
 
     <div>
       <label>Stock / Availability</label>
       <input
-        type="number"
-        className="w-full p-3 border border-gray-400 rounded-lg"
-        value={availabilityCount}
-        onChange={(e) => setAvailabilityCount(e.target.value)}
-        min="1"
-      />
+  type="text"
+  inputMode="numeric"
+  pattern="[0-9]*"
+  className="w-full p-3 border border-gray-400 rounded-lg"
+  value={availabilityCount}
+  onChange={(e) =>
+    setAvailabilityCount(
+      Math.max(1, Number(e.target.value.replace(/\D/g, "")) || 1)
+    )
+  }
+/>
+
     </div>
 
     {productType === "rental" && (
