@@ -79,10 +79,34 @@ exports.createCategory = async (req, res) => {
 ========================= */
 exports.updateCategory = async (req, res) => {
   try {
-    const updateData = { ...req.body };
+    const category = await Category.findById(req.params.id);
 
-    // If a new image is uploaded, upload to Cloudinary
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    const updateData = {
+      name: req.body.name ?? category.name,
+      type: req.body.type ?? category.type,
+    };
+
+    // If a new image is uploaded
     if (req.file?.path) {
+      //  DELETE OLD IMAGE FROM CLOUDINARY
+      if (category.image) {
+        try {
+          const parts = category.image.split("/");
+          const fileName = parts[parts.length - 1].split(".")[0];
+          const folder = "party-rentals/categories";
+          const publicId = `${folder}/${fileName}`;
+
+          await cloudinary.v2.uploader.destroy(publicId);
+        } catch (err) {
+          console.log("Cloudinary old image delete failed:", err.message);
+        }
+      }
+
+      // 🟢 UPLOAD NEW IMAGE
       const result = await cloudinary.v2.uploader.upload(req.file.path, {
         folder: "party-rentals/categories",
         resource_type: "image",
@@ -98,13 +122,11 @@ exports.updateCategory = async (req, res) => {
       updateData.image = result.secure_url;
     }
 
-    const updated = await Category.findByIdAndUpdate(req.params.id, updateData, {
-      new: true,
-    });
-
-    if (!updated) {
-      return res.status(404).json({ message: "Category not found" });
-    }
+    const updated = await Category.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
 
     return res.json(updated);
   } catch (err) {

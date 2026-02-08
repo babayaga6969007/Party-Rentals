@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { api } from "../../utils/api";
-import toast from "react-hot-toast";
 import AddToCartModal from "../../components/cart/AddToCartModal";
 import ShippingRatesModal from "../../components/ShippingRatesModal";
 import PricingChartModal from "../../components/PricingChartModal";
@@ -104,7 +103,6 @@ const getLowestPriceVariation = (variations = []) => {
   const [shelvingSize, setShelvingSize] = useState(""); // For Tier A
   const [shelvingQuantity, setShelvingQuantity] = useState(1); // 1-8 for A/B, 1 for C
   const [shelvingError, setShelvingError] = useState("");
-  const [customTitleText, setCustomTitleText] = useState(""); // e.g. telephone booth title
 
   const handleGoToCart = () => {
     setOpenModal(false);   // close modal
@@ -214,11 +212,8 @@ useEffect(() => {
 
 
 
-  // For variable rental, show selected variation's description when set, else product description
   const fullDescription =
-    isVariableRental && selectedVariation?.description?.trim()
-      ? selectedVariation.description.trim()
-      : (product?.description || "No description available.");
+    product?.description || "No description available.";
 
 
 
@@ -398,7 +393,6 @@ const attributeGroupsForUI =
     .map((a) => ({
       groupId: String(a.groupId._id),
       name: a.groupId.name,
-      type: a.groupId.type,
       options: (a.groupId.options || []).filter((opt) =>
         (a.optionIds || []).some((oid) => String(oid) === String(opt._id))
       ),
@@ -459,81 +453,26 @@ const attributeGroupsForUI =
     };
   });
 
-const [allAttributes, setAllAttributes] = useState([]);
-useEffect(() => {
-  const fetchAttributes = async () => {
-    try {
-     const res = await api("/admin/attributes");
-const data = res?.data ?? res; 
-setAllAttributes(Array.isArray(data) ? data : []);
-
-    } catch (err) {
-      console.error("Failed to load attributes", err);
-    }
-  };
-
-  fetchAttributes();
-}, []);
-const addonOptionMap = useMemo(() => {
-  const map = {};
-
-allAttributes.forEach((group) => {
-  (group?.options || []).forEach((opt) => {
-    map[String(opt._id)] = opt;
-  });
-});
-
-
-  return map;
-}, [allAttributes]);
-
-
 
 
   // ====================
   // ADD-ONS (safe even when product is null during loading)
-const renderedAddons =
-  product?.addons
-    ?.map((a) => {
-const normalizedOptionId =
-  typeof a.optionId === "string"
-    ? a.optionId
-    : a.optionId?._id
-    ? String(a.optionId._id)
-    : null;
-
-if (!normalizedOptionId) return null;
-
-const opt = addonOptionMap[normalizedOptionId];
-if (!opt) return null;
-      if (!opt) return null;
-
-      return {
-  optionId: normalizedOptionId,
-        name: opt.label,
+  // ====================
+  const renderedAddons =
+    product?.addons
+      ?.filter((a) => a.option)
+      .map((a) => ({
+        optionId: String(a.optionId),
+        name: a.option.label,
         finalPrice:
           a.overridePrice !== null && a.overridePrice !== undefined
             ? a.overridePrice
-            : opt.priceDelta || 0,
-        tier: opt.tier,
-      };
-    })
-    .filter(Boolean) || [];
+            : a.option.priceDelta || 0,
+        tier: a.option.tier, // Include tier for shelving addons
+      })) || [];
 
   // helper: normalize strings for matching
   const normalize = (s = "") => s.toLowerCase().trim();
-
-  // Client-facing: only one shelving addon (one tier). If product has multiple shelving options, show only the first.
-  const isShelvingLike = (a) => {
-    const n = normalize(a.name);
-    return n === "shelving" || n.includes("shelving");
-  };
-  const addonsForDisplay =
-    renderedAddons?.filter((a, i, arr) => {
-      if (!isShelvingLike(a)) return true;
-      const firstShelvingIndex = arr.findIndex(isShelvingLike);
-      return i === firstShelvingIndex;
-    }) ?? [];
 
   // find signage addon from renderedAddons (if exists for this product)
   const signageAddon = renderedAddons.find((a) => {
@@ -595,17 +534,8 @@ const isPedestalSelected = pedestalOptionId
   : false;
 const pedestalItems =
   pedestalOptionId && Array.isArray(product?.addons)
-    ? (product.addons.find((a) => {
-        const oid =
-          typeof a.optionId === "string"
-            ? a.optionId
-            : a.optionId?._id
-            ? String(a.optionId._id)
-            : "";
-        return oid === String(pedestalOptionId);
-      })?.pedestals || [])
+    ? (product.addons.find((a) => String(a.optionId) === String(pedestalOptionId))?.pedestals || [])
     : [];
-
 
   // Shelving config state
   const [shelvingConfig, setShelvingConfig] = useState(null);
@@ -698,20 +628,8 @@ const pedestalItems =
     if (shelvingOptionId && renderedAddons.length > 0) {
       const newTier = renderedAddons.find(a => a.optionId === shelvingOptionId)?.tier || "A";
       setShelvingTier(newTier);
-      if (newTier !== "A") {
-        setShelvingSize("yes");
-        setShelvingQuantity(1);
-      }
     }
   }, [shelvingOptionId, renderedAddons]);
-
-  // Default Tier A size when shelving selected so price displays (Tier A needs a size)
-  useEffect(() => {
-    if (isShelvingSelected && shelvingTier === "A" && !shelvingSize && shelvingTierAOptions?.[0]?.size) {
-      setShelvingSize(shelvingTierAOptions[0].size);
-      setShelvingQuantity(1);
-    }
-  }, [isShelvingSelected, shelvingTier, shelvingSize, shelvingTierAOptions]);
 
   // Clear shelving selections when shelving addon gets deselected
   useEffect(() => {
@@ -802,11 +720,12 @@ if (addon.optionId === pedestalOptionId) {
 }
 
       } else {
-        next[addon.optionId] = {
-          name: addon.name,
-          price: addon.optionId === pedestalOptionId ? 0 : addon.finalPrice,
-          realOptionId: addon.realOptionId ?? addon.optionId,
-        };
+    // select
+next[addon.optionId] = {
+  name: addon.name,
+  price: addon.optionId === pedestalOptionId ? 0 : addon.finalPrice, // pedestal price comes from dropdown
+};
+
       }
 
       return next;
@@ -1073,22 +992,6 @@ if (addon.optionId === pedestalOptionId) {
 
           </div>
 
-          {/* Custom title — when product allows it */}
-          {product?.allowCustomTitle && (
-            <div className="mt-4">
-              <label className="block font-medium text-lg mb-2 text-[#2D2926]">
-                Custom title
-              </label>
-              <input
-                type="text"
-                value={customTitleText}
-                onChange={(e) => setCustomTitleText(e.target.value)}
-                placeholder="e.g. Mr & Mrs, Smith Wedding"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-[#2D2926] focus:ring-2 focus:ring-black focus:border-transparent"
-                maxLength={80}
-              />
-            </div>
-          )}
 
           {/* PRODUCT ATTRIBUTES */}
 
@@ -1100,9 +1003,7 @@ if (addon.optionId === pedestalOptionId) {
 </h3>
 
 
-              {attributeGroupsForUI.map((g) => {
-                const isPaint = g.type === "paint";
-                return (
+              {attributeGroupsForUI.map((g) => (
                 <div key={g.groupId} className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {g.name}
@@ -1111,47 +1012,38 @@ if (addon.optionId === pedestalOptionId) {
                   <div className="flex flex-wrap gap-2">
                     {g.options.map((opt) => {
                       const selected = selectedVarOptions[g.groupId] === String(opt._id);
-                      const paintSrc = opt.imageUrl || (opt.value ? `/paint/${opt.value}` : null);
 
                       return (
                         <button
-                          key={String(opt._id)}
-                          type="button"
-                          disabled={!isRental}
-                          onClick={() => {
-                            if (!isRental) return;
-                            setSelectedVarOptions((prev) => ({
-                              ...prev,
-                              [g.groupId]: String(opt._id),
-                            }));
-                          }}
-                          className={`rounded-xl border text-sm transition
-                            ${selected
-                              ? "border-black bg-black text-white ring-2 ring-black ring-offset-1"
-                              : "border-gray-300 bg-white hover:bg-gray-50"
-                            }
-                            ${!isRental ? "cursor-not-allowed opacity-60" : ""}
-                            ${isPaint ? "flex flex-col items-center gap-1.5 p-2" : "flex items-center gap-2 px-4 py-2"}
-                          `}
-                          title={opt.label}
-                        >
-                          {isPaint && paintSrc ? (
-                            <>
-                              <span className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 flex shrink-0">
-                                <img src={paintSrc} alt="" className="w-full h-full object-cover" />
-                              </span>
-                              <span className="text-xs font-medium text-center">{opt.label}</span>
-                            </>
-                          ) : (
-                            opt.label
-                          )}
-                        </button>
+  key={String(opt._id)}
+  type="button"
+  disabled={!isRental}
+  onClick={() => {
+    if (!isRental) return;
+
+    setSelectedVarOptions((prev) => ({
+      ...prev,
+      [g.groupId]: String(opt._id),
+    }));
+  }}
+  className={`px-4 py-2 rounded-lg border text-sm transition
+    ${
+      selected
+        ? "border-black bg-black text-white"
+        : "border-gray-300 bg-white hover:bg-gray-50"
+    }
+    ${!isRental ? "cursor-not-allowed opacity-60" : ""}
+  `}
+>
+  {opt.label}
+</button>
+
+
                       );
                     })}
                   </div>
                 </div>
-              );
-              })}
+              ))}
 
              {isVariableRental && !selectedVariation && (
               <p className="text-sm text-red-600">
@@ -1179,7 +1071,7 @@ if (addon.optionId === pedestalOptionId) {
               <div className="space-y-3">
 
 
-                {addonsForDisplay.map((addon) => {
+                {renderedAddons.map((addon) => {
                   const selected = !!selectedAddons[addon.optionId];
                   const isSignage = addon.optionId === signageOptionId;
                   const isShelving = addon.optionId === shelvingOptionId;
@@ -1323,81 +1215,127 @@ if (addon.optionId === pedestalOptionId) {
     )}
   </div>
 )}
-              {/* Shelving: single tier from product addon (no tier selector on client) */}
+              {/* Shelving Configuration (only if shelving addon is selected) */}
               {shelvingOptionId && isShelvingSelected && (
                 <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <h4 className="font-semibold text-[#2D2926] mb-3">
-                    Shelving{shelvingTier ? ` (Tier ${shelvingTier})` : ""}
-                  </h4>
+                  <h4 className="font-semibold text-[#2D2926] mb-3">Shelving</h4>
 
-                  {/* Tier A: size dropdown when sizes available */}
-                  {shelvingTier === "A" && shelvingTierAOptions.length > 0 && (
+                  {/* Simplified: Shelves Select Option */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Add Shelving?
+                    </label>
+                    <select
+                      value={shelvingSize || ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setShelvingSize(value);
+                        if (value === "no") {
+                          setShelvingQuantity(0);
+                        } else if (value === "yes") {
+                          // Auto-set quantity based on tier
+                          const maxQty = shelvingTier === "C" ? 1 : 1; // Start with 1, user can adjust
+                          setShelvingQuantity(maxQty);
+                        }
+                        setShelvingError("");
+                      }}
+                      className="w-full p-2 border rounded-lg"
+                    >
+                      <option value="">Select</option>
+                      <option value="yes">Yes</option>
+                      <option value="no">No</option>
+                    </select>
+                  </div>
+
+                  {/* Size Selection (only for Tier A, after selecting Yes) */}
+                  {shelvingTier === "A" && shelvingSize === "yes" && (
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Size</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Select Size
+                      </label>
                       <select
-                        value={shelvingSize || ""}
+                        value={shelvingSize === "yes" ? "" : shelvingSize}
                         onChange={(e) => {
                           setShelvingSize(e.target.value);
                           setShelvingError("");
                         }}
-                        className="w-full p-2 border border-gray-300 rounded-lg bg-white"
+                        className="w-full p-2 border rounded-lg"
                       >
                         <option value="">Select a size</option>
                         {shelvingTierAOptions.map((opt) => (
                           <option key={opt.size} value={opt.size}>
-                            {opt.size} — {opt.dimensions} (${opt.price}/shelf)
+                            {opt.size} - {opt.dimensions} (${opt.price}/shelf)
                           </option>
                         ))}
                       </select>
                     </div>
                   )}
 
-                  {/* Quantity: Tier A (1–8), Tier B (1–8), Tier C fixed at 1 */}
-                  {shelvingTier && (shelvingTier === "C" || (shelvingTier === "A" && shelvingSize) || (shelvingTier === "B" && shelvingSize === "yes")) && (
+                  {/* Preview Option - Show selected configuration */}
+                  {((shelvingTier === "A" && shelvingSize && shelvingSize !== "yes" && shelvingSize !== "no") || 
+                    (shelvingTier !== "A" && shelvingSize === "yes")) && (
+                    <div className="mb-4 p-3 bg-white rounded-lg border">
+                      <p className="text-xs text-gray-600">
+                        {shelvingTier === "A" && (
+                          <>Size: {shelvingSize} - {shelvingTierAOptions.find(opt => opt.size === shelvingSize)?.dimensions}</>
+                        )}
+                        {shelvingTier === "B" && (
+                          <>Dimensions: {shelvingConfig?.tierB?.dimensions || "43\" wide x 11.5\" deep x 1.5\" thick"}</>
+                        )}
+                        {shelvingTier === "C" && (
+                          <>Dimensions: {shelvingConfig?.tierC?.dimensions || "75\" wide x 25\" deep x 1.5\" thick"} (Max 1 shelf)</>
+                        )}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Quantity Selection */}
+                  {((shelvingTier === "A" && shelvingSize && shelvingSize !== "yes" && shelvingSize !== "no") || 
+                    (shelvingTier !== "A" && shelvingSize === "yes")) && (
                     <div className="mb-4">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Quantity {shelvingTier === "C" ? "(max 1)" : "(max 8)"}
+                        Quantity {shelvingTier === "C" ? "(Max 1)" : `(Max ${shelvingTier === "A" ? 8 : 8})`}
                       </label>
                       <input
                         type="number"
                         min="1"
-                        max={shelvingTier === "C" ? 1 : 8}
+                        max={shelvingTier === "C" ? 1 : shelvingTier === "A" ? 8 : 8}
                         value={shelvingQuantity}
                         onChange={(e) => {
-                          const qty = parseInt(e.target.value, 10) || 1;
-                          const max = shelvingTier === "C" ? 1 : 8;
+                          const qty = parseInt(e.target.value) || 1;
+                          const max = shelvingTier === "C" ? 1 : shelvingTier === "A" ? 8 : 8;
                           setShelvingQuantity(Math.min(Math.max(1, qty), max));
                           setShelvingError("");
                         }}
-                        className="w-full p-2 border border-gray-300 rounded-lg"
+                        className="w-full p-2 border rounded-lg"
                       />
                     </div>
                   )}
 
-                  {/* Info for selected tier */}
-                  {shelvingTier && (
-                    <div className="mb-4 p-3 bg-white rounded-lg border border-gray-200 text-sm text-gray-600">
-                      {shelvingTier === "A" && shelvingSize && (
-                        <>Selected: {shelvingTierAOptions.find(o => o.size === shelvingSize)?.dimensions ?? shelvingSize} — ${shelvingTierAOptions.find(o => o.size === shelvingSize)?.price ?? 0}/shelf</>
-                      )}
-                      {shelvingTier === "B" && (
-                        <>{shelvingConfig?.tierB?.dimensions || "43\" wide x 11.5\" deep x 1.5\" thick"} — ${shelvingConfig?.tierB?.price ?? 29}/shelf</>
-                      )}
-                      {shelvingTier === "C" && (
-                        <>{shelvingConfig?.tierC?.dimensions || "75\" wide x 25\" deep x 1.5\" thick"} — ${shelvingConfig?.tierC?.price ?? 50}/shelf (max 1)</>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Price */}
-                  {shelvingTier && calculateShelvingPrice(shelvingTier, shelvingSize, shelvingQuantity, true) > 0 && (
-                    <div className="p-3 bg-white rounded-lg border border-black">
+                  {/* Price Display */}
+                  {calculateShelvingPrice(shelvingTier, shelvingSize, shelvingQuantity, isShelvingSelected) > 0 && (
+                    <div className="mt-4 p-3 bg-white rounded-lg border border-black">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-gray-700">Shelving</span>
+                        <span className="text-sm font-medium text-gray-700">Shelving Total:</span>
                         <span className="text-lg font-bold text-black">
-                          $ {calculateShelvingPrice(shelvingTier, shelvingSize, shelvingQuantity, true)}
+                          ${calculateShelvingPrice(shelvingTier, shelvingSize, shelvingQuantity, isShelvingSelected)}
                         </span>
                       </div>
+                      {shelvingTier === "A" && shelvingSize && shelvingSize !== "yes" && shelvingSize !== "no" && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {shelvingQuantity} shelf(s) × ${shelvingTierAOptions.find(opt => opt.size === shelvingSize)?.price}/shelf
+                        </p>
+                      )}
+                      {shelvingTier === "B" && shelvingSize === "yes" && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {shelvingQuantity} shelf(s) × ${shelvingConfig?.tierB?.price || 29}/shelf
+                        </p>
+                      )}
+                      {shelvingTier === "C" && shelvingSize === "yes" && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {shelvingQuantity} shelf(s) × ${shelvingConfig?.tierC?.price || 50}/shelf
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -1562,11 +1500,6 @@ if (addon.optionId === pedestalOptionId) {
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              if (file.size > 3 * 1024 * 1024) {
-                                toast.error("Image is too large. Maximum size is 3MB per image.");
-                                e.target.value = "";
-                                return;
-                              }
                               setVinylImageFile(file);
                               setVinylImagePreview(URL.createObjectURL(file));
                               setVinylImageUrl("");
@@ -1827,10 +1760,8 @@ if (addon.optionId === pedestalOptionId) {
                 startDate,
                 endDate,
 
-                customTitle: product.allowCustomTitle ? (customTitleText || "").trim() : "",
-
                 addons: Object.entries(selectedAddons).map(([optionId, a]) => ({
-  optionId: a.realOptionId ?? optionId,
+  optionId,
   name: a.name,
   price: a.price,
 
@@ -1976,8 +1907,6 @@ if (addon.optionId === pedestalOptionId) {
             <div className="bg-white p-5 rounded-xl shadow">
               <a
                 href="/contract"
-                target="_blank"
-                rel="noopener noreferrer"
                 className="font-semibold text-lg text-black underline hover:text-gray-800"
               >
                 Terms & Conditions

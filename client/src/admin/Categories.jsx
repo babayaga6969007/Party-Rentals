@@ -18,6 +18,8 @@ const [preview, setPreview] = useState("");
   // Edit category
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState("");
+const [editingImage, setEditingImage] = useState(null);
+const [editingPreview, setEditingPreview] = useState("");
 
   /* =========================
      FETCH CATEGORIES
@@ -110,25 +112,31 @@ setPreview("");
     try {
       const token = localStorage.getItem("admin_token");
 
-      const res = await api(`/categories/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: editingName.trim(),
-        }),
-      });
+   const fd = new FormData();
+fd.append("name", editingName.trim());
+
+if (editingImage) {
+  fd.append("image", editingImage); // MUST match multer field name
+}
+
+const res = await api(`/categories/${id}`, {
+  method: "PUT",
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+  body: fd,
+});
 
       const updated = res?.data ?? res;
 
       setCategories((prev) =>
         prev.map((c) => (c._id === id ? updated : c))
       );
+setEditingId(null);
+setEditingName("");
+setEditingImage(null);
+setEditingPreview("");
 
-      setEditingId(null);
-      setEditingName("");
     } catch (err) {
       console.error(err);
       alert("Failed to update category");
@@ -245,30 +253,81 @@ setPreview("");
 
                   <td className="p-4 capitalize">{cat.type}</td>
 <td className="p-4">
-  
+  {editingId === cat._id ? (
+    <div className="flex flex-col gap-2">
+      <img
+        src={editingPreview || cat.image}
+        alt={cat.name}
+        className="w-12 h-12 rounded-lg object-cover border"
+      />
 
-  <img
-  src={cat.image || "https://via.placeholder.com/48"}
-  alt={cat.name}
-  className="w-12 h-12 rounded-lg object-cover border"
-/>
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
 
+          if (file.size > 3 * 1024 * 1024) {
+            toast.error("Image must be under 3MB");
+            e.target.value = "";
+            return;
+          }
+
+          setEditingImage(file);
+          setEditingPreview(URL.createObjectURL(file));
+        }}
+        className="text-sm"
+      />
+    </div>
+  ) : (
+    <img
+      src={cat.image || "https://via.placeholder.com/48"}
+      alt={cat.name}
+      className="w-12 h-12 rounded-lg object-cover border"
+    />
+  )}
 </td>
 
                   <td className="p-4 text-right flex justify-end gap-4">
-                    <button
-                      onClick={() => {
-                        if (editingId === cat._id) {
-                          updateCategory(cat._id);
-                        } else {
-                          setEditingId(cat._id);
-                          setEditingName(cat.name);
-                        }
-                      }}
-                      className="text-black hover:opacity-70"
-                    >
-                      <FiEdit2 />
-                    </button>
+                    {editingId === cat._id ? (
+  <>
+    <button
+      onClick={() => updateCategory(cat._id)}
+      className="text-green-600 hover:opacity-70"
+      title="Save"
+    >
+      ✔
+    </button>
+
+    <button
+      onClick={() => {
+        setEditingId(null);
+        setEditingName("");
+        setEditingImage(null);
+        setEditingPreview("");
+      }}
+      className="text-gray-500 hover:opacity-70"
+      title="Cancel"
+    >
+      ✖
+    </button>
+  </>
+) : (
+  <button
+    onClick={() => {
+      setEditingId(cat._id);
+      setEditingName(cat.name);
+      setEditingImage(null);
+      setEditingPreview("");
+    }}
+    className="text-black hover:opacity-70"
+    title="Edit"
+  >
+    <FiEdit2 />
+  </button>
+)}
+
 
                     <button
                       onClick={() => deleteCategory(cat._id)}
