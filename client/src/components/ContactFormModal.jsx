@@ -67,13 +67,14 @@ const ContactFormModal = () => {
             <h3 className="text-xl font-semibold">The Details</h3>
             <p className="text-sm text-gray-600">Do you have a budget range in mind?</p>
             <div className="space-y-2 text-sm">
-              {["Under $1,000", "$1,000–$2,500", "$2,500–$5,000", "$5,000+", "I'm not sure yet"].map((item) => (
-                <label key={item} className="flex items-center gap-2">
-                  <input type="checkbox" />
-                  {item}
-                </label>
-              ))}
-            </div>
+  {["Under $1,000", "$1,000–$2,500", "$2,500–$5,000", "$5,000+", "I'm not sure yet"].map((item) => (
+    <label key={item} className="flex items-center gap-2 cursor-pointer">
+      <input type="radio" name="budget" />
+      {item}
+    </label>
+  ))}
+</div>
+
             <p className="text-sm text-gray-600">Please check all that apply:</p>
             <div className="flex flex-col gap-2 text-sm">
               {["Roof top event", "Outdoor", "Indoor"].map((item) => (
