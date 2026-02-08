@@ -105,6 +105,9 @@ const getLowestPriceVariation = (variations = []) => {
   const [shelvingQuantity, setShelvingQuantity] = useState(1); // 1-8 for A/B, 1 for C
   const [shelvingError, setShelvingError] = useState("");
   const [customTitleText, setCustomTitleText] = useState(""); // e.g. telephone booth title
+// ===== PAINT COLOR (ATTRIBUTE-LEVEL CUSTOM HEX) =====
+const [paintCustomHex, setPaintCustomHex] = useState("");
+const [paintCustomActive, setPaintCustomActive] = useState(false);
 
   const handleGoToCart = () => {
     setOpenModal(false);   // close modal
@@ -1101,7 +1104,9 @@ if (addon.optionId === pedestalOptionId) {
 
 
               {attributeGroupsForUI.map((g) => {
-                const isPaint = g.type === "paint";
+const isPaint =
+  g.type === "paint" ||
+  g.name?.toLowerCase() === "paint color";
                 return (
                 <div key={g.groupId} className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1118,13 +1123,21 @@ if (addon.optionId === pedestalOptionId) {
                           key={String(opt._id)}
                           type="button"
                           disabled={!isRental}
-                          onClick={() => {
-                            if (!isRental) return;
-                            setSelectedVarOptions((prev) => ({
-                              ...prev,
-                              [g.groupId]: String(opt._id),
-                            }));
-                          }}
+                         onClick={() => {
+  if (!isRental) return;
+
+  setSelectedVarOptions((prev) => ({
+    ...prev,
+    [g.groupId]: String(opt._id),
+  }));
+
+  // reset custom paint input when color changes
+  if (isPaint) {
+    setPaintCustomActive(false);
+    setPaintCustomHex("");
+  }
+}}
+
                           className={`rounded-xl border text-sm transition
                             ${selected
                               ? "border-black bg-black text-white ring-2 ring-black ring-offset-1"
@@ -1149,6 +1162,47 @@ if (addon.optionId === pedestalOptionId) {
                       );
                     })}
                   </div>
+                  {/* 🎨 Custom Paint Color (only for Paint Color attribute) */}
+{isPaint && selectedVarOptions[g.groupId] && (
+  <div className="mt-3 ml-1">
+    <button
+      type="button"
+      onClick={() => {
+        setPaintCustomActive(true);
+        
+      }}
+      className="text-sm font-medium text-black underline hover:text-gray-700"
+    >
+      Custom
+    </button>
+
+    {paintCustomActive && (
+      <div className="mt-2">
+        <input
+          type="text"
+          value={paintCustomHex}
+          onChange={(e) => setPaintCustomHex(e.target.value)}
+          placeholder="Enter HEX code (e.g. #FF5733)"
+          className="w-full max-w-xs p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-black focus:border-transparent"
+        />
+        <p className="mt-1 text-xs text-gray-500">
+  Visit{" "}
+  <a
+    href="https://www.behr.com/consumer"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-black underline hover:text-gray-700"
+  >
+    here
+  </a>{" "}
+  for reference.
+</p>
+
+      </div>
+    )}
+  </div>
+)}
+
                 </div>
               );
               })}
@@ -1816,7 +1870,7 @@ if (addon.optionId === pedestalOptionId) {
               }
 
               const rentalCartItem = {
-                // 🔑 cart-compatible payload
+                //  cart-compatible payload
                 productId: product._id,
                 name: product.title,
                 productType: "rental",
@@ -1826,7 +1880,10 @@ if (addon.optionId === pedestalOptionId) {
                 days: totalRentalDays,
                 startDate,
                 endDate,
-
+                paintCustomHex:
+                  paintCustomActive && paintCustomHex
+                    ? paintCustomHex.trim()
+                    : "",
                 customTitle: product.allowCustomTitle ? (customTitleText || "").trim() : "",
 
                 addons: Object.entries(selectedAddons).map(([optionId, a]) => ({
