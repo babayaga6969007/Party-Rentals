@@ -162,12 +162,50 @@ const AppRoutes = () => {
           />
 
           
-          <Route path="/admin/dashboard" element={<Dashboard />} />
-          <Route path="/admin/categories" element={<Categories />} />
-          <Route path="/admin/attributes" element={<Attributes />} />
-          <Route path="/admin/orders/active" element={<ActiveRentals />} />
-          <Route path="/admin/orders/completed" element={<CompletedOrders />} />
-           <Route path="/admin/inventoy" element={<Inventory />} />
+        <Route
+  path="/admin/categories"
+  element={
+    <ProtectedAdminRoute>
+      <Categories />
+    </ProtectedAdminRoute>
+  }
+/>
+
+<Route
+  path="/admin/attributes"
+  element={
+    <ProtectedAdminRoute>
+      <Attributes />
+    </ProtectedAdminRoute>
+  }
+/>
+
+<Route
+  path="/admin/orders/active"
+  element={
+    <ProtectedAdminRoute>
+      <ActiveRentals />
+    </ProtectedAdminRoute>
+  }
+/>
+
+<Route
+  path="/admin/orders/completed"
+  element={
+    <ProtectedAdminRoute>
+      <CompletedOrders />
+    </ProtectedAdminRoute>
+  }
+/>
+
+<Route
+  path="/admin/inventory"
+  element={
+    <ProtectedAdminRoute>
+      <Inventory />
+    </ProtectedAdminRoute>
+  }
+/>
          
 <Route
   path="/admin/products/edit/:id"
@@ -178,19 +216,22 @@ const AppRoutes = () => {
   }
 />
 
-          <Route
+         <Route
   path="/admin/AvailabilityCalendar"
-  element={<AvailabilityCalendar />}
+  element={
+    <ProtectedAdminRoute>
+      <AvailabilityCalendar />
+    </ProtectedAdminRoute>
+  }
 />
-<Route path="/admin/reports/sales" element={<SalesReports />} />
-<Route path="/admin/inventory" element={<Inventory />} />
-
-
-
-
-
-
-
+<Route
+  path="/admin/reports/sales"
+  element={
+    <ProtectedAdminRoute>
+      <SalesReports />
+    </ProtectedAdminRoute>
+  }
+/>
 
         </Routes>
       </Layout>
