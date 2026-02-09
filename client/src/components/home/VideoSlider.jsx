@@ -118,6 +118,13 @@ const handleTouchEnd = (e) => {
               transform: `translateX(-${index * cardWidth}px)`,
             }}
           >
+            {/* MOBILE SWIPE ARROW (ONE TIME ONLY) */}
+<div className="md:hidden absolute right-4 top-1/2 -translate-y-1/2 z-30 pointer-events-none">
+  <div className="w-8 h-8 rounded-full bg-[#C8A45D]/90 flex items-center justify-center shadow-md animate-pulse">
+    <FiChevronRight className="text-white" size={18} />
+  </div>
+</div>
+
             {videos.map((video, i) => (
              <div
   key={i}
@@ -133,12 +140,6 @@ const handleTouchEnd = (e) => {
     bg-white
   "
 >
-{/* Mobile swipe hint arrow */}
-<div className="md:hidden absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-  <div className="w-8 h-8 rounded-full bg-[#C8A45D]/90 flex items-center justify-center shadow-md animate-pulse">
-    <FiChevronRight className="text-white" size={18} />
-  </div>
-</div>
 
                 <a
                   href={instaLinks[i % instaLinks.length]}
@@ -158,6 +159,7 @@ const handleTouchEnd = (e) => {
             ))}
           </div>
         </div>
+
 
         {/* Right arrow – outside, no overlap */}
         <button
