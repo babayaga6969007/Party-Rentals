@@ -1,0 +1,9 @@
+export { default as ProductTypeSection } from "./ProductTypeSection";
+export { default as BasicInfoSection } from "./BasicInfoSection";
+export { default as VariationsSection } from "./VariationsSection";
+export { default as PricingSection } from "./PricingSection";
+export { default as AttributesSection } from "./AttributesSection";
+export { default as DimensionsSection } from "./DimensionsSection";
+export { default as DescriptionSection } from "./DescriptionSection";
+export { default as ImagesSection } from "./ImagesSection";
+export { default as SubmitSection } from "./SubmitSection";

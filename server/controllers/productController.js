@@ -46,6 +46,33 @@ addons = (addons || []).map((a) => {
     addonData.shelvingSize = a.shelvingSize != null ? String(a.shelvingSize) : "";
     addonData.shelvingQuantity = Math.max(0, Number(a.shelvingQuantity)) || 1;
   }
+  // Per-product shelving price overrides
+  if (a.shelvingPriceOverrides && typeof a.shelvingPriceOverrides === "object") {
+    const o = a.shelvingPriceOverrides;
+    addonData.shelvingPriceOverrides = {};
+    if (o.tierA && Array.isArray(o.tierA.sizes) && o.tierA.sizes.length > 0) {
+      addonData.shelvingPriceOverrides.tierA = {
+        sizes: o.tierA.sizes
+          .filter((s) => s && (s.size || s.price != null))
+          .map((s) => ({
+            size: String(s.size || "").trim(),
+            dimensions: String(s.dimensions || "").trim(),
+            price: Number(s.price) >= 0 ? Number(s.price) : 0,
+          })),
+      };
+    }
+    if (o.tierB != null && Number(o.tierB?.price) >= 0) {
+      addonData.shelvingPriceOverrides.tierB = { price: Number(o.tierB.price) };
+    }
+    if (o.tierC != null && Number(o.tierC?.price) >= 0) {
+      addonData.shelvingPriceOverrides.tierC = { price: Number(o.tierC.price) };
+    }
+    if (
+      Object.keys(addonData.shelvingPriceOverrides).length === 0
+    ) {
+      delete addonData.shelvingPriceOverrides;
+    }
+  }
 
   // Pedestals
   if (Array.isArray(a.pedestals)) {
@@ -410,6 +437,31 @@ if (updates.productSubType !== "variable") {
     addonData.shelvingTier = String(a.shelvingTier);
     addonData.shelvingSize = a.shelvingSize != null ? String(a.shelvingSize) : "";
     addonData.shelvingQuantity = Math.max(0, Number(a.shelvingQuantity)) || 1;
+  }
+  // Per-product shelving price overrides (edit)
+  if (a.shelvingPriceOverrides && typeof a.shelvingPriceOverrides === "object") {
+    const o = a.shelvingPriceOverrides;
+    addonData.shelvingPriceOverrides = {};
+    if (o.tierA && Array.isArray(o.tierA.sizes) && o.tierA.sizes.length > 0) {
+      addonData.shelvingPriceOverrides.tierA = {
+        sizes: o.tierA.sizes
+          .filter((s) => s && (s.size || s.price != null))
+          .map((s) => ({
+            size: String(s.size || "").trim(),
+            dimensions: String(s.dimensions || "").trim(),
+            price: Number(s.price) >= 0 ? Number(s.price) : 0,
+          })),
+      };
+    }
+    if (o.tierB != null && Number(o.tierB?.price) >= 0) {
+      addonData.shelvingPriceOverrides.tierB = { price: Number(o.tierB.price) };
+    }
+    if (o.tierC != null && Number(o.tierC?.price) >= 0) {
+      addonData.shelvingPriceOverrides.tierC = { price: Number(o.tierC.price) };
+    }
+    if (Object.keys(addonData.shelvingPriceOverrides).length === 0) {
+      delete addonData.shelvingPriceOverrides;
+    }
   }
 
   // Pedestals
