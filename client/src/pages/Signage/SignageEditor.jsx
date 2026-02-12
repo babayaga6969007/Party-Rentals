@@ -221,16 +221,18 @@ const SignageEditorContent = () => {
       effectiveTextSize.height,
       (lines.length - 1) * lineHeight + effectiveFontSize
     );
+    const halfH = dynamicHeight / 2;
     const cw = canvasWidth || 600;
     const ch = canvasHeight || 1200;
     const b = getBoardBounds(cw, ch);
-    const minX = b.left;
-    const maxX = b.left + b.width;
-    const minY = b.top;
-    const maxY = b.top + b.height;
-    const clampedX = Math.max(minX, Math.min(newX, maxX));
+    // Upper limit: top of text must not go above this Y, relative to board bottom (450px above bottom)
+    const boardBottom = b.top + b.height;
+    const upperLimitY = boardBottom - 450;
+    const minY = Math.max(b.top + halfH, upperLimitY + halfH);
+    const maxY = b.top + b.height - halfH;
+    // No left/right clamp — text can go full left/right and is clipped by the board overflow
     const clampedY = Math.max(minY, Math.min(newY, maxY));
-    const pos = { x: clampedX, y: clampedY };
+    const pos = { x: newX, y: clampedY };
     dragPositionRef.current = pos;
     setLiveDragPosition(pos);
   };
@@ -250,16 +252,16 @@ const SignageEditorContent = () => {
       effectiveTextSize.height,
       (lines.length - 1) * lineHeight + effectiveFontSize
     );
+    const halfH = dynamicHeight / 2;
     const cw = canvasWidth || 600;
     const ch = canvasHeight || 1200;
     const b = getBoardBounds(cw, ch);
-    const minX = b.left;
-    const maxX = b.left + b.width;
-    const minY = b.top;
-    const maxY = b.top + b.height;
-    const clampedX = Math.max(minX, Math.min(newX, maxX));
+    const boardBottom = b.top + b.height;
+    const upperLimitY = boardBottom - 450;
+    const minY = Math.max(b.top + halfH, upperLimitY + halfH);
+    const maxY = b.top + b.height - halfH;
     const clampedY = Math.max(minY, Math.min(newY, maxY));
-    const pos = { x: clampedX, y: clampedY };
+    const pos = { x: newX, y: clampedY };
     dragPositionRef.current = pos;
     setLiveDragPosition(pos);
   };

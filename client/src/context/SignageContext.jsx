@@ -260,14 +260,19 @@ export const SignageProvider = ({ children }) => {
         ? (textSizes[selectedSize]?.price ?? textSizes.medium?.price ?? 0)
         : 0;
 
-  // Sync text box dimensions when size preset (Small/Medium/Large) or scale changes
+  // Sync text box dimensions: width = 20 inch (from sign dimensions), height from size preset
+  const targetTextWidthInches = 20;
   useEffect(() => {
     const base = textSize
       ? { w: textSize.width * userTextScale, h: textSize.height * userTextScale }
       : { w: 250 * userTextScale, h: 60 * userTextScale };
-    setTextBoxWidth(base.w);
+    const widthPx =
+      canvasWidth > 0 && widthFt > 0
+        ? (targetTextWidthInches * canvasWidth) / (widthFt * 12)
+        : base.w;
+    setTextBoxWidth(widthPx);
     setTextBoxHeight(base.h);
-  }, [selectedSize, userTextScale, textSize?.width, textSize?.height]);
+  }, [selectedSize, userTextScale, textSize?.width, textSize?.height, canvasWidth, widthFt]);
 
   // Memoize functions to prevent rerenders
   const memoizedGetLinePositions = useCallback(() => {

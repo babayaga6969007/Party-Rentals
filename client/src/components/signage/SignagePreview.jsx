@@ -304,13 +304,13 @@ const SignagePreview = forwardRef(({
           </span>
           <div
             className="absolute left-1/2 bottom-0 font-normal tabular-nums text-gray-700 bg-white -translate-x-1/2 translate-y-1/2 border border-gray-400 rounded shadow-sm"
-            style={{ pointerEvents: "none", fontSize: Math.max(10, 10 * scale), padding: `${2 * scale}px ${4 * scale}px` }}
+            style={{ pointerEvents: "none", fontFamily: "system-ui, -apple-system, sans-serif", fontSize: Math.max(10, 10 * scale), padding: `${2 * scale}px ${4 * scale}px` }}
           >
             {widthInches != null ? formatInches(widthInches) : Math.round(textBoxWidth) + " px"}
           </div>
           <div
             className="absolute right-0 top-1/2 font-normal tabular-nums text-gray-700 bg-white -translate-y-1/2 translate-x-1/2 border border-gray-400 rounded shadow-sm whitespace-nowrap"
-            style={{ pointerEvents: "none", fontSize: Math.max(10, 10 * scale), padding: `${2 * scale}px ${4 * scale}px` }}
+            style={{ pointerEvents: "none", fontFamily: "system-ui, -apple-system, sans-serif", fontSize: Math.max(10, 10 * scale), padding: `${2 * scale}px ${4 * scale}px` }}
           >
             {heightInches != null ? formatInches(heightInches) : Math.round(textBoxHeight) + " px"}
           </div>
