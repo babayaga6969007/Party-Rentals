@@ -128,25 +128,36 @@ const [paintCustomActive, setPaintCustomActive] = useState(false);
 
 
   // Convert date to readable format
-  const formatDate = (d) =>
-    new Date(d).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+  const formatDate = (d) => {
+  if (!d) return "";
+
+  const [year, month, day] = d.split("-");
+  const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
+
+  return dateObj.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
 
   // Calculate number of days selected
-  const selectedDays =
-    startDate && endDate
-      ? Math.max(
-        1,
-        Math.ceil(
-          (new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)
-        ) + 1
-      )
-      : startDate
-        ? 1
-        : 0;
+  const calculateDays = (start, end) => {
+  if (!start || !end) return 0;
+
+  const [sy, sm, sd] = start.split("-");
+  const [ey, em, ed] = end.split("-");
+
+  const startObj = new Date(Number(sy), Number(sm) - 1, Number(sd));
+  const endObj = new Date(Number(ey), Number(em) - 1, Number(ed));
+
+  const diff = endObj - startObj;
+
+  return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24)) + 1);
+};
+
+const selectedDays = calculateDays(startDate, endDate);
+
 
 
 
