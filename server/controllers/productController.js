@@ -629,11 +629,12 @@ exports.getSingleProduct = async (req, res) => {
               priceDelta: 0,
               tier: undefined,
             };
-        return {
-          ...a,
-          optionId: attr?._id ?? a.optionId,
-          option,
-        };
+       return {
+  ...a,
+  optionId: rawId,  
+  option,
+};
+
       })
     );
 

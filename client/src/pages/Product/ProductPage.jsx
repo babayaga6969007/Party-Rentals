@@ -462,66 +462,31 @@ const attributeGroupsForUI =
     };
   });
 
-const [allAttributes, setAllAttributes] = useState([]);
-useEffect(() => {
-  const fetchAttributes = async () => {
-    try {
-     const res = await api("/admin/attributes");
-const data = res?.data ?? res; 
-setAllAttributes(Array.isArray(data) ? data : []);
-
-    } catch (err) {
-      console.error("Failed to load attributes", err);
-    }
-  };
-
-  fetchAttributes();
-}, []);
-const addonOptionMap = useMemo(() => {
-  const map = {};
-
-allAttributes.forEach((group) => {
-  (group?.options || []).forEach((opt) => {
-    map[String(opt._id)] = opt;
-  });
-});
-
-
-  return map;
-}, [allAttributes]);
-
-
-
-
   // ====================
   // ADD-ONS (safe even when product is null during loading)
 const renderedAddons =
-  product?.addons
-    ?.map((a) => {
+product?.addons?.map((a) => {
 const normalizedOptionId =
-  typeof a.optionId === "string"
-    ? a.optionId
-    : a.optionId?._id
-    ? String(a.optionId._id)
-    : null;
+typeof a.optionId === "string"
+? a.optionId
+: a.optionId?._id
+? String(a.optionId._id)
+: null;
+
 
 if (!normalizedOptionId) return null;
 
-const opt = addonOptionMap[normalizedOptionId];
-if (!opt) return null;
-      if (!opt) return null;
 
-      return {
-  optionId: normalizedOptionId,
-        name: opt.label,
-        finalPrice:
-          a.overridePrice !== null && a.overridePrice !== undefined
-            ? a.overridePrice
-            : opt.priceDelta || 0,
-        tier: opt.tier,
-      };
-    })
-    .filter(Boolean) || [];
+return {
+optionId: normalizedOptionId,
+name: a.option?.label || "Addon",
+finalPrice:
+a.overridePrice !== null && a.overridePrice !== undefined
+? a.overridePrice
+: a.option?.priceDelta || 0,
+tier: a.option?.tier || null,
+};
+}).filter(Boolean) || [];
 
   // helper: normalize strings for matching
   const normalize = (s = "") => s.toLowerCase().trim();
@@ -539,10 +504,11 @@ if (!opt) return null;
     }) ?? [];
 
   // find signage addon from renderedAddons (if exists for this product)
-  const signageAddon = renderedAddons.find((a) => {
-    const n = normalize(a.name);
-    return n === "signage" || n === "sinage";
-  });
+ const signageAddon = renderedAddons.find((a) => {
+  const n = normalize(a.name);
+  return n.includes("signage");
+});
+
 
   const signageOptionId = signageAddon?.optionId || null;
 
@@ -1233,79 +1199,74 @@ const isPaint =
               <div className="space-y-3">
 
 
-                {addonsForDisplay.map((addon) => {
-                  const selected = !!selectedAddons[addon.optionId];
-                  const isSignage = addon.optionId === signageOptionId;
-                  const isShelving = addon.optionId === shelvingOptionId;
-                  const isSelectedShelving = isShelving && selected;
+{addonsForDisplay.map((addon, index) => {
+  const selected = !!selectedAddons[addon.optionId];
+  const isSignage =
+    signageOptionId &&
+    addon.optionId === signageOptionId;
 
-                  // Special design for signage addon with redirect
-                  if (isSignage) {
-                    return (
-                      <button
-                        key={addon.optionId}
-                        type="button"
-                        onClick={() => navigate("/signage")}
-                        className="w-full flex items-center justify-between border-2 border-black rounded-lg px-4 py-3 transition bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-100 hover:shadow-md"
-                      >
-                        <div className="text-left flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center">
-                            <svg
-                              className="w-6 h-6 text-white"
-                              fill="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
-                            </svg>
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-700">{addon.name}</div>
-                            <div className="text-sm text-gray-500">
-                              + $ {addon.finalPrice}
-                            </div>
-                          </div>
-                        </div>
+  const isShelving =
+    shelvingOptionId &&
+    addon.optionId === shelvingOptionId;
 
-                        <div className="text-sm font-semibold px-3 py-1 rounded-full bg-black text-white flex items-center gap-1">
-                          <span>Design</span>
-                          <span>→</span>
-                        </div>
-                      </button>
-                    );
-                  }
+  const isSelectedShelving = isShelving && selected;
 
-                  // Regular addon design (including shelving - will show config below)
-                  return (
-                    <button
-                      key={addon.optionId}
-                      type="button"
-                      onClick={() => toggleAddon(addon)}
-                      className={`w-full flex items-center justify-between border rounded-lg px-4 py-3 transition
-              ${selected ? "border-black bg-gray-100" : "hover:bg-gray-50"}
-            `}
-                    >
-                      <div className="text-left">
-                        <div className="font-medium text-gray-700">{addon.name}</div>
-                        <div className="text-sm text-gray-500">
-  {addon.optionId === pedestalOptionId
-    ? "+ Select pedestal to see price"
-    : isSelectedShelving
-    ? `+ $ ${calculateShelvingPrice(shelvingTier, shelvingSize, shelvingQuantity, isShelvingSelected)}`
-    : `+ $ ${addon.finalPrice}`}
-</div>
+  if (isSignage) {
+    return (
+      <button
+        key={`${addon.optionId}-${index}`}
+        type="button"
+        onClick={() => navigate("/signage")}
+        className="w-full flex items-center justify-between border-2 border-black rounded-lg px-4 py-3 transition bg-gradient-to-r from-gray-100 to-gray-200 hover:shadow-md"
+      >
+        <div className="text-left">
+          <div className="font-medium text-gray-700">{addon.name}</div>
+          <div className="text-sm text-gray-500">
+            + $ {addon.finalPrice}
+          </div>
+        </div>
 
-                      </div>
+        <div className="text-sm font-semibold px-3 py-1 rounded-full bg-black text-white">
+          Design →
+        </div>
+      </button>
+    );
+  }
 
-                      <div
-                        className={`text-sm font-semibold px-3 py-1 rounded-full
-                ${selected ? "bg-black text-white" : "bg-gray-200 text-gray-700"}
-              `}
-                      >
-                        {selected ? "Selected" : "Add"}
-                      </div>
-                    </button>
-                  );
-                })}
+  return (
+    <button
+      key={`${addon.optionId}-${index}`}
+      type="button"
+      onClick={() => toggleAddon(addon)}
+      className={`w-full flex items-center justify-between border rounded-lg px-4 py-3 transition
+        ${selected ? "border-black bg-gray-100" : "hover:bg-gray-50"}
+      `}
+    >
+      <div className="text-left">
+        <div className="font-medium text-gray-700">{addon.name}</div>
+        <div className="text-sm text-gray-500">
+          {isSelectedShelving
+            ? `+ $ ${calculateShelvingPrice(
+                shelvingTier,
+                shelvingSize,
+                shelvingQuantity,
+                true
+              )}`
+            : `+ $ ${addon.finalPrice}`}
+        </div>
+      </div>
+
+      <div
+        className={`text-sm font-semibold px-3 py-1 rounded-full
+          ${selected ? "bg-black text-white" : "bg-gray-200 text-gray-700"}
+        `}
+      >
+        {selected ? "Selected" : "Add"}
+      </div>
+    </button>
+  );
+})}
+
               </div>
                 {/* ====================
     PEDESTALS DROPDOWN
