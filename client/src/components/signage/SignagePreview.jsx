@@ -1,8 +1,8 @@
 import { useRef, useState, useEffect, useLayoutEffect, forwardRef } from "react";
 import { useSignage, getBoardBounds, normalizeHexColor } from "../../context/SignageContext";
 
-const PADDING_X = 12;
-const PADDING_Y = 8;
+const PADDING_X = 14;
+const PADDING_Y = 14;
 const MIN_BOX_WIDTH = 48;
 const MIN_BOX_HEIGHT = 28;
 

@@ -269,8 +269,8 @@ export const SignageProvider = ({ children }) => {
         ? (textSizes[selectedSize]?.price ?? textSizes.medium?.price ?? 0)
         : 0;
 
-  // Sync text box dimensions: width = 17 inch (from sign dimensions), height from size preset
-  const targetTextWidthInches = 17;
+  // Sync text box dimensions: width = 13.5 inch (from sign dimensions), height from size preset
+  const targetTextWidthInches = 13.5;
   useEffect(() => {
     const base = textSize
       ? { w: textSize.width * userTextScale, h: textSize.height * userTextScale }
