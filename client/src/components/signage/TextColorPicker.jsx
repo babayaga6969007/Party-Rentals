@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { useSignage } from "../../context/SignageContext";
+import { useSignage, normalizeHexColor } from "../../context/SignageContext";
 
 // Default colors fallback
 const DEFAULT_PRESET_COLORS = [
@@ -38,9 +38,9 @@ const TextColorPicker = memo(() => {
           {PRESET_COLORS.map((color) => (
             <button
               key={color.value}
-              onClick={() => setSelectedTextColor(color.value)}
+              onClick={() => setSelectedTextColor(normalizeHexColor(color.value))}
               className={`w-full h-10 rounded-lg border-2 transition ${
-                selectedTextColor.toUpperCase() === color.value.toUpperCase()
+                normalizeHexColor(selectedTextColor).toUpperCase() === normalizeHexColor(color.value).toUpperCase()
                   ? "border-black ring-2 ring-black ring-offset-1"
                   : "border-gray-300 hover:border-gray-400"
               }`}
@@ -59,8 +59,8 @@ const TextColorPicker = memo(() => {
         <div className="flex items-center gap-3">
           <input
             type="color"
-            value={selectedTextColor}
-            onChange={(e) => setSelectedTextColor(e.target.value)}
+            value={normalizeHexColor(selectedTextColor)}
+            onChange={(e) => setSelectedTextColor(normalizeHexColor(e.target.value))}
             className="w-12 h-10 cursor-pointer"
             style={{ 
               border: "none",
@@ -73,7 +73,7 @@ const TextColorPicker = memo(() => {
             }}
           />
           <div className="flex-1 text-sm text-gray-600">
-            {selectedTextColor.toUpperCase()}
+            {normalizeHexColor(selectedTextColor).toUpperCase()}
           </div>
         </div>
       </div>

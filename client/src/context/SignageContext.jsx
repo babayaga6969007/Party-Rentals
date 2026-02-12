@@ -67,6 +67,15 @@ export const getBoardBounds = (cw, ch) => {
 // Backward compatibility alias
 export const getBannerBounds = getBoardBounds;
 
+/** Normalize to #rrggbb so color is always valid and consistent for style/input */
+export const normalizeHexColor = (str) => {
+  if (!str || typeof str !== "string") return "#000000";
+  let hex = str.trim().replace(/^#/, "");
+  if (hex.length === 3) hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  if (hex.length !== 6 || !/^[0-9A-Fa-f]{6}$/.test(hex)) return "#000000";
+  return "#" + hex.toLowerCase();
+};
+
 const SignageContext = createContext();
 
 export const useSignage = () => {
@@ -260,8 +269,8 @@ export const SignageProvider = ({ children }) => {
         ? (textSizes[selectedSize]?.price ?? textSizes.medium?.price ?? 0)
         : 0;
 
-  // Sync text box dimensions: width = 20 inch (from sign dimensions), height from size preset
-  const targetTextWidthInches = 20;
+  // Sync text box dimensions: width = 17 inch (from sign dimensions), height from size preset
+  const targetTextWidthInches = 17;
   useEffect(() => {
     const base = textSize
       ? { w: textSize.width * userTextScale, h: textSize.height * userTextScale }
@@ -311,7 +320,7 @@ export const SignageProvider = ({ children }) => {
   const memoizedResetSignage = useCallback(() => {
     setTextContent("Hello");
     setSelectedFont("'Farmhouse', cursive");
-    setSelectedTextColor("#000000");
+    setSelectedTextColor(normalizeHexColor("#000000"));
     setSelectedSize("medium");
     setUserTextScale(1);
     // textBoxWidth/textBoxHeight will sync from size preset via useEffect
@@ -348,7 +357,7 @@ export const SignageProvider = ({ children }) => {
           y: firstText.y + (totalHeight / 2),
         });
         setSelectedFont(firstText.fontFamily || "'Farmhouse', cursive");
-        setSelectedTextColor(firstText.color || "#000000");
+        setSelectedTextColor(normalizeHexColor(firstText.color || "#000000"));
         
         const fs = firstText.fontSize || 48;
         if (fs <= 32) setSelectedSize("small");
