@@ -1,17 +1,15 @@
 import { FiX } from "react-icons/fi";
-import hero1 from "../../assets/home2/hero1.png";
-import hero2 from "../../assets/home2/hero2.png";
+
 import { useCart } from "../../context/CartContext";
+import { useNavigate } from "react-router-dom";
 
 export default function AddToCartModal({ open, onClose, product, addons, onGoToCart, onAddRecommended }) {
   const { addToCart } = useCart();
+const navigate = useNavigate();
 
   if (!open) return null;
 
-  const recommended = [
-    { id: 101, name: "Pastel Balloon Garland", price: 55, image: hero1 },
-    { id: 102, name: "Event Fairy Light Stand", price: 75, image: hero2 },
-  ];
+ 
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-start pt-20 z-50">
@@ -39,11 +37,11 @@ export default function AddToCartModal({ open, onClose, product, addons, onGoToC
           </div>
         </div>
 {/* Addons Section */}
-{product?.addons?.length > 0 && (
+{product?.selectedAddons?.length > 0 && (
   <div className="mb-4">
     <p className="font-medium mb-2">Selected Add-Ons:</p>
 
-{product.addons.map((a, i) => (
+    {product.selectedAddons.map((a, i) => (
       <div
         key={i}
         className="flex justify-between text-sm text-gray-700"
@@ -75,30 +73,18 @@ export default function AddToCartModal({ open, onClose, product, addons, onGoToC
 
         </div>
 
-        {/* Recommended products */}
-        <h3 className="text-xl font-semibold mt-8 mb-3">
-          Customers Also Bought
-        </h3>
+        <div className="mt-6 border-t pt-4 text-center">
+  <button
+    onClick={() => {
+      onClose();
+      navigate("/category");
+    }}
+  className="w-full py-3 rounded-lg bg-black text-white hover:bg-gray-200 hover:text-black text-sm font-semibold transition"
+  >
+    View More Rental Products
+  </button>
+</div>
 
-        <div className="grid grid-cols-2 gap-4">
-          {recommended.map((rec) => (
-            <div key={rec.id} className="border rounded-xl p-3 hover:shadow cursor-pointer">
-
-              <img src={rec.image} className="w-full h-28 object-cover rounded-lg" />
-
-              <p className="font-medium mt-2">{rec.name}</p>
-              <p className="text-red-600 font-semibold">${rec.price}</p>
-
-              <button
-                className="mt-2 w-full bg-[#8B5C42] text-white py-1 rounded hover:bg-[#704A36]"
-                onClick={() => onAddRecommended(rec)}
-              >
-                Add
-              </button>
-
-            </div>
-          ))}
-        </div>
 
       </div>
     </div>
