@@ -39,11 +39,11 @@ export default function AddToCartModal({ open, onClose, product, addons, onGoToC
           </div>
         </div>
 {/* Addons Section */}
-{product?.selectedAddons?.length > 0 && (
+{product?.addons?.length > 0 && (
   <div className="mb-4">
     <p className="font-medium mb-2">Selected Add-Ons:</p>
 
-    {product.selectedAddons.map((a, i) => (
+{product.addons.map((a, i) => (
       <div
         key={i}
         className="flex justify-between text-sm text-gray-700"

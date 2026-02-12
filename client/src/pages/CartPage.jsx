@@ -181,6 +181,17 @@ className="w-20 h-20 rounded-lg object-cover border border-gray-300"
   <p className="mt-1 text-sm font-medium text-gray-900">
     ${item.lineTotal.toFixed(2)}
   </p>
+  {item.addons?.length > 0 && (
+  <div className="mt-2 text-xs text-gray-600 space-y-1">
+    {item.addons.map((a, idx) => (
+      <div key={idx} className="flex justify-between">
+        <span>{a.name}</span>
+        <span>+ ${Number(a.price || 0)}</span>
+      </div>
+    ))}
+  </div>
+)}
+
 </div>
 
 
