@@ -37,19 +37,20 @@ const navigate = useNavigate();
           </div>
         </div>
 {/* Addons Section */}
-{product?.selectedAddons?.length > 0 && (
-  <div className="mb-4">
-    <p className="font-medium mb-2">Selected Add-Ons:</p>
+{product?.addons?.length > 0 && (
+  <div className="mb-4 border-t pt-3">
+    <p className="font-medium mb-2 text-sm text-gray-800">
+      Selected Add-Ons:
+    </p>
 
-    {product.selectedAddons.map((a, i) => (
-      <div
-        key={i}
-        className="flex justify-between text-sm text-gray-700"
-      >
-        <span>{a.name}</span>
-        <span>+ Rs {Number(a.price) || 0}</span>
-      </div>
-    ))}
+    <div className="space-y-1 text-sm text-gray-600">
+      {product.addons.map((a, idx) => (
+        <div key={idx} className="flex justify-between">
+          <span>{a.name}</span>
+          <span>+ ${Number(a.price || 0).toFixed(2)}</span>
+        </div>
+      ))}
+    </div>
   </div>
 )}
 
