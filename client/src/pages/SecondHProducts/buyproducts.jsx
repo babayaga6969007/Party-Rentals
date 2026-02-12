@@ -126,7 +126,7 @@ const selectedDays =
   // Days selection
   const [days, setDays] = useState(1);
 
-  // Addon quantities
+  // Addon quantities (legacy lights/flowers)
   const [addons, setAddons] = useState({
     lights: 0,
     flowers: 0,
@@ -138,6 +138,13 @@ const selectedDays =
       [type]: Math.max(0, prev[type] + inc),
     }));
   };
+
+  // Product addons from API (shelving, etc.) — selection state
+  const [selectedAddons, setSelectedAddons] = useState({});
+  const [shelvingConfig, setShelvingConfig] = useState(null);
+  const [shelvingTier, setShelvingTier] = useState("A");
+  const [shelvingSize, setShelvingSize] = useState("");
+  const [shelvingQuantity, setShelvingQuantity] = useState(1);
 
   // Date selection
   const [selectedDate, setSelectedDate] = useState("");
@@ -156,11 +163,10 @@ const effectivePrice = salePrice || regularPrice;
   const maxStock = product?.availabilityCount ?? 1;
 
 
-  // Final total price
-// priority: use date range if selected, else manual days input
+  // Final total price (base + product addons from API)
 const totalRentalDays = selectedDays > 0 ? selectedDays : days;
-
-const totalPrice = effectivePrice * productQty;
+const addonsTotalFromProduct = Object.values(selectedAddons).reduce((sum, a) => sum + (Number(a?.price) || 0), 0);
+const totalPrice = effectivePrice * productQty + addonsTotalFromProduct;
 
 
 
@@ -190,20 +196,25 @@ const addedItem = {
 
 
 const handleAddToCart = () => {
-const unitPrice = effectivePrice;
-  const lineTotal = unitPrice * productQty;
+  const unitPrice = effectivePrice;
+  const addonsLine = Object.entries(selectedAddons).map(([optionId, a]) => ({
+    optionId: a.realOptionId ?? optionId,
+    name: a.name,
+    price: a.price ?? 0,
+    shelvingData: a.shelvingData ?? null,
+  }));
+  const addonsTotalForCart = addonsLine.reduce((s, a) => s + (Number(a.price) || 0), 0);
+  const lineTotal = unitPrice * productQty + addonsTotalForCart;
 
   addToCart({
     productId: product._id,
     name: product.title,
     productType: "purchase",
-
     qty: productQty,
     unitPrice,
     lineTotal,
-
     customTitle: product.allowCustomTitle ? (customTitleText || "").trim() : "",
-
+    addons: addonsLine,
     image: productImages[activeImage],
     maxStock: product?.availabilityCount ?? 1,
   });
@@ -220,10 +231,8 @@ const unitPrice = effectivePrice;
         setLoadingProduct(true);
         setProductError("");
 
-        // ✅ expected endpoint (if your backend already has it)
         const res = await api(`/products/${id}`);
-        const data = res?.product || res;
-
+        const data = res?.product ?? res;
         setProduct(data);
         
         
@@ -270,6 +279,180 @@ const attributeGroupsForUI =
         )
       ),
     })) || [];
+
+// ====================
+// ADD-ONS FROM PRODUCT — same shape as ProductPage.jsx
+// ====================
+const normalize = (s = "") => String(s).toLowerCase().trim();
+const renderedAddons =
+  (product?.addons && Array.isArray(product.addons)
+    ? product.addons
+        .filter((a) => a && a.option)
+        .map((a, index) => {
+          const rawId = a.optionId != null ? String(a.optionId) : null;
+          return {
+            optionId: `${rawId ?? "addon"}-${index}`,
+            realOptionId: rawId,
+            name: a.option?.label ?? "Add-on",
+            finalPrice:
+              a.overridePrice !== null && a.overridePrice !== undefined
+                ? a.overridePrice
+                : (a.option?.priceDelta ?? 0),
+            tier: a.shelvingTier ?? a.option?.tier,
+            shelvingSize: a.shelvingSize,
+            shelvingQuantity: a.shelvingQuantity,
+          };
+        })
+    : []) || [];
+
+const isShelvingLike = (a) => {
+  const n = normalize(a?.name ?? "");
+  return n === "shelving" || n.includes("shelving");
+};
+const addonsForDisplay = renderedAddons.filter((a, i, arr) => {
+  if (!isShelvingLike(a)) return true;
+  const firstShelvingIndex = arr.findIndex(isShelvingLike);
+  return i === firstShelvingIndex;
+});
+// If API returned addons but our transform produced none (e.g. missing option), show raw addons
+const hasProductAddons = Array.isArray(product?.addons) && product.addons.length > 0;
+const addonsListToShow =
+  addonsForDisplay.length > 0
+    ? addonsForDisplay
+    : hasProductAddons
+      ? product.addons
+          .filter((a) => a && (a.option || a.optionId))
+          .map((a, i) => ({
+            optionId: `${a.optionId ?? "addon"}-${i}`,
+            realOptionId: a.optionId != null ? String(a.optionId) : null,
+            name: a.option?.label ?? a.option?.name ?? "Add-on",
+            finalPrice: a.overridePrice ?? a.option?.priceDelta ?? 0,
+            tier: a.shelvingTier ?? a.option?.tier,
+            shelvingSize: a.shelvingSize,
+            shelvingQuantity: a.shelvingQuantity,
+          }))
+      : [];
+
+const shelvingAddon = renderedAddons.find((a) => {
+  const n = normalize(a.name);
+  return n === "shelving" || (n.includes("shelving") && !n.includes("tier"));
+});
+const shelvingOptionIdFromRendered = shelvingAddon?.optionId ?? null;
+const shelvingOptionId = shelvingOptionIdFromRendered ?? addonsListToShow.find(isShelvingLike)?.optionId ?? null;
+const isShelvingSelected = shelvingOptionId ? !!selectedAddons[shelvingOptionId] : false;
+
+// Fetch shelving config for price calculation
+useEffect(() => {
+  const fetchConfig = async () => {
+    try {
+      const res = await api("/shelving-config");
+      setShelvingConfig(res?.config ?? null);
+    } catch {
+      setShelvingConfig(null);
+    }
+  };
+  fetchConfig();
+}, []);
+
+const productShelvingAddon = product?.addons?.find((a) => {
+  const n = normalize(a.option?.label || a.name || "");
+  return n === "shelving" || (n.includes("shelving") && !n.includes("tier"));
+});
+const shelvingOverrides = productShelvingAddon?.shelvingPriceOverrides;
+
+const shelvingTierAOptions = (shelvingOverrides?.tierA?.sizes?.length > 0
+  ? shelvingOverrides.tierA.sizes
+  : shelvingConfig?.tierA?.sizes
+) || [
+  { size: "24\"", dimensions: "24\" long x 5.5\" deep x 0.75\" thick", price: 20 },
+  { size: "34\"", dimensions: "34\" long x 5.5\" deep x 0.75\" thick", price: 25 },
+  { size: "46\"", dimensions: "46\" long x 5.5\" deep x 0.75\" thick", price: 25 },
+  { size: "70\"", dimensions: "70\" long x 5.5\" deep x 0.75\" thick", price: 32 },
+  { size: "83\"", dimensions: "83\" long x 5.5\" deep x 0.75\" thick", price: 38 },
+  { size: "94\"", dimensions: "94\" long x 5.5\" deep x 0.75\" thick", price: 43 },
+];
+const shelvingTierBPrice = (shelvingOverrides?.tierB != null && Number(shelvingOverrides.tierB?.price) >= 0)
+  ? Number(shelvingOverrides.tierB.price)
+  : (shelvingConfig?.tierB?.price ?? 29);
+const shelvingTierCPrice = (shelvingOverrides?.tierC != null && Number(shelvingOverrides.tierC?.price) >= 0)
+  ? Number(shelvingOverrides.tierC.price)
+  : (shelvingConfig?.tierC?.price ?? 50);
+
+const calculateShelvingPrice = (tier, size, quantity, selected) => {
+  if (!selected) return 0;
+  if (tier === "A") {
+    if (!size) return 0;
+    const opt = shelvingTierAOptions.find((o) => o.size === size);
+    return (opt?.price ?? 0) * quantity;
+  }
+  if (tier === "B" && size === "yes") return shelvingTierBPrice * quantity;
+  if (tier === "C" && size === "yes") return shelvingTierCPrice * quantity;
+  return 0;
+};
+
+// Init shelving tier/size/quantity from product addon
+useEffect(() => {
+  if (!shelvingOptionId || !renderedAddons?.length) return;
+  const addon = renderedAddons.find((a) => a.optionId === shelvingOptionId);
+  const newTier = addon?.tier || "A";
+  setShelvingTier(newTier);
+  if (newTier !== "A") {
+    setShelvingSize("yes");
+    setShelvingQuantity(addon?.shelvingQuantity != null ? Number(addon.shelvingQuantity) : 1);
+  } else if (addon?.shelvingSize) {
+    setShelvingSize(addon.shelvingSize);
+    setShelvingQuantity(addon?.shelvingQuantity != null ? Number(addon.shelvingQuantity) : 1);
+  }
+}, [shelvingOptionId, product?._id]);
+
+useEffect(() => {
+  if (isShelvingSelected && shelvingTier === "A" && !shelvingSize && shelvingTierAOptions?.[0]?.size) {
+    setShelvingSize(shelvingTierAOptions[0].size);
+    setShelvingQuantity(1);
+  }
+}, [isShelvingSelected, shelvingTier, shelvingSize, shelvingTierAOptions]);
+
+// Sync selectedAddons price when shelving tier/size/quantity changes
+useEffect(() => {
+  if (!shelvingOptionId || !isShelvingSelected) return;
+  const price = calculateShelvingPrice(shelvingTier, shelvingSize, shelvingQuantity, true);
+  setSelectedAddons((prev) => {
+    if (!prev[shelvingOptionId]) return prev;
+    return {
+      ...prev,
+      [shelvingOptionId]: {
+        ...prev[shelvingOptionId],
+        price,
+        shelvingData: { tier: shelvingTier, size: shelvingSize, quantity: shelvingQuantity },
+      },
+    };
+  });
+}, [shelvingTier, shelvingSize, shelvingQuantity, shelvingOptionId, isShelvingSelected]);
+
+const toggleAddon = (addon) => {
+  setSelectedAddons((prev) => {
+    const next = { ...prev };
+    if (next[addon.optionId]) {
+      delete next[addon.optionId];
+      if (addon.optionId === shelvingOptionId) {
+        setShelvingTier("A");
+        setShelvingSize("");
+        setShelvingQuantity(1);
+      }
+    } else {
+      next[addon.optionId] = {
+        name: addon.name,
+        price: addon.optionId === shelvingOptionId ? 0 : addon.finalPrice,
+        realOptionId: addon.realOptionId ?? addon.optionId,
+      };
+      if (addon.optionId === shelvingOptionId) {
+        next[addon.optionId].shelvingData = { tier: shelvingTier, size: shelvingSize, quantity: shelvingQuantity };
+        next[addon.optionId].price = calculateShelvingPrice(shelvingTier, shelvingSize, shelvingQuantity, true);
+      }
+    }
+    return next;
+  });
+};
 
 // ====================
 // AUTO-SELECT DEFAULT ATTRIBUTE OPTIONS (SALE PAGE)
@@ -518,6 +701,83 @@ if (!product) {
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 text-[#2D2926] focus:ring-2 focus:ring-black focus:border-transparent"
                 maxLength={80}
               />
+            </div>
+          )}
+
+          {/* Optional Add-ons (from product.addons — same as /product page) */}
+          {addonsListToShow.length > 0 && (
+            <div className="mt-6 bg-white p-5 rounded-xl shadow border border-gray-200">
+              <h3 className="font-semibold text-lg text-[#2D2926] mb-4">
+                Optional Add-ons (Click to select)
+              </h3>
+              <div className="space-y-3">
+                {addonsListToShow.map((addon) => {
+                  const selected = !!selectedAddons[addon.optionId];
+                  const isShelving = addon.optionId === shelvingOptionId || isShelvingLike(addon);
+                  const isSelectedShelving = isShelving && selected;
+                  const displayPrice = isSelectedShelving
+                    ? calculateShelvingPrice(shelvingTier, shelvingSize, shelvingQuantity, true)
+                    : addon.finalPrice;
+                  return (
+                    <div key={addon.optionId}>
+                      <button
+                        type="button"
+                        onClick={() => toggleAddon(addon)}
+                        className={`w-full flex items-center justify-between border rounded-lg px-4 py-3 transition text-left
+                          ${selected ? "border-black bg-gray-100" : "hover:bg-gray-50 border-gray-300"}
+                        `}
+                      >
+                        <div>
+                          <div className="font-medium text-gray-700">{addon.name}</div>
+                          <div className="text-sm text-gray-500">
+                            + $ {isSelectedShelving ? displayPrice : addon.finalPrice}
+                          </div>
+                        </div>
+                        <span className={`text-sm font-semibold px-3 py-1 rounded-full ${selected ? "bg-black text-white" : "bg-gray-200 text-gray-700"}`}>
+                          {selected ? "Selected" : "Add"}
+                        </span>
+                      </button>
+                      {/* Shelving: tier/size/quantity when selected */}
+                      {isSelectedShelving && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
+                          {shelvingTier === "A" && shelvingTierAOptions?.length > 0 && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Size</label>
+                              <select
+                                value={shelvingSize || ""}
+                                onChange={(e) => setShelvingSize(e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded"
+                              >
+                                {shelvingTierAOptions.map((opt) => (
+                                  <option key={opt.size} value={opt.size}>
+                                    {opt.size} — ${opt.price ?? 0}/shelf
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={shelvingTier === "C" ? 1 : 8}
+                                value={shelvingQuantity}
+                                onChange={(e) => setShelvingQuantity(Math.max(1, Math.min(shelvingTier === "C" ? 1 : 8, Number(e.target.value) || 1)))}
+                                className="w-24 p-2 border border-gray-300 rounded"
+                              />
+                            </div>
+                            <div className="text-sm text-gray-600 pt-6">
+                              Shelving total: $ {calculateShelvingPrice(shelvingTier, shelvingSize, shelvingQuantity, true)}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 

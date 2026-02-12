@@ -18,6 +18,10 @@ const ProductAttributeSchema = new mongoose.Schema(
         required: true,
       },
     ],
+    // Paint-only: per-product config (price, price per addition, allow multiple)
+    allowMultiple: { type: Boolean, default: false },
+    price: { type: Number, default: null },
+    pricePerAddition: { type: Number, default: null },
   },
   { _id: false }
 );
@@ -53,6 +57,21 @@ const ProductAddonSchema = new mongoose.Schema(
       type: Number,
       default: 1,
       min: 0,
+    },
+
+    // Per-product shelving pricing (overrides global Shelving Config when set)
+    shelvingPriceOverrides: {
+      tierA: {
+        sizes: [
+          {
+            size: { type: String, trim: true },
+            dimensions: { type: String, trim: true, default: "" },
+            price: { type: Number, min: 0 },
+          },
+        ],
+      },
+      tierB: { price: { type: Number, min: 0, default: undefined } },
+      tierC: { price: { type: Number, min: 0, default: undefined } },
     },
 
     /* =========================

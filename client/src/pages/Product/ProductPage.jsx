@@ -260,6 +260,33 @@ const effectivePricePerDay = Number(
     0
   );
 
+  // Groups available on this product (with paint config) — before paintTotal/totalPrice
+  const attributeGroupsForUI =
+    product?.attributes
+      ?.filter((a) => a?.groupId && Array.isArray(a.groupId.options))
+      .map((a) => ({
+        groupId: String(a.groupId._id),
+        name: a.groupId.name,
+        type: a.groupId.type,
+        options: (a.groupId.options || []).filter((opt) =>
+          (a.optionIds || []).some((oid) => String(oid) === String(opt._id))
+        ),
+        allowMultiple: !!a.allowMultiple,
+        paintPrice: a.price != null ? Number(a.price) : null,
+        paintPricePerAddition: a.pricePerAddition != null ? Number(a.pricePerAddition) : null,
+      })) || [];
+
+  const paintTotal = (attributeGroupsForUI || []).reduce((sum, g) => {
+    if (g.type !== "paint") return sum;
+    const sel = selectedVarOptions[g.groupId];
+    const isMulti = !!g.allowMultiple;
+    const count = isMulti && Array.isArray(sel) ? sel.length : (sel != null && sel !== "" ? 1 : 0);
+    if (count === 0) return sum;
+    const firstPrice = Number(g.paintPrice ?? 0);
+    const perAddition = Number(g.paintPricePerAddition ?? 0);
+    return sum + firstPrice + (count - 1) * perAddition;
+  }, 0);
+
   // ====================
   //  FINAL TOTAL PRICE
   // ====================
@@ -280,8 +307,8 @@ const effectivePricePerDay = Number(
   // Related products are still calculated per day (they follow their own pricing)
   const relatedProductsPrice = totalRentalDays * relatedTotal;
   
-  // Addons are one-time fees, not per day
-  const totalPrice = mainProductRentalPrice + relatedProductsPrice + selectedAddonTotal;
+  // Addons and paint are one-time fees, not per day
+  const totalPrice = mainProductRentalPrice + relatedProductsPrice + selectedAddonTotal + paintTotal;
 
 
 
@@ -394,18 +421,6 @@ useEffect(() => {
 
     fetchRelated();
   }, [product]);
-// Groups available on this product (based on selected attributes)
-const attributeGroupsForUI =
-  product?.attributes
-    ?.filter((a) => a?.groupId && Array.isArray(a.groupId.options))
-    .map((a) => ({
-      groupId: String(a.groupId._id),
-      name: a.groupId.name,
-      type: a.groupId.type,
-      options: (a.groupId.options || []).filter((opt) =>
-        (a.optionIds || []).some((oid) => String(oid) === String(opt._id))
-      ),
-    })) || [];
 
   // Auto-select first options for each group (only for variable rental)
  useEffect(() => {
@@ -415,13 +430,11 @@ const attributeGroupsForUI =
     return;
   }
 
-  // ✅ Rental (single OR variable): build default selections
+  // ✅ Rental: build default selections (paint is never pre-selected)
   const defaults = {};
 
   attributeGroupsForUI.forEach((g) => {
-    if (g.options?.length >= 1) {
-      // if only 1 option → select it
-      // if multiple options → select first one
+    if (g.options?.length >= 1 && g.type !== "paint") {
       defaults[g.groupId] = String(g.options[0]._id);
     }
   });
@@ -1070,9 +1083,17 @@ if (addon.optionId === pedestalOptionId) {
 
 
               {attributeGroupsForUI.map((g) => {
-const isPaint =
-  g.type === "paint" ||
-  g.name?.toLowerCase() === "paint color";
+                const isPaint =
+                  g.type === "paint" ||
+                  g.name?.toLowerCase() === "paint color";
+                const isMultiPaint = isPaint && !!g.allowMultiple;
+                const sel = selectedVarOptions[g.groupId];
+                const selectedIds = isMultiPaint && Array.isArray(sel) ? sel : (sel != null && sel !== "" ? [String(sel)] : []);
+                const paintFirst = g.paintPrice != null ? Number(g.paintPrice) : 0;
+                const paintPerAdd = g.paintPricePerAddition != null ? Number(g.paintPricePerAddition) : 0;
+                const paintCount = isPaint ? selectedIds.length : 0;
+                const groupPaintTotal = isPaint && paintCount > 0 ? paintFirst + (paintCount - 1) * paintPerAdd : 0;
+
                 return (
                 <div key={g.groupId} className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1081,29 +1102,34 @@ const isPaint =
 
                   <div className="flex flex-wrap gap-2">
                     {g.options.map((opt) => {
-                      const selected = selectedVarOptions[g.groupId] === String(opt._id);
+                      const optId = String(opt._id);
+                      const selected = isMultiPaint ? selectedIds.includes(optId) : selectedVarOptions[g.groupId] === optId;
                       const paintSrc = opt.imageUrl || (opt.value ? `/paint/${opt.value}` : null);
 
                       return (
                         <button
-                          key={String(opt._id)}
+                          key={optId}
                           type="button"
                           disabled={!isRental}
-                         onClick={() => {
-  if (!isRental) return;
-
-  setSelectedVarOptions((prev) => ({
-    ...prev,
-    [g.groupId]: String(opt._id),
-  }));
-
-  // reset custom paint input when color changes
-  if (isPaint) {
-    setPaintCustomActive(false);
-    setPaintCustomHex("");
-  }
-}}
-
+                          onClick={() => {
+                            if (!isRental) return;
+                            if (isMultiPaint) {
+                              setSelectedVarOptions((prev) => {
+                                const arr = Array.isArray(prev[g.groupId]) ? prev[g.groupId] : (prev[g.groupId] != null && prev[g.groupId] !== "" ? [String(prev[g.groupId])] : []);
+                                const next = arr.includes(optId) ? arr.filter((id) => id !== optId) : [...arr, optId];
+                                return { ...prev, [g.groupId]: next };
+                              });
+                            } else {
+                              setSelectedVarOptions((prev) => ({
+                                ...prev,
+                                [g.groupId]: optId,
+                              }));
+                            }
+                            if (isPaint) {
+                              setPaintCustomActive(false);
+                              setPaintCustomHex("");
+                            }
+                          }}
                           className={`rounded-xl border text-sm transition
                             ${selected
                               ? "border-black bg-black text-white ring-2 ring-black ring-offset-1"
@@ -1128,8 +1154,22 @@ const isPaint =
                       );
                     })}
                   </div>
+                  {isPaint && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      {isMultiPaint ? "Select one or more." : "Select one."}
+                      {(paintFirst > 0 || paintPerAdd > 0) && (
+                        <span className="ml-2">
+                          First: ${paintFirst.toFixed(2)}
+                          {paintPerAdd > 0 && `, +$${paintPerAdd.toFixed(2)} each additional`}
+                          {groupPaintTotal > 0 && (
+                            <span className="font-medium text-[#2D2926]"> → +${groupPaintTotal.toFixed(2)}</span>
+                          )}
+                        </span>
+                      )}
+                    </p>
+                  )}
                   {/* 🎨 Custom Paint Color (only for Paint Color attribute) */}
-{isPaint && selectedVarOptions[g.groupId] && (
+{isPaint && (isMultiPaint ? selectedIds.length > 0 : selectedVarOptions[g.groupId]) && (
   <div className="mt-3 ml-1">
     <button
       type="button"
@@ -1697,10 +1737,22 @@ const isPaint =
           </div>
 
 
+          {/* Add-ons / Paint breakdown */}
+          {(selectedAddonTotal > 0 || paintTotal > 0) && (
+            <div className="mt-4 text-sm text-gray-600 space-y-1">
+              {selectedAddonTotal > 0 && (
+                <p>Add-ons: +${Number(selectedAddonTotal).toFixed(2)}</p>
+              )}
+              {paintTotal > 0 && (
+                <p>Paint: +${Number(paintTotal).toFixed(2)}</p>
+              )}
+            </div>
+          )}
+
           {/* TOTAL */}
           <div className="mt-8 text-2xl font-semibold text-[#2D2926]">
             Total ({totalRentalDays} {totalRentalDays === 1 ? "day" : "days"}):
-            ${totalPrice}
+            ${Number(totalPrice).toFixed(2)}
           </div>
 
           {Object.keys(relatedQty).length > 0 && (
@@ -1875,8 +1927,21 @@ const isPaint =
       : null,
 })),
 
+                paintSelections: (attributeGroupsForUI || [])
+                  .filter((g) => g.type === "paint")
+                  .map((g) => {
+                    const sel = selectedVarOptions[g.groupId];
+                    const isMulti = !!g.allowMultiple;
+                    const optionIds = isMulti && Array.isArray(sel) ? [...sel] : (sel != null && sel !== "" ? [String(sel)] : []);
+                    if (optionIds.length === 0) return null;
+                    const firstPrice = Number(g.paintPrice ?? 0);
+                    const perAdd = Number(g.paintPricePerAddition ?? 0);
+                    const price = firstPrice + (optionIds.length - 1) * perAdd;
+                    return { groupId: g.groupId, groupName: g.name, optionIds, price };
+                  })
+                  .filter(Boolean),
 
-                // 🔒 FINAL SNAPSHOT PRICE
+                // 🔒 FINAL SNAPSHOT PRICE (includes paint)
                 lineTotal: totalPrice,
 
                 image: productImages[activeImage],
