@@ -69,6 +69,24 @@ if (!customer?.addressLine) {
             quantity: addon.shelvingData.quantity || 0
           } : null
         })) : [],
+        // Colors & paints for admin order view
+        selectedOptions: item.selectedOptions && Array.isArray(item.selectedOptions) ? item.selectedOptions.map(so => ({
+          groupName: so.groupName || "",
+          type: so.type || "",
+          optionLabels: Array.isArray(so.optionLabels) ? so.optionLabels : [],
+          optionIds: Array.isArray(so.optionIds) ? so.optionIds : [],
+          optionHexes: Array.isArray(so.optionHexes) ? so.optionHexes : [],
+          optionImageUrls: Array.isArray(so.optionImageUrls) ? so.optionImageUrls : [],
+          price: so.price || 0
+        })) : [],
+        paintSelections: item.paintSelections && Array.isArray(item.paintSelections) ? item.paintSelections.map(ps => ({
+          groupId: ps.groupId || "",
+          groupName: ps.groupName || "",
+          optionIds: Array.isArray(ps.optionIds) ? ps.optionIds : [],
+          optionLabels: Array.isArray(ps.optionLabels) ? ps.optionLabels : [],
+          optionImageUrls: Array.isArray(ps.optionImageUrls) ? ps.optionImageUrls : [],
+          price: ps.price || 0
+        })) : [],
         // Explicitly preserve signageData for signage items
         signageData: item.productType === "signage" ? (item.signageData || {
           texts: [],

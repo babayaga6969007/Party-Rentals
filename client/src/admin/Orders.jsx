@@ -606,6 +606,72 @@ const Orders = () => {
                         </div>
                       </div>
 
+                      {/* Colors & Paints (rental attribute selections) */}
+                      {item.productType === "rental" && (item.selectedOptions?.length > 0 || item.paintSelections?.length > 0) && (
+                        <div className="mt-3 pt-3 border-t bg-amber-50 p-3 rounded">
+                          <p className="font-medium text-sm mb-2 text-amber-900">Colors & Paints</p>
+                          <div className="space-y-2 text-sm text-gray-700">
+                            {item.selectedOptions && item.selectedOptions.length > 0 && item.selectedOptions.map((opt, idx) => (
+                              <div key={idx} className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                                <span className="font-medium text-amber-800">{opt.groupName}:</span>
+                                <span className="flex flex-wrap items-center gap-2">
+                                  {Array.isArray(opt.optionLabels) && opt.optionLabels.length > 0 ? (
+                                    opt.optionLabels.map((label, i) => (
+                                      <span key={i} className="inline-flex items-center gap-1.5">
+                                        {opt.type === "color" && Array.isArray(opt.optionHexes) && opt.optionHexes[i] && (
+                                          <span
+                                            className="inline-block w-5 h-5 rounded border border-gray-300 shrink-0"
+                                            style={{ backgroundColor: opt.optionHexes[i] || "#ccc" }}
+                                            title={label}
+                                          />
+                                        )}
+                                        {opt.type === "paint" && Array.isArray(opt.optionImageUrls) && opt.optionImageUrls[i] && (
+                                          <img
+                                            src={opt.optionImageUrls[i]}
+                                            alt={label}
+                                            className="w-6 h-6 rounded-full object-cover border border-gray-300 shrink-0"
+                                            onError={(e) => { e.target.style.display = "none"; }}
+                                          />
+                                        )}
+                                        <span>{label}</span>
+                                      </span>
+                                    ))
+                                  ) : (
+                                    (opt.optionIds || []).join(", ")
+                                  )}
+                                </span>
+                                {opt.price > 0 && <span className="text-gray-500">(+${Number(opt.price).toFixed(2)})</span>}
+                              </div>
+                            ))}
+                            {item.paintSelections && item.paintSelections.length > 0 && item.selectedOptions?.length === 0 && item.paintSelections.map((ps, idx) => (
+                              <div key={idx} className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                                <span className="font-medium text-amber-800">{ps.groupName}:</span>
+                                <span className="flex flex-wrap items-center gap-2">
+                                  {Array.isArray(ps.optionLabels) && ps.optionLabels.length > 0 ? (
+                                    ps.optionLabels.map((label, i) => (
+                                      <span key={i} className="inline-flex items-center gap-1.5">
+                                        {Array.isArray(ps.optionImageUrls) && ps.optionImageUrls[i] && (
+                                          <img
+                                            src={ps.optionImageUrls[i]}
+                                            alt={label}
+                                            className="w-6 h-6 rounded-full object-cover border border-gray-300 shrink-0"
+                                            onError={(e) => { e.target.style.display = "none"; }}
+                                          />
+                                        )}
+                                        <span>{label}</span>
+                                      </span>
+                                    ))
+                                  ) : (
+                                    (ps.optionIds || []).join(", ")
+                                  )}
+                                </span>
+                                {ps.price > 0 && <span className="text-gray-500">(+${Number(ps.price).toFixed(2)})</span>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Signage Details */}
                       {item.productType === "signage" && item.signageData && (
                         <div className="mt-3 pt-3 border-t bg-purple-50 p-3 rounded">

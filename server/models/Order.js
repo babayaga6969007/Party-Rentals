@@ -52,6 +52,25 @@ const orderItemSchema = new mongoose.Schema(
       },
     }],
 
+    // Colors & paints (attribute selections for rental) – for admin order view
+    selectedOptions: [{
+      groupName: { type: String, default: "" },
+      type: { type: String, default: "" },
+      optionLabels: [{ type: String }],
+      optionIds: [{ type: String }],
+      optionHexes: [{ type: String }],
+      optionImageUrls: [{ type: String }],
+      price: { type: Number, default: 0 },
+    }],
+    paintSelections: [{
+      groupId: { type: String, default: "" },
+      groupName: { type: String, default: "" },
+      optionIds: [{ type: String }],
+      optionLabels: [{ type: String }],
+      optionImageUrls: [{ type: String }],
+      price: { type: Number, default: 0 },
+    }],
+
     image: { type: String, default: "" },
   },
   { _id: false }
