@@ -196,3 +196,14 @@ button:disabled {
   @apply w-full p-3 rounded-lg border border-[#D9C7BE]
   focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50;
 }
+/* Remove number input arrows */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Remove number input arrows (Firefox) */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
