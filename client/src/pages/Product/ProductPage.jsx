@@ -175,6 +175,29 @@ useEffect(() => {
 }, [selectedVariationIndex]);
 
   const [activeImage, setActiveImage] = useState(0);
+// ====================
+// FULLSCREEN IMAGE VIEWER
+// ====================
+const [isImageOpen, setIsImageOpen] = useState(false);
+const [zoomLevel, setZoomLevel] = useState(1);
+
+const openImageViewer = () => {
+  setIsImageOpen(true);
+  setZoomLevel(1);
+};
+
+const closeImageViewer = () => {
+  setIsImageOpen(false);
+  setZoomLevel(1);
+};
+
+const zoomIn = () => {
+  setZoomLevel((prev) => Math.min(prev + 0.5, 3));
+};
+
+const zoomOut = () => {
+  setZoomLevel((prev) => Math.max(prev - 0.5, 1));
+};
 
   const handleNext = () => {
     if (productImages.length <= 1) return;
@@ -819,10 +842,12 @@ if (addon.optionId === pedestalOptionId) {
 
             {/* Main Image */}
             <img
-              src={productImages[activeImage] || ""}
-              className="w-full h-full object-cover"
-              alt={product?.title || "Product"}
-            />
+  src={productImages[activeImage] || ""}
+  className="w-full h-full object-cover cursor-zoom-in"
+  alt={product?.title || "Product"}
+  onClick={openImageViewer}
+/>
+
 
             {/* LEFT ARROW */}
             {productImages.length > 1 && (
@@ -2133,6 +2158,51 @@ basePrice={
       />
 
 
+{/* ====================
+   FULLSCREEN IMAGE MODAL
+==================== */}
+{isImageOpen && (
+  <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center">
+
+    {/* Close Button */}
+    <button
+      onClick={closeImageViewer}
+      className="absolute top-6 right-6 text-white text-3xl font-bold"
+    >
+      ✕
+    </button>
+
+    {/* Zoom Controls */}
+    <div className="absolute top-6 left-6 flex gap-3">
+      <button
+        onClick={zoomOut}
+        className="bg-white text-black px-3 py-1 rounded-lg text-lg font-bold"
+      >
+        −
+      </button>
+
+      <button
+        onClick={zoomIn}
+        className="bg-white text-black px-3 py-1 rounded-lg text-lg font-bold"
+      >
+        +
+      </button>
+    </div>
+
+    {/* Image */}
+    <div className="overflow-auto max-w-full max-h-full p-10">
+      <img
+        src={productImages[activeImage] || ""}
+        alt="Fullscreen"
+        style={{
+          transform: `scale(${zoomLevel})`,
+          transition: "transform 0.3s ease",
+        }}
+        className="max-w-full max-h-full object-contain"
+      />
+    </div>
+  </div>
+)}
 
     </>
   );
