@@ -1,8 +1,8 @@
 import { useRef, useState, useEffect, useLayoutEffect, forwardRef } from "react";
-import { useSignage, getBoardBounds } from "../../context/SignageContext";
+import { useSignage, getBoardBounds, normalizeHexColor } from "../../context/SignageContext";
 
-const PADDING_X = 12;
-const PADDING_Y = 8;
+const PADDING_X = 14;
+const PADDING_Y = 14;
 const MIN_BOX_WIDTH = 48;
 const MIN_BOX_HEIGHT = 28;
 
@@ -291,9 +291,8 @@ const SignagePreview = forwardRef(({
             fontFamily: selectedFont ? `${selectedFont}, Georgia, serif` : "Georgia, serif",
             fontSize: scaledFontSize,
             fontWeight: "bold",
-            color: selectedTextColor && selectedTextColor !== "transparent" ? selectedTextColor : "#1a1a1a",
-            textShadow: "0 0 8px #fff, 2px 2px 4px rgba(0,0,0,0.9)",
-            WebkitTextStroke: "1px rgba(0,0,0,0.8)",
+            color: selectedTextColor && selectedTextColor !== "transparent" ? normalizeHexColor(selectedTextColor) : "#1a1a1a",
+            textShadow: "0 0 8px #fff, 2px 2px 4px rgba(0,0,0,0.4)",
             whiteSpace: "pre-line",
             textAlign: "center",
             pointerEvents: isEditable ? "auto" : "none",

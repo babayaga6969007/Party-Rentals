@@ -59,6 +59,10 @@ export const CartProvider = ({ children }) => {
       // Custom title when product allows it
       customTitle: payload.customTitle ? String(payload.customTitle).trim() : "",
 
+      // Colors & paints (rental attribute selections) – for order and admin view
+      selectedOptions: payload.selectedOptions && Array.isArray(payload.selectedOptions) ? payload.selectedOptions : [],
+      paintSelections: payload.paintSelections && Array.isArray(payload.paintSelections) ? payload.paintSelections : [],
+
       image: payload.image || "",
       maxStock: Number(payload.maxStock || 1),
 

@@ -221,6 +221,7 @@ const SignageEditorContent = () => {
       effectiveTextSize.height,
       (lines.length - 1) * lineHeight + effectiveFontSize
     );
+    const halfW = effectiveTextSize.width / 2;
     const halfH = dynamicHeight / 2;
     const cw = canvasWidth || 600;
     const ch = canvasHeight || 1200;
@@ -230,9 +231,13 @@ const SignageEditorContent = () => {
     const upperLimitY = boardBottom - 450;
     const minY = Math.max(b.top + halfH, upperLimitY + halfH);
     const maxY = b.top + b.height - halfH;
-    // No left/right clamp — text can go full left/right and is clipped by the board overflow
+    // Left/right: keep text inside board with inset so movement range is reduced
+    const horizontalInset = 40;
+    const minX = b.left + halfW + horizontalInset;
+    const maxX = b.left + b.width - halfW - horizontalInset;
+    const clampedX = Math.max(minX, Math.min(newX, maxX));
     const clampedY = Math.max(minY, Math.min(newY, maxY));
-    const pos = { x: newX, y: clampedY };
+    const pos = { x: clampedX, y: clampedY };
     dragPositionRef.current = pos;
     setLiveDragPosition(pos);
   };
@@ -252,6 +257,7 @@ const SignageEditorContent = () => {
       effectiveTextSize.height,
       (lines.length - 1) * lineHeight + effectiveFontSize
     );
+    const halfW = effectiveTextSize.width / 2;
     const halfH = dynamicHeight / 2;
     const cw = canvasWidth || 600;
     const ch = canvasHeight || 1200;
@@ -260,8 +266,12 @@ const SignageEditorContent = () => {
     const upperLimitY = boardBottom - 450;
     const minY = Math.max(b.top + halfH, upperLimitY + halfH);
     const maxY = b.top + b.height - halfH;
+    const horizontalInset = 40;
+    const minX = b.left + halfW + horizontalInset;
+    const maxX = b.left + b.width - halfW - horizontalInset;
+    const clampedX = Math.max(minX, Math.min(newX, maxX));
     const clampedY = Math.max(minY, Math.min(newY, maxY));
-    const pos = { x: newX, y: clampedY };
+    const pos = { x: clampedX, y: clampedY };
     dragPositionRef.current = pos;
     setLiveDragPosition(pos);
   };

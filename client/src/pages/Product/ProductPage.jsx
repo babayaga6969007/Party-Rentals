@@ -1963,6 +1963,23 @@ if (addon.optionId === pedestalOptionId) {
       : null,
 })),
 
+                selectedOptions: (attributeGroupsForUI || [])
+                  .map((g) => {
+                    const sel = selectedVarOptions[g.groupId];
+                    const isMulti = !!g.allowMultiple;
+                    const optionIds = isMulti && Array.isArray(sel) ? [...sel] : (sel != null && sel !== "" ? [String(sel)] : []);
+                    if (optionIds.length === 0) return null;
+                    const optionLabels = optionIds.map((id) => g.options?.find((o) => String(o._id) === id)?.label).filter(Boolean);
+                    const optionHexes = g.type === "color" ? optionIds.map((id) => g.options?.find((o) => String(o._id) === id)?.hex).filter(Boolean) : [];
+                    const optionImageUrls = g.type === "paint" ? optionIds.map((id) => {
+                      const o = g.options?.find((opt) => String(opt._id) === id);
+                      return o?.imageUrl || (o?.value ? `/paint/${o.value}` : null);
+                    }).filter(Boolean) : [];
+                    const price = g.type === "paint" ? Number(g.paintPrice ?? 0) + (optionIds.length - 1) * Number(g.paintPricePerAddition ?? 0) : 0;
+                    return { groupName: g.name, type: g.type || "", optionIds, optionLabels, optionHexes, optionImageUrls, price };
+                  })
+                  .filter(Boolean),
+
                 paintSelections: (attributeGroupsForUI || [])
                   .filter((g) => g.type === "paint")
                   .map((g) => {
@@ -1970,10 +1987,15 @@ if (addon.optionId === pedestalOptionId) {
                     const isMulti = !!g.allowMultiple;
                     const optionIds = isMulti && Array.isArray(sel) ? [...sel] : (sel != null && sel !== "" ? [String(sel)] : []);
                     if (optionIds.length === 0) return null;
+                    const optionLabels = optionIds.map((id) => g.options?.find((o) => String(o._id) === id)?.label).filter(Boolean);
+                    const optionImageUrls = optionIds.map((id) => {
+                      const o = g.options?.find((opt) => String(opt._id) === id);
+                      return o?.imageUrl || (o?.value ? `/paint/${o.value}` : null);
+                    }).filter(Boolean);
                     const firstPrice = Number(g.paintPrice ?? 0);
                     const perAdd = Number(g.paintPricePerAddition ?? 0);
                     const price = firstPrice + (optionIds.length - 1) * perAdd;
-                    return { groupId: g.groupId, groupName: g.name, optionIds, price };
+                    return { groupId: g.groupId, groupName: g.name, optionIds, optionLabels, optionImageUrls, price };
                   })
                   .filter(Boolean),
 
