@@ -12,7 +12,6 @@ import {
 } from "@stripe/react-stripe-js";
 
 const STAIRS_COST = 250;
-const SETUP_COST = 300; // 150 × 2 hours
 // ====================
 // DELIVERY / PICKUP TIME SLOTS
 // ====================
@@ -82,7 +81,6 @@ const [pickupTimeFee, setPickupTimeFee] = useState(0);
 
 
   const [stairsFee, setStairsFee] = useState(false);
-  const [setupFee, setSetupFee] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
 
   // Fallback demo data if user opens this page directly
@@ -118,9 +116,9 @@ const [pickupTimeFee, setPickupTimeFee] = useState(0);
   // ✅ Extra fees (now stairsFee/setupFee exist)
 const extraFees =
   (stairsFee ? STAIRS_COST : 0) +
-  (setupFee ? SETUP_COST : 0) +
   deliveryTimeFee +
   pickupTimeFee;
+
   const finalTotal = pricing.total + extraFees;
 
   const handlePlaceOrder = async (mode = "FULL") => {
@@ -199,7 +197,7 @@ if (!agreeToTerms) {
               pickupTime,
               services: {
                 stairs: stairsFee,
-                setup: setupFee,
+              
               },
             },
             paymentMethod: "Stripe",
@@ -243,7 +241,7 @@ if (!agreeToTerms) {
             pickupTime,
             services: {
               stairs: stairsFee,
-              setup: setupFee,
+              
             },
           },
         },
@@ -464,14 +462,7 @@ if (!agreeToTerms) {
                 Stairs / Elevator (+$250)
               </label>
 
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={setupFee}
-                  onChange={() => setSetupFee((v) => !v)}
-                />
-                Set Up & Tear Down (+$150/hour, 2 hours minimum)
-              </label>
+    
             </div>
             
           </section>
@@ -536,12 +527,7 @@ if (!agreeToTerms) {
               </div>
             )}
 
-            {setupFee && (
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Setup & Tear Down</span>
-                <span className="font-medium">$300.00</span>
-              </div>
-            )}
+          
           </div>
 
           <div className="mt-4 pt-4 border-t flex justify-between items-center text-sm">
