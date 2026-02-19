@@ -46,7 +46,7 @@ const Partners = () => {
   style={{ fontFamily: '"Cormorant Garamond", serif' }}
 >
   You shouldn't have to compromise the unique style of your event – with our
-  customizable rentals and tailored fabrications, you don't.
+  customizable rentals and tailored fabrications, you won't.
 </p>
 
 

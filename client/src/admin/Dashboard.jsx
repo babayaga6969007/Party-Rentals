@@ -260,7 +260,7 @@ const productsCount = (products || []).filter((p) => {
           </div>
 
           {/* LOWER SECTION */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div className="grid grid-cols-1 gap-8">
             {/* UPCOMING RENTALS */}
             <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border">
               <h2 className="text-xl font-semibold text-[#2D2926] mb-4">
@@ -313,35 +313,6 @@ const productsCount = (products || []).filter((p) => {
               )}
             </div>
 
-            {/* ALERTS / LOW STOCK */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border">
-              <h2 className="text-xl font-semibold text-[#2D2926] mb-4 flex items-center gap-2">
-                <FiAlertCircle />
-                Attention Needed
-              </h2>
-
-              {lowStockList.length === 0 ? (
-                <div className="text-sm text-gray-500">
-                  No low stock alerts right now.
-                </div>
-              ) : (
-                lowStockList.map((item, index) => (
-                  <div
-                    key={`${item.name}-${index}`}
-                    className="flex justify-between items-center py-3 border-b last:border-0"
-                  >
-                    <div>
-                      <p className="font-medium text-[#2D2926]">{item.name}</p>
-                      <p className="text-sm text-gray-500">Low stock warning</p>
-                    </div>
-
-                    <span className="text-red-600 font-semibold">
-                      {item.stock} left
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
           </div>
         </>
       )}
