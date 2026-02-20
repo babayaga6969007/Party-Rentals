@@ -155,7 +155,6 @@ Need something unique? Our experienced team will help you plan the perfect setup
               <p className="text-[#2D2926]/70">
 2031 Via Burton Street
 Suite A                <br />
-                (Delivery available nationwide)
               </p>
             </div>
           </div>

@@ -84,15 +84,28 @@ const ContactFormModal = () => {
                 </label>
               ))}
             </div>
-            <div className="flex items-center gap-4 text-sm">
-              <span>Will you need a mock up design from us?</span>
-              <label className="flex items-center gap-1">
-                <input type="radio" name="mockup" /> Yes
-              </label>
-              <label className="flex items-center gap-1">
-                <input type="radio" name="mockup" /> No
-              </label>
-            </div>
+            <div className="flex flex-col gap-2 text-sm">
+  <span className="font-medium">
+    Will you need a mock up design from us?
+  </span>
+
+  <span className="text-xs text-gray-500">
+    A small fee will be applicable.
+  </span>
+
+  <div className="flex items-center gap-4 mt-1">
+    <label className="flex items-center gap-1">
+      <input type="radio" name="mockup" value="yes" />
+      Yes
+    </label>
+
+    <label className="flex items-center gap-1">
+      <input type="radio" name="mockup" value="no" />
+      No
+    </label>
+  </div>
+</div>
+
             <textarea rows="3" placeholder="Anything else we should know?" className="input" />
             <p className="text-sm text-gray-500">
               You don’t need all the details figured out yet. We’ll review your inquiry within 1–2 business days.
