@@ -28,6 +28,7 @@ import About from "../pages/About/About";
 import ProductPage from "../pages/Product/ProductPage";
 import UpdatedProductPage from "../pages/Product/UpdatedProductPage";
 import CategoryPage from "../pages/Category/CategoryPage";
+import CategoryPageInside from "../pages/Category/CategoryPageInside";
 import Shop from "../pages/Shop/shop";
 import SecondHProducts from "../pages/SecondHProducts/buyproducts";
 import SignageEditor from "../pages/Signage/SignageEditor";
@@ -69,7 +70,8 @@ const AppRoutes = () => {
  
           <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/product/demo" element={<UpdatedProductPage />} />
-          <Route path="/category" element={<CategoryPage />} />
+<Route path="/category" element={<CategoryPage />} />
+<Route path="/category/:id" element={<CategoryPageInside />} />
           <Route path="/contract" element={<Contract />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/buyproducts/:id" element={<SecondHProducts />} />
