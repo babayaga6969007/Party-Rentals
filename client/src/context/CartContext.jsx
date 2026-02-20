@@ -132,7 +132,37 @@ if (index === -1) return [...prev, normalized];
       })
     );
   };
+const replaceCartItem = (originalCartKey, newPayload) => {
+  const normalized = {
+    cartKey: "",
+    productId: newPayload.productId || newPayload.id,
+    name: newPayload.name,
+    productType: newPayload.productType || "purchase",
+    qty: Number(newPayload.qty || 1),
+    unitPrice: Number(newPayload.unitPrice ?? newPayload.price ?? 0),
+    days: Number(newPayload.days || 0),
+    startDate: newPayload.startDate || "",
+    endDate: newPayload.endDate || "",
+    addons: newPayload.addons || [],
+    signageData: newPayload.signageData || null,
+    customTitle: newPayload.customTitle
+      ? String(newPayload.customTitle).trim()
+      : "",
+    selectedOptions: newPayload.selectedOptions || [],
+    paintSelections: newPayload.paintSelections || [],
+    image: newPayload.image || "",
+    maxStock: Number(newPayload.maxStock || 1),
+    lineTotal: Number(newPayload.lineTotal || newPayload.totalPrice),
+  };
 
+  normalized.cartKey = buildCartKey(normalized);
+
+  setCartItems((prev) =>
+    prev.map((item) =>
+      item.cartKey === originalCartKey ? normalized : item
+    )
+  );
+};
   const removeItem = (cartKey) => {
     setCartItems((prev) =>
       prev.filter((item) => item.cartKey !== cartKey)
@@ -151,14 +181,15 @@ if (index === -1) return [...prev, normalized];
 
   return (
     <CartContext.Provider
-      value={{
-        cartItems,
-        addToCart,
-        updateQty,
-        removeItem,
-        clearCart,
-        cartSubtotal,
-      }}
+     value={{
+  cartItems,
+  addToCart,
+  updateQty,
+  replaceCartItem,
+  removeItem,
+  clearCart,
+  cartSubtotal,
+}}
     >
       {children}
     </CartContext.Provider>

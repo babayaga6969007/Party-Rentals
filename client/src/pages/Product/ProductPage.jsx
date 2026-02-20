@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import { api } from "../../utils/api";
 import toast from "react-hot-toast";
 import AddToCartModal from "../../components/cart/AddToCartModal";
@@ -40,8 +40,9 @@ const [selectedPedestalIndex, setSelectedPedestalIndex] = useState("");
 
   const [openPricingChart, setOpenPricingChart] = useState(false);
   const [openShippingModal, setOpenShippingModal] = useState(false); // ✅ ADD THIS
-  const { addToCart } = useCart();
-
+const { addToCart, replaceCartItem } = useCart();
+const location = useLocation();
+const editItem = location.state?.editItem || null;
   const [product, setProduct] = useState(null);
   // ====================
   // VARIATIONS (Rental Variable Products)
@@ -161,7 +162,8 @@ const selectedDays = calculateDays(startDate, endDate);
 
 
 
-  // Product images from backend
+const [activeImage, setActiveImage] = useState(0);
+
 // ====================
 // PRODUCT IMAGES (FIXED FOR VARIATIONS)
 // ====================
@@ -173,8 +175,6 @@ const productImages = isVariableRental
 useEffect(() => {
   setActiveImage(0);
 }, [selectedVariationIndex]);
-
-  const [activeImage, setActiveImage] = useState(0);
 // ====================
 // FULLSCREEN IMAGE VIEWER
 // ====================
@@ -778,7 +778,25 @@ const pedestalItems =
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shelvingTier, shelvingSize, shelvingQuantity, shelvingOptionId]);
+useEffect(() => {
+  if (!editItem) return;
 
+  setProductQty(editItem.qty || 1);
+  setStartDate(editItem.startDate || "");
+  setEndDate(editItem.endDate || "");
+  setCustomTitleText(editItem.customTitle || "");
+
+  if (editItem.addons?.length) {
+    const addonObj = {};
+    editItem.addons.forEach((a) => {
+      addonObj[a.optionId] = {
+        name: a.name,
+        price: a.price,
+      };
+    });
+    setSelectedAddons(addonObj);
+  }
+}, [editItem]);
   if (loadingProduct) {
     return <div className="max-w-7xl mx-auto px-6 py-20">Loading...</div>;
   }
@@ -2007,8 +2025,12 @@ if (addon.optionId === pedestalOptionId) {
               };
 
               // ✅ ADD TO CART IMMEDIATELY (THIS IS THE FIX)
-              addToCart(rentalCartItem);
-
+if (editItem) {
+  replaceCartItem(editItem.cartKey, rentalCartItem);
+  navigate("/cart");
+} else {
+  addToCart(rentalCartItem);
+}
               // still needed for modal UI
               setChosenProduct(rentalCartItem);
 

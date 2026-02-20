@@ -144,7 +144,7 @@ const handleProceed = () => {
             <div className="flex flex-col gap-4">
               {items.map((item) => (
                 <div
-                  key={item.id}
+                  key={item.cartKey}
 className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border border-gray-300 rounded-xl px-3 py-3"
                 >
                   <div className="flex items-center gap-4">
@@ -217,13 +217,27 @@ className="w-20 h-20 rounded-lg object-cover border border-gray-300"
 
                     </div>
 
-                    <button
-                      type="button"
-                      className="text-xs text-red-500 hover:text-red-600"
-onClick={() => removeItem(item.cartKey)}
-                    >
-                      Remove
-                    </button>
+                    <div className="flex gap-3">
+  <button
+    type="button"
+    className="text-xs text-blue-600 hover:text-blue-700"
+    onClick={() =>
+      navigate(`/product/${item.productId}`, {
+        state: { editItem: item },
+      })
+    }
+  >
+    Edit
+  </button>
+
+  <button
+    type="button"
+    className="text-xs text-red-500 hover:text-red-600"
+    onClick={() => removeItem(item.cartKey)}
+  >
+    Remove
+  </button>
+</div>
                   </div>
                 </div>
               ))}
