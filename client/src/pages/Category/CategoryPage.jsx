@@ -3,9 +3,14 @@ import { api } from "../../utils/api";
 import { Link } from "react-router-dom";
 const CategoryLandingPage = () => {
   const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
+// SEARCH STATES
+const [searchTerm, setSearchTerm] = useState("");
+const [searchResults, setSearchResults] = useState([]);
+const [searching, setSearching] = useState(false);
+const [noResult, setNoResult] = useState(false);
   // =========================
   // FETCH RENTAL CATEGORIES
   // =========================
@@ -35,9 +40,52 @@ const CategoryLandingPage = () => {
 
     fetchCategories();
   }, []);
+useEffect(() => {
+  if (searchTerm.length < 2) {
+    setSearchResults([]);
+    setNoResult(false);
+    return;
+  }
 
+  const delay = setTimeout(() => {
+    const keyword = searchTerm.toLowerCase().trim();
+
+// CATEGORY MATCH (word-level match)
+const matchedCategories = categories.filter((cat) => {
+  const words = cat.name.toLowerCase().split(" ");
+  return words.some((word) => word.includes(keyword));
+});
+
+// PRODUCT MATCH (word-level match)
+const matchedProducts = products.filter((product) => {
+  const words = product.title.toLowerCase().split(" ");
+  return words.some((word) => word.includes(keyword));
+});
+    const combined = [
+      ...matchedCategories.map((c) => ({ ...c, type: "category" })),
+      ...matchedProducts.map((p) => ({ ...p, type: "product" })),
+    ];
+
+    setSearchResults(combined);
+    setNoResult(combined.length === 0);
+  }, 300);
+
+  return () => clearTimeout(delay);
+}, [searchTerm, categories, products]);
+useEffect(() => {
+  const fetchProducts = async () => {
+    try {
+      const res = await api("/products?limit=500");
+      setProducts(res?.products || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  fetchProducts();
+}, []);
 return (
-  <section className="page-wrapper py-24 px-6 bg-[#faf9f7]">
+  <section className="page-wrapper py-24 px-6 bg-white">
     
     {/* ========================= */}
     {/* PAGE HEADING */}
@@ -59,7 +107,63 @@ return (
         Explore our curated rental categories and discover the perfect pieces for your event.
       </p>
     </div>
+{/* SEARCH SECTION */}
+<div className="max-w-xl mx-auto mb-14 relative">
+  <input
+    type="text"
+    placeholder="Search categories..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
+    className="w-full px-6 py-4 rounded-full border border-black shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2D2926]/20 text-lg"
+  />
 
+  {/* DROPDOWN RESULTS */}
+  {searchTerm.length > 2 && (
+    <div className="absolute w-full bg-white mt-2 rounded-xl shadow-xl border border-[#e5e2dd] z-50 max-h-72 overflow-y-auto">
+      
+      {searching && (
+        <div className="p-4 text-gray-400 text-center">Searching...</div>
+      )}
+
+      {noResult && (
+        <div className="p-4 text-red-500 text-center">
+          No category/product found with that name.
+        </div>
+      )}
+
+     {searchResults.map((item) => {
+  if (item.type === "category") {
+    return (
+      <Link
+        key={`cat-${item._id}`}
+        to={`/category/${item._id}`}
+        className="block px-6 py-3 hover:bg-[#f5f3ef] transition"
+      >
+        <span className="text-xs text-gray-400 mr-2">Category</span>
+        {item.name}
+      </Link>
+    );
+  }
+
+  if (item.type === "product") {
+    return (
+      <Link
+        key={`prod-${item._id}`}
+        to={`/product/${item._id}`}
+        className="block px-6 py-3 hover:bg-[#f5f3ef] transition"
+      >
+        <span className="text-xs text-gray-400 mr-2">Product</span>
+        {item.title}
+      </Link>
+    );
+  }
+
+  return null;
+})}
+    </div>
+  )}
+</div>
     {/* ========================= */}
     {/* CATEGORY GRID */}
     {/* ========================= */}
