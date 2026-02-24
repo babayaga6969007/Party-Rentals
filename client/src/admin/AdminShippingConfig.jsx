@@ -228,7 +228,7 @@ const AdminShippingConfig = () => {
     <AdminLayout>
       <div className="p-6">
         <h1 className="text-2xl font-bold text-[#2D2926] mb-6">
-          Shipping Configuration
+          Delivery Configuration
         </h1>
 
         {/* Warehouse Location */}

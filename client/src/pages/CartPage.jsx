@@ -1,5 +1,5 @@
 import { useCart } from "../context/CartContext";
-import { useMemo, useState } from "react";
+import {  useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CheckoutSteps from "../components/cart/CheckoutSteps";
 import { api } from "../utils/api";
@@ -285,7 +285,7 @@ className="w-20 h-20 rounded-lg object-cover border border-gray-300"
                   }}
                   className="text-xs text-red-600 hover:text-red-700 mt-1"
                 >
-                  Remove shipping
+                  Remove delivery
                 </button>
               )}
             </div>
@@ -340,7 +340,7 @@ className="w-20 h-20 rounded-lg object-cover border border-gray-300"
   <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-start gap-2">
     <FiAlertCircle className="text-orange-600 mt-0.5 flex-shrink-0" size={16} />
     <p className="text-xs text-orange-700">
-      Shipping cost not included in total. Click "Calculate" above to add shipping.
+      Delivery cost not included in total. Click "Calculate" above to add delivery.
     </p>
   </div>
 )}
@@ -359,13 +359,13 @@ className="w-20 h-20 rounded-lg object-cover border border-gray-300"
   onClick={handleProceed}
   disabled={items.length === 0 || shippingCost === 0}
   className="mt-5 w-full py-3 rounded-full bg-black text-white text-sm font-semibold hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
-  title={shippingCost === 0 ? "Calculate shipping first to proceed" : undefined}
+  title={shippingCost === 0 ? "Calculate delivery first to proceed" : undefined}
 >
   Go to Checkout
 </button>
 {shippingCost === 0 && items.length > 0 && (
   <p className="mt-2 text-xs text-gray-500 text-center">
-    Calculate shipping above to enable checkout.
+    Calculate delivery above to enable checkout.
   </p>
 )}
 

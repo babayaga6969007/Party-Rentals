@@ -440,7 +440,7 @@ const ShippingRatesModal = ({ isOpen, onClose, onShippingCalculated }) => {
         </div>
 
         <p className="mt-4 text-xs text-gray-500">
-          * Shipping charges are indicative. Final cost may vary based on access,
+          * Delivery charges are indicative. Final cost may vary based on access,
           timing, and handling requirements.
         </p>
         </div>

@@ -103,7 +103,7 @@ const Sidebar = () => {
             Shelving Config
           </NavLink>
           <NavLink to="/admin/shipping-config" className={linkClass}>
-            Shipping Config
+            Delivery Config
           </NavLink>
 
         </div>
