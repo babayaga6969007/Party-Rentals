@@ -1,0 +1,210 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+html, body {
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+/* All buttons use pointer cursor */
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* Signage Fonts from public/fonts */
+@font-face {
+  font-family: 'BlackMango-Bold';
+  src: url('/fonts/BlackMango-Bold.otf') format('opentype');
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Bodoni 72 Smallcaps';
+  src: url('/fonts/Bodoni 72 Smallcaps Book.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Bright';
+  src: url('/fonts/Bright TTF.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Farmhouse';
+  src: url('/fonts/Farmhouse.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Futura';
+  src: local('Futura'), local('Futura Std'), local('Futura-Medium');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Greycliff CF Thin';
+  src: url('/fonts/Greycliff_CF_Thin.otf') format('opentype');
+  font-weight: 100;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'SignPainter';
+  src: local('SignPainter'), local('SignPainter-HouseScript'), local('SignPainter Script');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Sloop Script Three';
+  src: url('/fonts/Sloop-ScriptThree.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+
+
+/* Perfect Infinite Loop Animation */
+@keyframes infinite-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-33.3333%);
+  }
+}
+
+.animate-infinite-scroll {
+  animation: infinite-scroll 18s linear infinite;
+  width: fit-content;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.4s ease;
+}
+/* Fix internal container layout */
+.custom-date-container {
+  width: 100% !important;
+}
+
+/* Fix the actual text input */
+.custom-date-input {
+  width: 100% !important;
+  text-align: left !important;
+  padding-left: 10px  !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+}
+
+/* Force placeholder + text to stay left */
+.custom-date-container .rmdp-input {
+  width: 100% !important;
+  text-align: left !important;
+  padding-left: 4px !important;   /* adjust freely */
+  padding-right: 4px !important;
+}
+.page-wrapper {
+  margin-top: 100px;
+}
+.page-wrapper-checkout {
+  margin-top: 130px;
+}
+.page-wrapper-checkoutt {
+  margin-top: 130px;
+  padding-top: 10px;
+}
+/* ==========================================
+   CUSTOM RANGE SLIDER (WORKS IN CHROME)
+========================================== */
+
+.range-slider {
+  position: relative;
+  height: 4px;             
+  background: #ddd;
+  border-radius: 3px;
+  margin-top: 12px;
+}
+
+.range-slider .range-selected {
+  position: absolute;
+  height: 100%;
+  background: #000;
+  border-radius: 3px;
+}
+
+/* Wrapper for the slider inputs */
+.range-input {
+  position: relative;
+  height: 22px; /* ensures thumb fits correctly */
+}
+
+/* Base input tracks */
+.range-input input[type="range"] {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 22px;
+  background: transparent;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* === Chrome / Edge / Safari thumb === */
+.range-input input[type="range"]::-webkit-slider-thumb {
+  pointer-events: auto;
+  -webkit-appearance: none;
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: #000;
+  cursor: pointer;
+  margin-top: -8px;  /* ★ centers the thumb on 4px track */
+}
+
+/* === Firefox thumb === */
+.range-input input[type="range"]::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: #000;
+  cursor: pointer;
+}
+.range-input input[type="range"]::-moz-range-track {
+  background: transparent;
+}
+
+/* Tailwind helper */
+.input {
+  @apply w-full p-3 rounded-lg border border-[#D9C7BE]
+  focus:outline-none focus:ring-1 focus:ring-[#8B5C42]/50;
+}
+/* Remove number input arrows */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Remove number input arrows (Firefox) */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
