@@ -81,8 +81,8 @@ const iconHoverClass =
           <img
             src={logo}
             alt="Logo"
-            className={`h-20 transition-all duration-300 ${
-              scrolled ? "" : "brightness-200 invert"
+className={`h-14 md:h-20 transition-all duration-300 ${
+                scrolled ? "" : "brightness-200 invert"
             }`}
           />
         </Link>
