@@ -135,24 +135,22 @@ className={`h-14 md:h-20 transition-all duration-300 ${
         {/* RIGHT ICONS */}
         <div className="flex items-center gap-5">
 
-         <a
+        <a
   href="mailto:hello@newprojectdesigns.com"
   className={`p-2 rounded-full ${iconHoverClass}
     ${scrolled ? "bg-black" : "bg-white/20 hover:bg-white/40"}`}
 >
-
-            <FiMail size={18} className="text-white" />
-          </a>
-
+  <FiMail size={18} className="text-white" />
+</a>
          <a
-  href="#"
+  href="https://www.instagram.com/newprojectdesigns/"
+  target="_blank"
+  rel="noopener noreferrer"
   className={`p-2 rounded-full ${iconHoverClass}
     ${scrolled ? "bg-black" : "bg-white/20 hover:bg-white/40"}`}
 >
-
-            <FiInstagram size={18} className="text-white" />
-          </a>
-
+  <FiInstagram size={18} className="text-white" />
+</a>
           {/* CART ICON */}
           <Link
             to="/cart"
