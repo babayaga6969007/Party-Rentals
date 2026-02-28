@@ -63,6 +63,8 @@ if (!customer?.addressLine) {
           vinylColor: addon.vinylColor || "",
           vinylHex: addon.vinylHex || "",
           vinylImageUrl: addon.vinylImageUrl || "",
+          vinylWidthInches: addon.vinylWidthInches != null ? Number(addon.vinylWidthInches) : 0,
+          vinylHeightInches: addon.vinylHeightInches != null ? Number(addon.vinylHeightInches) : 0,
           shelvingData: addon.shelvingData ? {
             tier: addon.shelvingData.tier || "",
             size: addon.shelvingData.size || "",
@@ -87,17 +89,30 @@ if (!customer?.addressLine) {
           optionImageUrls: Array.isArray(ps.optionImageUrls) ? ps.optionImageUrls : [],
           price: ps.price || 0
         })) : [],
-        // Explicitly preserve signageData for signage items
-        signageData: item.productType === "signage" ? (item.signageData || {
-          texts: [],
-          backgroundType: "",
-          backgroundColor: "",
-          backgroundImageUrl: ""
-        }) : null
+        // Explicitly preserve signageData for signage items (including signageType, rushProduction)
+        signageData: item.productType === "signage" ? {
+          texts: (item.signageData && item.signageData.texts) ? item.signageData.texts : [],
+          backgroundType: (item.signageData && item.signageData.backgroundType) || "",
+          backgroundColor: (item.signageData && item.signageData.backgroundColor) || "",
+          backgroundImageUrl: (item.signageData && item.signageData.backgroundImageUrl) || "",
+          signageType: (item.signageData && item.signageData.signageType) === "vinyl" ? "vinyl" : "acrylic",
+          rushProduction: !!(item.signageData && item.signageData.rushProduction),
+        } : null,
+        // vinyl-printing only
+        vinylPrintingData: item.productType === "vinyl-printing" && item.vinylPrintingData ? {
+          sizeLabel: item.vinylPrintingData.sizeLabel || "",
+          sizeKey: item.vinylPrintingData.sizeKey || "",
+          price: Number(item.vinylPrintingData.price) || 0,
+          fileUrl: item.vinylPrintingData.fileUrl || "",
+          rushProduction: !!item.vinylPrintingData.rushProduction,
+        } : null,
       };
       
       if (item.productType === "signage" && (!item.productId || item.productId === "signage" || !mongoose.Types.ObjectId.isValid(item.productId))) {
         processed.productId = null; // Set to null for standalone signage items
+      }
+      if (item.productType === "vinyl-printing" && (!item.productId || item.productId === "vinyl-printing" || !mongoose.Types.ObjectId.isValid(item.productId))) {
+        processed.productId = null;
       }
       
       return processed;

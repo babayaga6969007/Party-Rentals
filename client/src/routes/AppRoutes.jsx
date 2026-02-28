@@ -32,6 +32,7 @@ import CategoryPageInside from "../pages/Category/CategoryPageInside";
 import Shop from "../pages/Shop/shop";
 import SecondHProducts from "../pages/SecondHProducts/buyproducts";
 import SignageEditor from "../pages/Signage/SignageEditor";
+import VinylPrinting from "../pages/VinylPrinting/VinylPrinting";
 import Gallery from "../pages/Gallery/Gallery";
 
 // 🛒 NEW Checkout Flow Pages
@@ -51,6 +52,8 @@ import AdminSignages from "../admin/AdminSignages";
 import AdminSignageConfig from "../admin/AdminSignageConfig";
 import AdminShelvingConfig from "../admin/AdminShelvingConfig";
 import AdminShippingConfig from "../admin/AdminShippingConfig";
+import AdminVinylConfig from "../admin/AdminVinylConfig";
+import AdminVinylPrintingConfig from "../admin/AdminVinylPrintingConfig";
 import GalleryAdmin from "../admin/Gallery";
 
 
@@ -78,6 +81,7 @@ const AppRoutes = () => {
           <Route path="/signage" element={<SignageEditor />} />
           <Route path="/signage/:id" element={<SignageEditor />} />
           <Route path="/signage/share/:token" element={<SignageEditor />} />
+          <Route path="/vinyl-printing" element={<VinylPrinting />} />
 
           {/* 🛒 Checkout Flow */}
           <Route path="/cart" element={<CartPage />} />
@@ -141,6 +145,22 @@ const AppRoutes = () => {
   element={
     <ProtectedAdminRoute>
       <AdminShippingConfig />
+    </ProtectedAdminRoute>
+  }
+/>
+<Route
+  path="/admin/vinyl-config"
+  element={
+    <ProtectedAdminRoute>
+      <AdminVinylConfig />
+    </ProtectedAdminRoute>
+  }
+/>
+<Route
+  path="/admin/vinyl-printing-config"
+  element={
+    <ProtectedAdminRoute>
+      <AdminVinylPrintingConfig />
     </ProtectedAdminRoute>
   }
 />

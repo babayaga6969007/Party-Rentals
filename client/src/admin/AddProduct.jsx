@@ -219,20 +219,20 @@ const [variations, setVariations] = useState([]);
       if (!option) return;
 
       const optionId = String(option._id);
-      const shelvingData = a.shelvingData || {};
-      const tierFromOption = option?.tier || "A";
-
-      grouped[groupKey][optionId] = {
-        selected: true,
-        overridePrice: a.overridePrice ?? "",
-        shelvingTier: shelvingData.tier || (a.shelvingTier || tierFromOption),
-        shelvingSize: shelvingData.size || (a.shelvingSize || ""),
-        shelvingQuantity: shelvingData.quantity || (a.shelvingQuantity || 1),
+    const shelvingData = a.shelvingData || {};
+    const tierFromOption = option?.tier || "A";
+    
+   grouped[groupKey][optionId] = {
+  selected: true,
+  overridePrice: a.overridePrice ?? "",
+  shelvingTier: shelvingData.tier || (a.shelvingTier || tierFromOption),
+  shelvingSize: shelvingData.size || (a.shelvingSize || ""),
+  shelvingQuantity: shelvingData.quantity || (a.shelvingQuantity || 1),
         shelvingPriceOverrides: a.shelvingPriceOverrides || null,
-        pedestalCount: Array.isArray(a.pedestals) ? a.pedestals.length : 0,
-        pedestals: Array.isArray(a.pedestals) ? a.pedestals : [],
-      };
-    });
+  pedestalCount: Array.isArray(a.pedestals) ? a.pedestals.length : 0,
+  pedestals: Array.isArray(a.pedestals) ? a.pedestals : [],
+};
+  });
 
     setSelectedAddons(grouped);
   }, [isEditMode, loadedAddons, attributeGroups]);
@@ -396,33 +396,33 @@ if (data.productType === "rental" && data.productSubType === "variable") {
     const useVariationQueue = isVariableRental && variationsWithNewImages.length > 0;
 
     if (isVariableRental) {
-      formData.append(
-        "variations",
-        JSON.stringify(
-          variations.map((v) => ({
-            dimension: v.dimension,
-            pricePerDay: v.pricePerDay,
-            salePrice: v.salePrice || null,
-            stock: v.stock,
+  formData.append(
+  "variations",
+  JSON.stringify(
+    variations.map((v) => ({
+      dimension: v.dimension,
+      pricePerDay: v.pricePerDay,
+      salePrice: v.salePrice || null,
+      stock: v.stock,
             description: (v.description && String(v.description).trim()) ? String(v.description).trim() : "",
-            existingImages: (v.existingImages || []).map((img) => ({
-              public_id: img.public_id,
-              url: img.url,
-            })),
-          }))
-        )
-      );
+      existingImages: (v.existingImages || []).map((img) => ({
+        public_id: img.public_id,
+        url: img.url,
+      })),
+    }))
+  )
+);
       // Queue mode: do NOT append variation images here; upload one variation at a time after create/edit
       if (!useVariationQueue) {
-        variations.forEach((v, i) => {
-          (v.images || []).forEach((img) => {
-            formData.append(`variationImages_${i}`, img);
-          });
-        });
-      }
+ variations.forEach((v, i) => {
+  (v.images || []).forEach((img) => {
+    formData.append(`variationImages_${i}`, img);
+  });
+});
+}
     }
 
-    formData.append("productSubType", rentalSubType);
+formData.append("productSubType", rentalSubType);
 
     if (productType === "rental") {
       formData.append("featured", featured);
@@ -507,7 +507,7 @@ if (data.productType === "rental" && data.productSubType === "variable") {
           if (hasTierC) addonData.shelvingPriceOverrides.tierC = { price: Number(o.tierC.price) };
         }
       }
-    }
+}
 
 if (v.pedestalCount && v.pedestalCount > 0) {
   addonData.pedestals = v.pedestals || [];
@@ -540,7 +540,7 @@ formData.append("isEditMode", String(isEditMode));
 
     formData.append("attributes", JSON.stringify(attributesPayload));
     //  Always send addons (even empty array) so edit can clear them
-formData.append("addons", JSON.stringify(addonsPayload));
+      formData.append("addons", JSON.stringify(addonsPayload));
 
 
 
@@ -577,11 +577,11 @@ if (isEditMode) {
   // CREATE MODE
   if (productType === "rental" && rentalSubType === "variable" && !useVariationQueue) {
     // When not using queue, each variation must have its own image in this request
-    const missingImage = variations.some(
-      (v) =>
-        (!v.images || v.images.length === 0) &&
-        (!v.existingImages || v.existingImages.length === 0)
-    );
+const missingImage = variations.some(
+  (v) =>
+    (!v.images || v.images.length === 0) &&
+    (!v.existingImages || v.existingImages.length === 0)
+);
     if (missingImage) {
       alert("Each variation must have an image");
       return;
@@ -628,10 +628,10 @@ if (isEditMode) {
     try {
       // 5️⃣ First request: create or update product (no variation images when using queue)
       const res = await api(endpoint, {
-        method: isEditMode ? "PUT" : "POST",
+      method: isEditMode ? "PUT" : "POST",
         headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
+      body: formData,
+    });
 
       const productId = isEditMode ? id : res?.product?._id;
       if (!productId) {
@@ -662,12 +662,12 @@ if (isEditMode) {
         setVariationUploadProgress(null);
       }
 
-      if (isEditMode) {
-        sessionStorage.setItem("productEdited", "true");
-      } else {
-        toast.success("Product added successfully!");
-      }
-      window.location.href = "/admin/products";
+    if (isEditMode) {
+      sessionStorage.setItem("productEdited", "true");
+    } else {
+      toast.success("Product added successfully!");
+    }
+    window.location.href = "/admin/products";
     } catch (err) {
       console.error("Product save failed:", err);
       toast.error(err?.message || "Failed to save product. Please try again.");
@@ -994,7 +994,7 @@ if (isEditMode) {
       e.target.value = "";
       return;
     }
-    const existingKeys = new Set(
+const existingKeys = new Set(
       (copy[index].images || []).map((f) => `${f.name}_${f.size}`)
     );
     const filtered = withinSize.filter((f) => !existingKeys.has(`${f.name}_${f.size}`));
@@ -1086,11 +1086,11 @@ if (isEditMode) {
   type="text"
   inputMode="numeric"
   pattern="[0-9]*"
-  className="w-full p-3 border border-gray-400 rounded-lg"
-  value={pricePerDay}
+        className="w-full p-3 border border-gray-400 rounded-lg"
+        value={pricePerDay}
   onChange={(e) => setPricePerDay(e.target.value.replace(/\D/g, ""))}
-  required
-/>
+        required
+      />
 
     </div>
 
@@ -1100,11 +1100,11 @@ if (isEditMode) {
   type="text"
   inputMode="numeric"
   pattern="[0-9]*"
-  className="w-full p-3 border border-gray-400 rounded-lg"
-  value={salePrice}
+        className="w-full p-3 border border-gray-400 rounded-lg"
+        value={salePrice}
   onChange={(e) => setSalePrice(e.target.value.replace(/\D/g, ""))}
-  placeholder="Optional discounted price"
-/>
+        placeholder="Optional discounted price"
+      />
 
     </div>
 
@@ -1114,8 +1114,8 @@ if (isEditMode) {
   type="text"
   inputMode="numeric"
   pattern="[0-9]*"
-  className="w-full p-3 border border-gray-400 rounded-lg"
-  value={availabilityCount}
+        className="w-full p-3 border border-gray-400 rounded-lg"
+        value={availabilityCount}
   onChange={(e) =>
     setAvailabilityCount(
       Math.max(1, Number(e.target.value.replace(/\D/g, "")) || 1)
@@ -1447,39 +1447,39 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
                     {isShelving && isSelected && (
                       <div className="mt-3 pt-3 border-t border-gray-300 space-y-3">
                         <h4 className="font-semibold text-sm text-gray-700">Shelving — select tier</h4>
-                        <div className="flex gap-3">
-                          {["A", "B", "C"].map((tier) => (
-                            <button
-                              key={tier}
-                              type="button"
-                              onClick={() => {
-                                setSelectedAddons((prev) => {
-                                  const groupKey = String(g._id);
-                                  return {
-                                    ...prev,
-                                    [groupKey]: {
-                                      ...(prev[groupKey] || {}),
-                                      [oid]: {
-                                        ...prev[groupKey]?.[oid],
-                                        selected: true,
-                                        shelvingTier: tier,
-                                        shelvingSize: tier === "A" ? "" : "yes",
+                          <div className="flex gap-3">
+                            {["A", "B", "C"].map((tier) => (
+                              <button
+                                key={tier}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedAddons((prev) => {
+                                    const groupKey = String(g._id);
+                                    return {
+                                      ...prev,
+                                      [groupKey]: {
+                                        ...(prev[groupKey] || {}),
+                                        [oid]: {
+                                          ...prev[groupKey]?.[oid],
+                                          selected: true,
+                                          shelvingTier: tier,
+                                          shelvingSize: tier === "A" ? "" : "yes",
                                         shelvingQuantity: 1,
+                                        },
                                       },
-                                    },
-                                  };
-                                });
-                              }}
-                              className={`px-4 py-2 rounded-lg border-2 transition ${
-                                shelvingTier === tier
+                                    };
+                                  });
+                                }}
+                                className={`px-4 py-2 rounded-lg border-2 transition ${
+                                  shelvingTier === tier
                                   ? "border-black bg-gray-50 text-black font-semibold"
-                                  : "border-gray-300 hover:border-gray-400"
-                              }`}
-                            >
-                              Tier {tier}
-                            </button>
-                          ))}
-                        </div>
+                                    : "border-gray-300 hover:border-gray-400"
+                                }`}
+                              >
+                                Tier {tier}
+                              </button>
+                            ))}
+                          </div>
                         {/* Info only (no dropdowns / inputs) */}
                         {shelvingTier && (
                           <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200">
@@ -1492,7 +1492,7 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
                             {shelvingTier === "C" && (
                               <>{shelvingConfig?.tierC?.dimensions || "75\" wide x 25\" deep x 1.5\" thick"} — ${shelvingConfig?.tierC?.price ?? 50}/shelf, max 1 (info only)</>
                             )}
-                          </div>
+                        </div>
                         )}
 
                         {/* Per-product shelving pricing override */}
@@ -1532,7 +1532,7 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
                               }}
                             />
                             <span className="font-medium text-sm text-gray-700">Override shelving pricing for this product</span>
-                          </label>
+                            </label>
                           {useShelvingPriceOverride && shelvingTier && (
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                               {shelvingTier === "A" && (shelvingPriceOverrides?.tierA?.sizes || shelvingTierAOptions).map((s, idx) => (
@@ -1546,29 +1546,29 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
                                     value={((shelvingPriceOverrides?.tierA?.sizes || shelvingTierAOptions)[idx]?.price ?? s.price) ?? ""}
                                     onChange={(ev) => {
                                       const val = ev.target.value === "" ? "" : Number(ev.target.value);
-                                      setSelectedAddons((prev) => {
-                                        const groupKey = String(g._id);
+                                setSelectedAddons((prev) => {
+                                  const groupKey = String(g._id);
                                         const sizes = [...(prev[groupKey]?.[oid]?.shelvingPriceOverrides?.tierA?.sizes || shelvingTierAOptions.map((x) => ({ size: x.size, dimensions: x.dimensions || "", price: x.price })))];
                                         if (sizes[idx] == null) sizes[idx] = { size: s.size, dimensions: s.dimensions || "", price: s.price };
                                         sizes[idx] = { ...sizes[idx], price: val === "" ? 0 : val };
-                                        return {
-                                          ...prev,
-                                          [groupKey]: {
-                                            ...(prev[groupKey] || {}),
-                                            [oid]: {
-                                              ...prev[groupKey]?.[oid],
-                                              selected: true,
+                                  return {
+                                    ...prev,
+                                    [groupKey]: {
+                                      ...(prev[groupKey] || {}),
+                                      [oid]: {
+                                        ...prev[groupKey]?.[oid],
+                                        selected: true,
                                               shelvingPriceOverrides: {
                                                 ...prev[groupKey]?.[oid]?.shelvingPriceOverrides,
                                                 tierA: { sizes },
                                                 tierB: prev[groupKey]?.[oid]?.shelvingPriceOverrides?.tierB || { price: shelvingConfig?.tierB?.price ?? 29 },
                                                 tierC: prev[groupKey]?.[oid]?.shelvingPriceOverrides?.tierC || { price: shelvingConfig?.tierC?.price ?? 50 },
                                               },
-                                            },
-                                          },
-                                        };
-                                      });
-                                    }}
+                                      },
+                                    },
+                                  };
+                                });
+                              }}
                                     className="w-20 p-1.5 border border-gray-300 rounded text-sm"
                                   />
                                   <span className="text-xs text-gray-400">/shelf</span>
@@ -1605,26 +1605,26 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
                                     className="w-20 p-1.5 border border-gray-300 rounded text-sm"
                                   />
                                   <span className="text-xs text-gray-400">/shelf</span>
-                                </div>
-                              )}
+                          </div>
+                        )}
                               {shelvingTier === "C" && (
                                 <div className="inline-flex items-center gap-2">
                                   <span className="text-sm text-gray-600">Tier C</span>
                                   <span className="text-gray-400">$</span>
-                                  <input
-                                    type="number"
+                            <input
+                              type="number"
                                     min="0"
                                     step="1"
                                     value={shelvingPriceOverrides?.tierC?.price ?? shelvingConfig?.tierC?.price ?? 50}
                                     onChange={(ev) => {
                                       const val = ev.target.value === "" ? "" : Number(ev.target.value);
                                       setSelectedAddons((prev) => ({
-                                        ...prev,
-                                        [groupKey]: {
-                                          ...(prev[groupKey] || {}),
-                                          [oid]: {
-                                            ...prev[groupKey]?.[oid],
-                                            selected: true,
+                                    ...prev,
+                                    [groupKey]: {
+                                      ...(prev[groupKey] || {}),
+                                      [oid]: {
+                                        ...prev[groupKey]?.[oid],
+                                        selected: true,
                                             shelvingPriceOverrides: {
                                               ...prev[groupKey]?.[oid]?.shelvingPriceOverrides,
                                               tierA: prev[groupKey]?.[oid]?.shelvingPriceOverrides?.tierA || { sizes: shelvingTierAOptions.map((x) => ({ size: x.size, dimensions: x.dimensions || "", price: x.price })) },
@@ -1638,9 +1638,9 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
                                     className="w-20 p-1.5 border border-gray-300 rounded text-sm"
                                   />
                                   <span className="text-xs text-gray-400">/shelf</span>
-                                </div>
-                              )}
-                            </div>
+                          </div>
+                        )}
+                      </div>
                           )}
                         </div>
                       </div>
@@ -1680,15 +1680,15 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
                         <span className="text-xs font-medium text-center">{o.label}</span>
                       </>
                     ) : (
-                      <span className="inline-flex items-center gap-2">
-                        {isColor && (
-                          <span
-                            className="w-4 h-4 rounded-full border"
-                            style={{ backgroundColor: o.hex || "#000" }}
-                          />
-                        )}
-                        {o.label}
-                      </span>
+                    <span className="inline-flex items-center gap-2">
+                      {isColor && (
+                        <span
+                          className="w-4 h-4 rounded-full border"
+                          style={{ backgroundColor: o.hex || "#000" }}
+                        />
+                      )}
+                      {o.label}
+                    </span>
                     )}
                   </button>
                 );
@@ -1755,7 +1755,7 @@ const shelvingTierAOptions = shelvingConfig?.tierA?.sizes || [];
                   </div>
                 </div>
                 <p className="text-xs text-gray-500">First paint = Price; each additional = Price per addition (when multiple allowed).</p>
-              </div>
+            </div>
             )}
             </>
           )}

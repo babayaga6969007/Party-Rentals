@@ -27,7 +27,9 @@ const Sidebar = () => {
   location.pathname.startsWith("/admin/coupons") ||
   location.pathname.startsWith("/admin/signage-config") ||
   location.pathname.startsWith("/admin/shelving-config") ||
-  location.pathname.startsWith("/admin/shipping-config");
+  location.pathname.startsWith("/admin/shipping-config") ||
+  location.pathname.startsWith("/admin/vinyl-config") ||
+  location.pathname.startsWith("/admin/vinyl-printing-config");
 
 
   const isOrdersActive = location.pathname.startsWith("/admin/orders");
@@ -104,6 +106,12 @@ const Sidebar = () => {
           </NavLink>
           <NavLink to="/admin/shipping-config" className={linkClass}>
             Delivery Config
+          </NavLink>
+          <NavLink to="/admin/vinyl-config" className={linkClass}>
+            Vinyl Config
+          </NavLink>
+          <NavLink to="/admin/vinyl-printing-config" className={linkClass}>
+            Vinyl Printing Config
           </NavLink>
 
         </div>

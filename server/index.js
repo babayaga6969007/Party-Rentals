@@ -73,6 +73,8 @@ const couponRoutes = require("./routes/couponRoutes");
 const signageConfigRoutes = require("./routes/signageConfigRoutes");
 const shelvingConfigRoutes = require("./routes/shelvingConfigRoutes");
 const shippingConfigRoutes = require("./routes/shippingConfigRoutes");
+const vinylConfigRoutes = require("./routes/vinylConfigRoutes");
+const vinylPrintingConfigRoutes = require("./routes/vinylPrintingConfigRoutes");
 const galleryRoutes = require("./routes/galleryRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 
@@ -120,6 +122,12 @@ app.use("/api/shelving-config", shelvingConfigRoutes);
 
 // 🚚 Shipping Config (for admin to manage distance-based shipping prices)
 app.use("/api/shipping-config", shippingConfigRoutes);
+
+// 🎨 Vinyl Wrap Config (price per square inch; admin sets, user enters size in inches)
+app.use("/api/vinyl-config", vinylConfigRoutes);
+
+// 🖼️ Vinyl Printing Config (sizes + prices for vinyl printing page)
+app.use("/api/vinyl-printing-config", vinylPrintingConfigRoutes);
 
 // 🖼️ Gallery (for signage and vinyl wraps images)
 app.use("/api/gallery", galleryRoutes);

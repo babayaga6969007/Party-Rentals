@@ -63,6 +63,11 @@ const SignageEditorContent = () => {
     heightInches,
     configLoading,
     verticalBoardImageUrl,
+    signageType,
+    printFilePrepFee,
+    rushProduction,
+    basePrice,
+    rushFee,
   } = useSignage();
 
   // Track if we've initialized the position for this session
@@ -483,6 +488,8 @@ const SignageEditorContent = () => {
               textWidth: effectiveTextSize.width,
               textHeight: effectiveTextSize.height,
               size: selectedSize,
+              signageType: signageType === "vinyl" ? "vinyl" : "acrylic",
+              rushProduction: !!rushProduction,
             },
           };
 
@@ -548,9 +555,26 @@ const SignageEditorContent = () => {
               </div>
               <div className="text-right">
                 <div className="text-sm text-gray-500">Price</div>
-                <div className="text-xl font-bold text-black">
-                  ${Number(currentPrice || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
+                {(Number(printFilePrepFee) > 0 || rushProduction) ? (
+                  <>
+                    <div className="text-sm text-black">
+                      Initial: ${Number(basePrice ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {Number(printFilePrepFee) > 0 && (
+                        <> + Print file preparation (${Number(printFilePrepFee).toFixed(2)})</>
+                      )}
+                      {rushProduction && Number(rushFee) > 0 && (
+                        <> + Rush production +30% (${Number(rushFee).toFixed(2)})</>
+                      )}
+                    </div>
+                    <div className="text-xl font-bold text-black mt-0.5">
+                      ${Number(currentPrice || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-xl font-bold text-black">
+                    ${Number(currentPrice || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                )}
                 <div className="text-sm text-gray-600 mt-0.5" title="Text area size (updates with scale)">
                   {widthInches != null && heightInches != null && (widthInches > 0 || heightInches > 0)
                     ? `${Number(widthInches).toFixed(2)} in × ${Number(heightInches).toFixed(2)} in`
@@ -607,6 +631,19 @@ const SignageEditorContent = () => {
               </div>
             </div>
           </div>
+
+          {/* Note section at bottom of page */}
+          {!isSharedView && (
+            <div className="mt-8 p-5 bg-white border border-gray-200 rounded-xl shadow-sm">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">Note:</h3>
+              <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                <li>All sign and vinyl orders have a 7 day lead time.</li>
+                <li>Minimum $95 per acrylic or vinyl order.</li>
+                <li>All acrylic and vinyl sign orders must be picked up at our location in Anaheim.</li>
+                <li>Any acrylic sign or vinyl orders added to current rental orders will be delivered with rental items.</li>
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </>

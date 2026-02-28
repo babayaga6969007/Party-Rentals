@@ -506,6 +506,39 @@ width: `${((priceRange[1] - priceRange[0]) / PRICE_MAX) * 100}%`,
             </div>
           </div>
         </div>
+
+        {/* Vinyl Printing Card */}
+        <div
+          className="flex flex-col h-full border-2 border-black rounded-xl shadow-lg
+            transition-all duration-300 group hover:shadow-xl hover:scale-[1.02]
+            bg-gradient-to-br from-gray-50 to-gray-100"
+        >
+          <div className="h-40 shrink-0 rounded-t-xl overflow-hidden bg-gradient-to-br from-gray-800 to-gray-700 flex items-center justify-center">
+            <div className="text-center text-white">
+              <svg className="w-12 h-12 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 4h-2v2h2V7zm0 4h-2v2h2v-2zm0 4h-2v2h2v-2zm-6-8H7v2h2V7zm0 4H7v2h2v-2zm0 4H7v2h2v-2z" />
+              </svg>
+              <p className="text-xs font-semibold">Vinyl Printing</p>
+            </div>
+          </div>
+          <div className="p-4 flex flex-col flex-1 min-h-0">
+            <h3 className="font-bold text-base text-[#2D2926]">
+              Vinyl Printing
+            </h3>
+            <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+              Choose a size, upload your artwork, and add to cart. Pickup in Anaheim. Minimum $95.
+            </p>
+            <div className="mt-auto pt-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
+              <button
+                onClick={(e) => { e.preventDefault(); navigate("/vinyl-printing"); }}
+                className="w-full bg-black text-white px-4 py-2 rounded-lg text-sm shadow-md hover:bg-gray-800 transition"
+              >
+                Get started
+              </button>
+            </div>
+          </div>
+        </div>
+
         {filteredProducts.map((product) => (
           <a
             href={`/buyproducts/${product._id}`}

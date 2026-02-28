@@ -17,6 +17,10 @@ const buildCartKey = (item) => {
     const titleKey = (item.customTitle && String(item.customTitle).trim()) ? String(item.customTitle).trim() : "";
     return `${item.productId}__${item.startDate}__${item.endDate}__${addonKey}__${titleKey}`;
   }
+  if (item.productType === "vinyl-printing") {
+    const vp = item.vinylPrintingData || {};
+    return `vinyl-printing__${vp.sizeKey || ""}__${vp.fileUrl || ""}__${vp.rushProduction ? "rush" : ""}`;
+  }
   const titleKey = (item.customTitle && String(item.customTitle).trim()) ? String(item.customTitle).trim() : "";
   return `${item.productId}__purchase__${titleKey}`;
 };
@@ -56,6 +60,9 @@ export const CartProvider = ({ children }) => {
       // signage-only
       signageData: payload.signageData || null,
 
+      // vinyl-printing only
+      vinylPrintingData: payload.vinylPrintingData || null,
+
       // Custom title when product allows it
       customTitle: payload.customTitle ? String(payload.customTitle).trim() : "",
 
@@ -80,6 +87,11 @@ export const CartProvider = ({ children }) => {
       i.productType === "purchase" &&
       i.productId === normalized.productId
     );
+  }
+
+  // vinyl-printing: match by cartKey (size + file + rush)
+  if (normalized.productType === "vinyl-printing") {
+    return i.cartKey === normalized.cartKey;
   }
 
   // 🔓 RENTAL: must match cartKey (dates + addons)

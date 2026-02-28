@@ -98,7 +98,14 @@ export const SignageProvider = ({ children }) => {
   const [widthFt, setWidthFt] = useState(4);
   const [heightFt, setHeightFt] = useState(8);
   const [pricePerSqInch, setPricePerSqInch] = useState(0);
+  const [printFilePrepFee, setPrintFilePrepFee] = useState(25);
   const [configLoading, setConfigLoading] = useState(true);
+
+  // Signage type: acrylic | vinyl (user-facing choice)
+  const [signageType, setSignageType] = useState("acrylic");
+
+  // Rush production: sign needed in 3-5 days; adds +30% to initial price (excluding print file prep)
+  const [rushProduction, setRushProduction] = useState(false);
 
   // Fetch config from backend
   useEffect(() => {
@@ -157,6 +164,9 @@ export const SignageProvider = ({ children }) => {
           // Price per square inch (1" × 1") for scale-based pricing
           const ppi = Number(res.config.pricePerSqInch);
           setPricePerSqInch(Number.isFinite(ppi) && ppi >= 0 ? ppi : 0);
+          // Print file preparation fee (added to every sign order)
+          const prepFee = Number(res.config.printFilePrepFee);
+          setPrintFilePrepFee(Number.isFinite(prepFee) && prepFee >= 0 ? prepFee : 25);
         }
       } catch (err) {
         console.error("Failed to load signage config:", err);
@@ -258,16 +268,18 @@ export const SignageProvider = ({ children }) => {
     height: textBoxHeight,
   };
 
-  // Get current price: scale-based (pricePerSqInch × widthIn × heightIn) when pricePerSqInch is set; else fallback to size-based
+  // Get current price: base (scale-based or size-based) + print file preparation fee
   const widthInches = canvasWidth > 0 ? (textBoxWidth * widthFt * 12) / canvasWidth : 0;
   const heightInches = canvasHeight > 0 ? (textBoxHeight * heightFt * 12) / canvasHeight : 0;
   const scaleBasedPrice = (pricePerSqInch || 0) * widthInches * heightInches;
-  const currentPrice =
+  const basePrice =
     pricePerSqInch > 0
       ? Math.round(scaleBasedPrice * 100) / 100
       : (textSizes && Object.keys(textSizes).length > 0)
         ? (textSizes[selectedSize]?.price ?? textSizes.medium?.price ?? 0)
         : 0;
+  const rushFee = rushProduction ? Math.round(basePrice * 0.3 * 100) / 100 : 0;
+  const currentPrice = basePrice + (Number(printFilePrepFee) || 0) + rushFee;
 
   // Sync text box dimensions: width = 13.5 inch (from sign dimensions), height from size preset
   const targetTextWidthInches = 13.5;
@@ -398,6 +410,8 @@ export const SignageProvider = ({ children }) => {
     setUserTextScale,
     setTextBoxWidth,
     setTextBoxHeight,
+    setSignageType,
+    setRushProduction,
     setIsDragging,
     setDragOffset,
     setIsTextHovered,
@@ -453,6 +467,11 @@ export const SignageProvider = ({ children }) => {
     widthInches,
     heightInches,
     configLoading,
+    signageType,
+    printFilePrepFee,
+    rushProduction,
+    basePrice,
+    rushFee,
     
     // Computed
     textSize,
@@ -505,6 +524,11 @@ export const SignageProvider = ({ children }) => {
     widthInches,
     heightInches,
     configLoading,
+    signageType,
+    printFilePrepFee,
+    rushProduction,
+    basePrice,
+    rushFee,
     stableSetters,
     stableFunctions,
   ]);

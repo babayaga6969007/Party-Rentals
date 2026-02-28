@@ -6,12 +6,12 @@ const orderItemSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId, 
       ref: "Product", 
       required: function() {
-        // productId is required for rental and purchase, optional for signage
-        return this.productType !== "signage";
+        // productId optional for signage and vinyl-printing
+        return this.productType !== "signage" && this.productType !== "vinyl-printing";
       }
     },
     name: { type: String, required: true },
-    productType: { type: String, enum: ["rental", "purchase", "signage"], required: true },
+    productType: { type: String, enum: ["rental", "purchase", "signage", "vinyl-printing"], required: true },
 
     qty: { type: Number, required: true, min: 1 },
 
@@ -31,6 +31,17 @@ const orderItemSchema = new mongoose.Schema(
       backgroundType: { type: String, default: "" },
       backgroundColor: { type: String, default: "" },
       backgroundImageUrl: { type: String, default: "" },
+      signageType: { type: String, enum: ["acrylic", "vinyl"], default: "acrylic" },
+      rushProduction: { type: Boolean, default: false },
+    },
+
+    // vinyl-printing only
+    vinylPrintingData: {
+      sizeLabel: { type: String, default: "" },
+      sizeKey: { type: String, default: "" },
+      price: { type: Number, default: 0 },
+      fileUrl: { type: String, default: "" },
+      rushProduction: { type: Boolean, default: false },
     },
 
     // Custom title text (e.g. for telephone booth) when product allows it
@@ -45,6 +56,8 @@ const orderItemSchema = new mongoose.Schema(
       vinylColor: { type: String, default: "" },
       vinylHex: { type: String, default: "" },
       vinylImageUrl: { type: String, default: "" },
+      vinylWidthInches: { type: Number, default: 0 },
+      vinylHeightInches: { type: Number, default: 0 },
       shelvingData: {
         tier: { type: String },
         size: { type: String },
@@ -97,6 +110,8 @@ const orderSchema = new mongoose.Schema(
       tax: { type: Number, default: 0 },
       total: { type: Number, required: true },
     },
+    delivery: { type: mongoose.Schema.Types.Mixed, default: null },
+
 coupon: {
   code: { type: String },
   discount: { type: Number },

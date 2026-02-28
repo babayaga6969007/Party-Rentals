@@ -89,6 +89,9 @@ const [pickupTimeFee, setPickupTimeFee] = useState(0);
   const { cartItems, clearCart } = useCart();
   const items = cartItems;
 
+  // Vinyl-printing-only cart: no delivery, pickup at Anaheim — simpler checkout
+  const isVinylPrintingOnly = items.length > 0 && items.every((i) => i.productType === "vinyl-printing");
+
   // ✅ Base pricing (memo to avoid recalculating every render)
   const pricing = useMemo(() => {
     if (location.state?.pricing) {
@@ -113,11 +116,10 @@ const [pickupTimeFee, setPickupTimeFee] = useState(0);
   }, [location.state?.pricing, items]);
 
 
-  // ✅ Extra fees (now stairsFee/setupFee exist)
-const extraFees =
-  (stairsFee ? STAIRS_COST : 0) +
-  deliveryTimeFee +
-  pickupTimeFee;
+  // ✅ Extra fees (vinyl-printing has no delivery/stairs)
+const extraFees = isVinylPrintingOnly
+  ? 0
+  : (stairsFee ? STAIRS_COST : 0) + deliveryTimeFee + pickupTimeFee;
 
   const finalTotal = pricing.total + extraFees;
 
@@ -139,8 +141,8 @@ if (!agreeToTerms) {
     }
     setPaymentError("");
 
-    // Basic validation
-    if (!deliveryDate || !pickupDate) {
+    // Basic validation (skip delivery dates for vinyl-printing-only — pickup at Anaheim)
+    if (!isVinylPrintingOnly && (!deliveryDate || !pickupDate)) {
       setPaymentError("Please select delivery and pickup dates.");
       return;
     }
@@ -190,16 +192,15 @@ if (!agreeToTerms) {
                 discount: appliedCoupon.discount,
               }
               : null,
-            delivery: {
-              deliveryDate,
-              pickupDate,
-              deliveryTime,
-              pickupTime,
-              services: {
-                stairs: stairsFee,
-              
-              },
-            },
+            delivery: isVinylPrintingOnly
+              ? { pickupAtAnaheim: true }
+              : {
+                  deliveryDate,
+                  pickupDate,
+                  deliveryTime,
+                  pickupTime,
+                  services: { stairs: stairsFee },
+                },
             paymentMethod: "Stripe",
             paymentType: mode === "PARTIAL" ? "PARTIAL_60" : "FULL",
             amountPaid: mode === "PARTIAL" ? finalTotal * 0.6 : finalTotal,
@@ -373,7 +374,8 @@ if (!agreeToTerms) {
             </div>
           </section>
 
-          {/* DELIVERY & PICKUP */}
+          {/* DELIVERY & PICKUP — hidden for vinyl-printing-only (pickup at Anaheim) */}
+          {!isVinylPrintingOnly && (
           <section className="mb-6">
             <h3 className="text-sm font-semibold mb-1 text-gray-900">
               Delivery & Pickup
@@ -480,6 +482,13 @@ if (!agreeToTerms) {
             </div>
             
           </section>
+          )}
+
+          {isVinylPrintingOnly && (
+            <p className="mb-6 text-sm text-gray-600">
+              Vinyl print orders are picked up at our location in Anaheim. No delivery.
+            </p>
+          )}
 
           {/* Payment */}
           {/* Payment */}
@@ -506,8 +515,8 @@ if (!agreeToTerms) {
           <h3 className="text-sm font-semibold mb-3">Order Summary</h3>
 
           <div className="mb-3 max-h-40 overflow-auto space-y-2 text-sm">
-            {items.map((item) => (
-              <div key={item.id} className="flex justify-between items-center text-xs">
+            {items.map((item, idx) => (
+              <div key={item.cartKey || `item-${idx}`} className="flex justify-between items-center text-xs">
                 <span className="text-gray-600">
                   {item.name} × {item.qty}
                 </span>

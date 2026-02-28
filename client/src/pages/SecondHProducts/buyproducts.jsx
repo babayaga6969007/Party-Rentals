@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { api } from "../../utils/api";
 import { useCart } from "../../context/CartContext";
+import toast from "react-hot-toast";
 
 
 import {
@@ -146,6 +147,16 @@ const selectedDays =
   const [shelvingSize, setShelvingSize] = useState("");
   const [shelvingQuantity, setShelvingQuantity] = useState(1);
 
+  // Vinyl wrap addon — image upload + size (inches)
+  const [vinylError, setVinylError] = useState("");
+  const [vinylImageFile, setVinylImageFile] = useState(null);
+  const [vinylImagePreview, setVinylImagePreview] = useState("");
+  const [vinylImageUrl, setVinylImageUrl] = useState("");
+  const [vinylImageUploading, setVinylImageUploading] = useState(false);
+  const [vinylWidthInches, setVinylWidthInches] = useState("");
+  const [vinylHeightInches, setVinylHeightInches] = useState("");
+  const [vinylPricePerSqInch, setVinylPricePerSqInch] = useState(0);
+
   // Date selection
   const [selectedDate, setSelectedDate] = useState("");
   
@@ -195,13 +206,50 @@ const addedItem = {
 
 
 
-const handleAddToCart = () => {
-  const unitPrice = effectivePrice;
+const handleAddToCart = async () => {
+const unitPrice = effectivePrice;
+  if (isVinylSelected) {
+    const w = Number(vinylWidthInches);
+    const h = Number(vinylHeightInches);
+    if (!Number.isFinite(w) || w <= 0 || !Number.isFinite(h) || h <= 0) {
+      setVinylError("Please enter width and height in inches (both must be greater than 0).");
+      return;
+    }
+    if (!vinylImageFile && !vinylImageUrl) {
+      setVinylError("Please upload your vinyl wrap design.");
+      return;
+    }
+  }
+  setVinylError("");
+
+  let resolvedVinylImageUrl = vinylImageUrl;
+  if (isVinylSelected && vinylImageFile) {
+    try {
+      setVinylImageUploading(true);
+      const formData = new FormData();
+      formData.append("image", vinylImageFile);
+      const res = await api("/upload/vinyl-image", { method: "POST", body: formData });
+      resolvedVinylImageUrl = res?.url || "";
+      if (!resolvedVinylImageUrl) throw new Error("Upload did not return URL");
+    } catch (err) {
+      setVinylError(err?.message || "Failed to upload image. Please try again.");
+      setVinylImageUploading(false);
+      return;
+    } finally {
+      setVinylImageUploading(false);
+    }
+  }
+
   const addonsLine = Object.entries(selectedAddons).map(([optionId, a]) => ({
     optionId: a.realOptionId ?? optionId,
     name: a.name,
     price: a.price ?? 0,
     shelvingData: a.shelvingData ?? null,
+    vinylColor: optionId === vinylOptionId ? "" : "",
+    vinylHex: optionId === vinylOptionId ? "" : "",
+    vinylImageUrl: optionId === vinylOptionId ? (resolvedVinylImageUrl || "") : "",
+    vinylWidthInches: optionId === vinylOptionId ? (Number(vinylWidthInches) || 0) : undefined,
+    vinylHeightInches: optionId === vinylOptionId ? (Number(vinylHeightInches) || 0) : undefined,
   }));
   const addonsTotalForCart = addonsLine.reduce((s, a) => s + (Number(a.price) || 0), 0);
   const lineTotal = unitPrice * productQty + addonsTotalForCart;
@@ -341,6 +389,13 @@ const shelvingOptionIdFromRendered = shelvingAddon?.optionId ?? null;
 const shelvingOptionId = shelvingOptionIdFromRendered ?? addonsListToShow.find(isShelvingLike)?.optionId ?? null;
 const isShelvingSelected = shelvingOptionId ? !!selectedAddons[shelvingOptionId] : false;
 
+const vinylAddon = renderedAddons.find((a) => {
+  const n = normalize(a?.name ?? "");
+  return n === "vinyl wrap" || n === "vinylwrap";
+});
+const vinylOptionId = vinylAddon?.optionId ?? null;
+const isVinylSelected = vinylOptionId ? !!selectedAddons[vinylOptionId] : false;
+
 // Fetch shelving config for price calculation
 useEffect(() => {
   const fetchConfig = async () => {
@@ -412,6 +467,49 @@ useEffect(() => {
   }
 }, [isShelvingSelected, shelvingTier, shelvingSize, shelvingTierAOptions]);
 
+// Clear vinyl when vinyl addon is deselected
+useEffect(() => {
+  if (!isVinylSelected) {
+    setVinylError("");
+    setVinylImageFile(null);
+    setVinylImagePreview("");
+    setVinylImageUrl("");
+    setVinylWidthInches("");
+    setVinylHeightInches("");
+  }
+}, [isVinylSelected]);
+
+// Fetch vinyl config (price per square inch)
+useEffect(() => {
+  const fetchVinylConfig = async () => {
+    try {
+      const res = await api("/vinyl-config");
+      if (res?.config?.pricePerSqInch != null) {
+        setVinylPricePerSqInch(Number(res.config.pricePerSqInch));
+      }
+    } catch (err) {
+      console.error("Failed to load vinyl config:", err);
+    }
+  };
+  fetchVinylConfig();
+}, []);
+
+// Update vinyl addon price when size or pricePerSqInch changes
+useEffect(() => {
+  if (!vinylOptionId || !isVinylSelected) return;
+  const w = Number(vinylWidthInches);
+  const h = Number(vinylHeightInches);
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return;
+  const price = vinylPricePerSqInch * w * h;
+  setSelectedAddons((prev) => {
+    if (!prev[vinylOptionId]) return prev;
+    return {
+      ...prev,
+      [vinylOptionId]: { ...prev[vinylOptionId], price },
+    };
+  });
+}, [vinylOptionId, isVinylSelected, vinylWidthInches, vinylHeightInches, vinylPricePerSqInch]);
+
 // Sync selectedAddons price when shelving tier/size/quantity changes
 useEffect(() => {
   if (!shelvingOptionId || !isShelvingSelected) return;
@@ -438,6 +536,14 @@ const toggleAddon = (addon) => {
         setShelvingTier("A");
         setShelvingSize("");
         setShelvingQuantity(1);
+      }
+      if (addon.optionId === vinylOptionId) {
+        setVinylError("");
+        setVinylImageFile(null);
+        setVinylImagePreview("");
+        setVinylImageUrl("");
+        setVinylWidthInches("");
+        setVinylHeightInches("");
       }
     } else {
       next[addon.optionId] = {
@@ -774,6 +880,112 @@ if (!product) {
                           </div>
                         </div>
                       )}
+                      {/* Vinyl wrap: size (inches) + image upload when selected */}
+                      {addon.optionId === vinylOptionId && selected && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Size (inches)
+                          </label>
+                          <div className="flex flex-wrap gap-4 mb-4">
+                            <div>
+                              <span className="text-xs text-gray-500 block mb-1">Width</span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.5"
+                                value={vinylWidthInches}
+                                onChange={(e) => setVinylWidthInches(e.target.value)}
+                                placeholder="e.g. 12"
+                                className="w-24 p-2 border border-gray-300 rounded-lg text-sm"
+                              />
+                            </div>
+                            <div>
+                              <span className="text-xs text-gray-500 block mb-1">Height</span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.5"
+                                value={vinylHeightInches}
+                                onChange={(e) => setVinylHeightInches(e.target.value)}
+                                placeholder="e.g. 24"
+                                className="w-24 p-2 border border-gray-300 rounded-lg text-sm"
+                              />
+                            </div>
+                            {vinylPricePerSqInch > 0 && Number(vinylWidthInches) > 0 && Number(vinylHeightInches) > 0 && (
+                              <div className="text-sm text-gray-600 flex items-end pb-2">
+                                ${(vinylPricePerSqInch * Number(vinylWidthInches) * Number(vinylHeightInches)).toFixed(2)} (price per sq in × width × height)
+                              </div>
+                            )}
+                          </div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Upload your vinyl wrap design
+                          </label>
+                          {vinylError && <p className="text-sm text-red-600 mb-2">{vinylError}</p>}
+                          <input
+                            type="file"
+                            accept=".jpg,.jpeg,.pdf,image/jpeg,application/pdf"
+                            className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:font-medium file:text-gray-700 hover:file:bg-gray-200"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const allowed = ["image/jpeg", "application/pdf"];
+                                const ok = allowed.includes(file.type) || /\.(jpe?g|pdf)$/i.test(file.name || "");
+                                if (!ok) {
+                                  setVinylError("Only JPG, JPEG, and PDF files are allowed.");
+                                  e.target.value = "";
+                                  return;
+                                }
+                                if (file.size > 3 * 1024 * 1024) {
+                                  toast.error("Image is too large. Maximum size is 3MB.");
+                                  e.target.value = "";
+                                  return;
+                                }
+                                setVinylImageFile(file);
+                                setVinylImagePreview(file.type === "application/pdf" ? null : URL.createObjectURL(file));
+                                setVinylImageUrl("");
+                                setVinylError("");
+                              } else {
+                                setVinylImageFile(null);
+                                setVinylImagePreview("");
+                                setVinylImageUrl("");
+                              }
+                            }}
+                          />
+                          {vinylImagePreview && (
+                            <div className="mt-3 flex items-center gap-3">
+                              <img src={vinylImagePreview} alt="Vinyl preview" className="w-20 h-20 object-cover rounded border" />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setVinylImageFile(null);
+                                  setVinylImagePreview("");
+                                  setVinylImageUrl("");
+                                }}
+                                className="text-sm text-red-600 hover:text-red-700"
+                              >
+                                Remove image
+                              </button>
+                            </div>
+                          )}
+                          {vinylImageFile && !vinylImagePreview && vinylImageFile.type === "application/pdf" && (
+                            <div className="mt-3 flex items-center gap-3">
+                              <span className="text-sm font-medium text-gray-700">PDF file selected</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setVinylImageFile(null);
+                                  setVinylImagePreview("");
+                                  setVinylImageUrl("");
+                                }}
+                                className="text-sm text-red-600 hover:text-red-700"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          )}
+                          <p className="mt-1 text-xs text-gray-500">JPG, JPEG or PDF only. Max 3MB.</p>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -792,16 +1004,18 @@ if (!product) {
  <button
   onClick={handleAddToCart}
   disabled={
-    (product?.availabilityCount ?? 0) === 0 || isAlreadyInCart
+    (product?.availabilityCount ?? 0) === 0 || isAlreadyInCart || vinylImageUploading
   }
   className={`mt-8 w-full py-3 rounded-lg text-white
     ${
-      isAlreadyInCart || (product?.availabilityCount ?? 0) === 0
+      isAlreadyInCart || (product?.availabilityCount ?? 0) === 0 || vinylImageUploading
         ? "bg-gray-400 cursor-not-allowed"
         : "bg-black hover:bg-[#222222]"
     }`}
 >
-  {isAlreadyInCart
+  {vinylImageUploading
+    ? "Uploading image..."
+    : isAlreadyInCart
     ? "Product already in cart"
     : (product?.availabilityCount ?? 0) === 0
     ? "Out of Stock"
@@ -836,19 +1050,19 @@ if (!product) {
             const paintSrc = opt.imageUrl || (opt.value ? `/paint/${opt.value}` : null);
             return (
             <button
-              key={String(opt._id)}
-              type="button"
-              onClick={() => {
-                setSelectedOptionState((prev) => ({
-                  ...prev,
-                  [g.groupId]: String(opt._id),
-                }));
-              }}
+  key={String(opt._id)}
+  type="button"
+  onClick={() => {
+    setSelectedOptionState((prev) => ({
+      ...prev,
+      [g.groupId]: String(opt._id),
+    }));
+  }}
               className={`rounded-xl border text-sm transition
                 ${selectedOptionState?.[g.groupId] === String(opt._id)
                   ? "border-black bg-black text-white ring-2 ring-black ring-offset-1"
-                  : "border-gray-300 bg-white hover:bg-gray-50"
-                }
+        : "border-gray-300 bg-white hover:bg-gray-50"
+    }
                 ${isPaint ? "flex flex-col items-center gap-1.5 p-2" : "flex items-center gap-2 px-4 py-2"}
               `}
               title={opt.label}
@@ -863,7 +1077,7 @@ if (!product) {
               ) : (
                 opt.label
               )}
-            </button>
+</button>
           );
           })}
         </div>

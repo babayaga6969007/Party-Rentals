@@ -174,6 +174,14 @@ className="w-20 h-20 rounded-lg object-cover border border-gray-300"
     </div>
   )}
 
+  {item.productType === "vinyl-printing" && item.vinylPrintingData && (
+    <div className="mt-1 text-xs text-gray-500">
+      <p>Size: {item.vinylPrintingData.sizeLabel}</p>
+      {item.vinylPrintingData.rushProduction && <p>Rush (3–5 days)</p>}
+      <p>Pickup at Anaheim</p>
+    </div>
+  )}
+
   {item.customTitle && item.customTitle.trim() && (
     <p className="mt-1 text-xs text-gray-600">Title: {item.customTitle}</p>
   )}

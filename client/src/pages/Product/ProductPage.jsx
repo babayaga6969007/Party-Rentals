@@ -85,13 +85,14 @@ const getLowestPriceVariation = (variations = []) => {
   const [signageText, setSignageText] = useState("");
   const [signageError, setSignageError] = useState("");
   // ===== VINYL WRAP STATES =====
-  const [vinylColor, setVinylColor] = useState(""); // e.g. "red" OR "custom"
-  const [vinylHex, setVinylHex] = useState("");     // only when custom
   const [vinylError, setVinylError] = useState("");
   const [vinylImageFile, setVinylImageFile] = useState(null);
   const [vinylImagePreview, setVinylImagePreview] = useState("");
   const [vinylImageUrl, setVinylImageUrl] = useState(""); // Cloudinary URL after upload
   const [vinylImageUploading, setVinylImageUploading] = useState(false);
+  const [vinylWidthInches, setVinylWidthInches] = useState("");
+  const [vinylHeightInches, setVinylHeightInches] = useState("");
+  const [vinylPricePerSqInch, setVinylPricePerSqInch] = useState(0);
 
   const [selectedAddons, setSelectedAddons] = useState({});
   // shape: { [optionId]: { name, price } }
@@ -136,10 +137,10 @@ const [paintCustomActive, setPaintCustomActive] = useState(false);
   const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
 
   return dateObj.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
 };
 
   // Calculate number of days selected
@@ -511,7 +512,7 @@ useEffect(() => {
 
   // ====================
   // ADD-ONS (safe even when product is null during loading)
-const renderedAddons =
+  const renderedAddons =
 product?.addons?.map((a) => {
 const normalizedOptionId =
 typeof a.optionId === "string"
@@ -527,9 +528,9 @@ if (!normalizedOptionId) return null;
 return {
 optionId: normalizedOptionId,
 name: a.option?.label || "Addon",
-finalPrice:
-a.overridePrice !== null && a.overridePrice !== undefined
-? a.overridePrice
+        finalPrice:
+          a.overridePrice !== null && a.overridePrice !== undefined
+            ? a.overridePrice
 : a.option?.priceDelta || 0,
 tier: a.option?.tier || null,
 };
@@ -551,10 +552,10 @@ tier: a.option?.tier || null,
     }) ?? [];
 
   // find signage addon from renderedAddons (if exists for this product)
- const signageAddon = renderedAddons.find((a) => {
-  const n = normalize(a.name);
+  const signageAddon = renderedAddons.find((a) => {
+    const n = normalize(a.name);
   return n.includes("signage");
-});
+  });
 
 
   const signageOptionId = signageAddon?.optionId || null;
@@ -686,28 +687,49 @@ const pedestalItems =
     return 0;
   };
 
-  // 7 basic vinyl colors
-  const vinylColors = [
-    { id: "red", label: "Red" },
-    { id: "blue", label: "Blue" },
-    { id: "green", label: "Green" },
-    { id: "yellow", label: "Yellow" },
-    { id: "black", label: "Black" },
-    { id: "white", label: "White" },
-    { id: "orange", label: "Orange" },
-  ];
-
   // Clear vinyl selections when vinyl wrap gets deselected
   useEffect(() => {
     if (!isVinylSelected) {
-      setVinylColor("");
-      setVinylHex("");
       setVinylError("");
       setVinylImageFile(null);
       setVinylImagePreview("");
       setVinylImageUrl("");
+      setVinylWidthInches("");
+      setVinylHeightInches("");
     }
   }, [isVinylSelected]);
+
+  // Fetch vinyl config (price per square inch)
+  useEffect(() => {
+    const fetchVinylConfig = async () => {
+      try {
+        const res = await api("/vinyl-config");
+        if (res?.config?.pricePerSqInch != null) {
+          setVinylPricePerSqInch(Number(res.config.pricePerSqInch));
+        }
+      } catch (err) {
+        console.error("Failed to load vinyl config:", err);
+      }
+    };
+    fetchVinylConfig();
+  }, []);
+
+  // Update vinyl addon price when size or pricePerSqInch changes
+  useEffect(() => {
+    if (!vinylOptionId || !isVinylSelected) return;
+    const w = Number(vinylWidthInches);
+    const h = Number(vinylHeightInches);
+    if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return;
+    const sqIn = w * h;
+    const price = vinylPricePerSqInch * sqIn;
+    setSelectedAddons((prev) => {
+      if (!prev[vinylOptionId]) return prev;
+      return {
+        ...prev,
+        [vinylOptionId]: { ...prev[vinylOptionId], price },
+      };
+    });
+  }, [vinylOptionId, isVinylSelected, vinylWidthInches, vinylHeightInches, vinylPricePerSqInch]);
 
   // Update tier when shelving addon option changes or when product loads
   useEffect(() => {
@@ -836,11 +858,11 @@ if (addon.optionId === pedestalOptionId) {
 }
 
       } else {
-        next[addon.optionId] = {
-          name: addon.name,
+next[addon.optionId] = {
+  name: addon.name,
           price: addon.optionId === pedestalOptionId ? 0 : addon.finalPrice,
           realOptionId: addon.realOptionId ?? addon.optionId,
-        };
+};
       }
 
       return next;
@@ -860,11 +882,11 @@ if (addon.optionId === pedestalOptionId) {
 
             {/* Main Image */}
             <img
-  src={productImages[activeImage] || ""}
+              src={productImages[activeImage] || ""}
   className="w-full h-full object-cover cursor-zoom-in"
-  alt={product?.title || "Product"}
+              alt={product?.title || "Product"}
   onClick={openImageViewer}
-/>
+            />
 
 
             {/* LEFT ARROW */}
@@ -1163,10 +1185,10 @@ if (addon.optionId === pedestalOptionId) {
                       return (
                         <button
                           key={optId}
-                          type="button"
-                          disabled={!isRental}
-                          onClick={() => {
-                            if (!isRental) return;
+  type="button"
+  disabled={!isRental}
+  onClick={() => {
+    if (!isRental) return;
                             if (isMultiPaint) {
                               setSelectedVarOptions((prev) => {
                                 const arr = Array.isArray(prev[g.groupId]) ? prev[g.groupId] : (prev[g.groupId] != null && prev[g.groupId] !== "" ? [String(prev[g.groupId])] : []);
@@ -1174,8 +1196,8 @@ if (addon.optionId === pedestalOptionId) {
                                 return { ...prev, [g.groupId]: next };
                               });
                             } else {
-                              setSelectedVarOptions((prev) => ({
-                                ...prev,
+    setSelectedVarOptions((prev) => ({
+      ...prev,
                                 [g.groupId]: optId,
                               }));
                             }
@@ -1187,9 +1209,9 @@ if (addon.optionId === pedestalOptionId) {
                           className={`rounded-xl border text-sm transition
                             ${selected
                               ? "border-black bg-black text-white ring-2 ring-black ring-offset-1"
-                              : "border-gray-300 bg-white hover:bg-gray-50"
-                            }
-                            ${!isRental ? "cursor-not-allowed opacity-60" : ""}
+        : "border-gray-300 bg-white hover:bg-gray-50"
+    }
+    ${!isRental ? "cursor-not-allowed opacity-60" : ""}
                             ${isPaint ? "flex flex-col items-center gap-1.5 p-2" : "flex items-center gap-2 px-4 py-2"}
                           `}
                           title={opt.label}
@@ -1204,7 +1226,7 @@ if (addon.optionId === pedestalOptionId) {
                           ) : (
                             opt.label
                           )}
-                        </button>
+</button>
                       );
                     })}
                   </div>
@@ -1258,7 +1280,7 @@ if (addon.optionId === pedestalOptionId) {
   for reference.
 </p>
 
-      </div>
+                </div>
     )}
   </div>
 )}
@@ -1294,7 +1316,7 @@ if (addon.optionId === pedestalOptionId) {
 
 
 {addonsForDisplay.map((addon, index) => {
-  const selected = !!selectedAddons[addon.optionId];
+                  const selected = !!selectedAddons[addon.optionId];
   const isSignage =
     signageOptionId &&
     addon.optionId === signageOptionId;
@@ -1303,42 +1325,42 @@ if (addon.optionId === pedestalOptionId) {
     shelvingOptionId &&
     addon.optionId === shelvingOptionId;
 
-  const isSelectedShelving = isShelving && selected;
+                  const isSelectedShelving = isShelving && selected;
 
-  if (isSignage) {
-    return (
-      <button
+                  if (isSignage) {
+                    return (
+                      <button
         key={`${addon.optionId}-${index}`}
-        type="button"
-        onClick={() => navigate("/signage")}
+                        type="button"
+                        onClick={() => navigate("/signage")}
         className="w-full flex items-center justify-between border-2 border-black rounded-lg px-4 py-3 transition bg-gradient-to-r from-gray-100 to-gray-200 hover:shadow-md"
       >
         <div className="text-left">
-          <div className="font-medium text-gray-700">{addon.name}</div>
-          <div className="text-sm text-gray-500">
-            + $ {addon.finalPrice}
-          </div>
-        </div>
+                            <div className="font-medium text-gray-700">{addon.name}</div>
+                            <div className="text-sm text-gray-500">
+                              + $ {addon.finalPrice}
+                          </div>
+                        </div>
 
         <div className="text-sm font-semibold px-3 py-1 rounded-full bg-black text-white">
           Design →
-        </div>
-      </button>
-    );
-  }
+                        </div>
+                      </button>
+                    );
+                  }
 
-  return (
-    <button
+                  return (
+                    <button
       key={`${addon.optionId}-${index}`}
-      type="button"
-      onClick={() => toggleAddon(addon)}
-      className={`w-full flex items-center justify-between border rounded-lg px-4 py-3 transition
-        ${selected ? "border-black bg-gray-100" : "hover:bg-gray-50"}
-      `}
-    >
-      <div className="text-left">
-        <div className="font-medium text-gray-700">{addon.name}</div>
-        <div className="text-sm text-gray-500">
+                      type="button"
+                      onClick={() => toggleAddon(addon)}
+                      className={`w-full flex items-center justify-between border rounded-lg px-4 py-3 transition
+              ${selected ? "border-black bg-gray-100" : "hover:bg-gray-50"}
+            `}
+                    >
+                      <div className="text-left">
+                        <div className="font-medium text-gray-700">{addon.name}</div>
+                        <div className="text-sm text-gray-500">
           {isSelectedShelving
             ? `+ $ ${calculateShelvingPrice(
                 shelvingTier,
@@ -1346,20 +1368,20 @@ if (addon.optionId === pedestalOptionId) {
                 shelvingQuantity,
                 true
               )}`
-            : `+ $ ${addon.finalPrice}`}
-        </div>
-      </div>
+    : `+ $ ${addon.finalPrice}`}
+</div>
+                      </div>
 
-      <div
-        className={`text-sm font-semibold px-3 py-1 rounded-full
-          ${selected ? "bg-black text-white" : "bg-gray-200 text-gray-700"}
-        `}
-      >
-        {selected ? "Selected" : "Add"}
-      </div>
-    </button>
-  );
-})}
+                      <div
+                        className={`text-sm font-semibold px-3 py-1 rounded-full
+                ${selected ? "bg-black text-white" : "bg-gray-200 text-gray-700"}
+              `}
+                      >
+                        {selected ? "Selected" : "Add"}
+                      </div>
+                    </button>
+                  );
+                })}
 
               </div>
                 {/* ====================
@@ -1441,10 +1463,10 @@ if (addon.optionId === pedestalOptionId) {
 
                   {/* Tier A: size dropdown when sizes available */}
                   {shelvingTier === "A" && shelvingTierAOptions.length > 0 && (
-                    <div className="mb-4">
+                  <div className="mb-4">
                       <label className="block text-sm font-medium text-gray-700 mb-2">Size</label>
-                      <select
-                        value={shelvingSize || ""}
+                    <select
+                      value={shelvingSize || ""}
                         onChange={(e) => {
                           setShelvingSize(e.target.value);
                           setShelvingError("");
@@ -1564,123 +1586,71 @@ if (addon.optionId === pedestalOptionId) {
                       )}
                     </div>
                   )}
-                  {/* ===== VINYL WRAP COLOR PICKER (only if vinyl addon exists AND selected) ===== */}
+                  {/* ===== VINYL WRAP: SIZE (inches) + IMAGE UPLOAD ===== */}
                   {vinylOptionId && isVinylSelected && (
                     <div className="mt-5">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-sm font-medium text-gray-700">
-                          Vinyl Wrap Color (select one)
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Size (inches)
                         </label>
-
-                        {vinylError && (
-                          <span className="text-sm text-red-600">{vinylError}</span>
-                        )}
-                      </div>
-
-                      {/* Color row */}
-                      <div className="mt-3 flex items-center gap-3 flex-wrap">
-                        {/* 7 circles */}
-                        {vinylColors.map((c) => {
-                          const selected = vinylColor === c.id;
-
-                          return (
-                            <button
-                              key={c.id}
-                              type="button"
-                              onClick={() => {
-                                setVinylColor(c.id);
-                                setVinylHex("");
-                                setVinylError("");
-                                setVinylImageFile(null);
-                                setVinylImagePreview("");
-                                setVinylImageUrl("");
-                              }}
-                              title={c.label}
-                              className={`w-9 h-9 rounded-full transition border border-black
-  ${selected ? "ring-2 ring-black" : ""}
-`}
-                              style={{
-                                background:
-                                  c.id === "white"
-                                    ? "#ffffff"
-                                    : c.id === "black"
-                                      ? "#000000"
-                                      : c.id, // red/blue/green/yellow/orange work as css colors
-                              }}
-                            />
-                          );
-                        })}
-
-                        {/* Custom box */}
-                        <div className="relative group">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setVinylColor("custom");
-                              setVinylError("");
-                              setVinylImageFile(null);
-                              setVinylImagePreview("");
-                              setVinylImageUrl("");
-                            }}
-                            className={`h-9 px-3 rounded-lg border text-sm font-medium transition
-            ${vinylColor === "custom" ? "border-black ring-2 ring-black" : "border-gray-300"}
-          `}
-                          >
-                            Custom
-                          </button>
-
-                          {/* Tooltip on hover */}
-                          <div
-                            className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-11
-                     opacity-0 group-hover:opacity-100 transition
-                     bg-black text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap"
-                          >
-                            Choose color from https://htmlcolorcodes.com/
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* HEX input only when custom is selected */}
-                      {vinylColor === "custom" && (
-                        <div className="mt-3">
+                      <div className="flex flex-wrap gap-4 mb-4">
+                        <div>
+                          <span className="text-xs text-gray-500 block mb-1">Width</span>
                           <input
-                            type="text"
-                            value={vinylHex}
-                            onChange={(e) => {
-                              setVinylHex(e.target.value);
-                              setVinylError("");
-                            }}
-                            placeholder="Put HEX code here"
-                            className="w-full p-3 border rounded-lg"
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            value={vinylWidthInches}
+                            onChange={(e) => setVinylWidthInches(e.target.value)}
+                            placeholder="e.g. 12"
+                            className="w-24 p-2 border border-gray-300 rounded-lg text-sm"
                           />
-                          <p className="mt-1 text-xs text-gray-500">
-                            Example: #FF5733
-                          </p>
+                          </div>
+                        <div>
+                          <span className="text-xs text-gray-500 block mb-1">Height</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            value={vinylHeightInches}
+                            onChange={(e) => setVinylHeightInches(e.target.value)}
+                            placeholder="e.g. 24"
+                            className="w-24 p-2 border border-gray-300 rounded-lg text-sm"
+                          />
+                        </div>
+                        {vinylPricePerSqInch > 0 && Number(vinylWidthInches) > 0 && Number(vinylHeightInches) > 0 && (
+                          <div className="text-sm text-gray-600 flex items-end pb-2">
+                            ${(vinylPricePerSqInch * Number(vinylWidthInches) * Number(vinylHeightInches)).toFixed(2)} (price per sq in × width × height)
                         </div>
                       )}
-
-                      {/* Or upload your own image */}
-                      <div className="mt-4 pt-4 border-t border-gray-200">
-                        <p className="text-sm font-medium text-gray-700 mb-2">
-                          Or upload your own design
-                        </p>
+                      </div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Upload your vinyl wrap design
+                      </label>
+                      {vinylError && (
+                        <p className="text-sm text-red-600 mb-2">{vinylError}</p>
+                      )}
                         <input
                           type="file"
-                          accept="image/*"
+                        accept=".jpg,.jpeg,.pdf,image/jpeg,application/pdf"
                           className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:font-medium file:text-gray-700 hover:file:bg-gray-200"
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              if (file.size > 3 * 1024 * 1024) {
-                                toast.error("Image is too large. Maximum size is 3MB per image.");
-                                e.target.value = "";
-                                return;
-                              }
+                            const allowed = ["image/jpeg", "application/pdf"];
+                            const ok = allowed.includes(file.type) || /\.(jpe?g|pdf)$/i.test(file.name || "");
+                            if (!ok) {
+                              setVinylError("Only JPG, JPEG, and PDF files are allowed.");
+                              e.target.value = "";
+                              return;
+                            }
+                            if (file.size > 3 * 1024 * 1024) {
+                              toast.error("Image is too large. Maximum size is 3MB per image.");
+                              e.target.value = "";
+                              return;
+                            }
                               setVinylImageFile(file);
-                              setVinylImagePreview(URL.createObjectURL(file));
+                            setVinylImagePreview(file.type === "application/pdf" ? null : URL.createObjectURL(file));
                               setVinylImageUrl("");
-                              setVinylColor("");
-                              setVinylHex("");
                               setVinylError("");
                             } else {
                               setVinylImageFile(null);
@@ -1709,10 +1679,25 @@ if (addon.optionId === pedestalOptionId) {
                             </button>
                           </div>
                         )}
+                      {vinylImageFile && !vinylImagePreview && vinylImageFile.type === "application/pdf" && (
+                        <div className="mt-3 flex items-center gap-3">
+                          <span className="text-sm font-medium text-gray-700">PDF file selected</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setVinylImageFile(null);
+                              setVinylImagePreview("");
+                              setVinylImageUrl("");
+                            }}
+                            className="text-sm text-red-600 hover:text-red-700"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      )}
                         <p className="mt-1 text-xs text-gray-500">
-                          Image is stored securely and used for your vinyl wrap only.
+                        JPG, JPEG or PDF only. Max 3MB. Stored securely for your vinyl wrap only.
                         </p>
-                      </div>
                     </div>
                   )}
 
@@ -1845,21 +1830,18 @@ if (addon.optionId === pedestalOptionId) {
                 setSignageError("Please enter the signage text.");
                 return;
               }
-              // ===== VINYL WRAP VALIDATION =====
+              // ===== VINYL WRAP VALIDATION (size + image) =====
               if (isVinylSelected) {
-                const hasColor = vinylColor && (vinylColor !== "custom" || /^#([0-9A-Fa-f]{6})$/.test(vinylHex.trim()));
-                const hasImage = vinylImageFile || vinylImageUrl;
-                if (!hasColor && !hasImage) {
-                  setVinylError("Please select a vinyl color or upload your own design.");
+                const w = Number(vinylWidthInches);
+                const h = Number(vinylHeightInches);
+                if (!Number.isFinite(w) || w <= 0 || !Number.isFinite(h) || h <= 0) {
+                  setVinylError("Please enter width and height in inches (both must be greater than 0).");
                   return;
                 }
-                if (vinylColor === "custom") {
-                  const hex = vinylHex.trim();
-                  const isValidHex = /^#([0-9A-Fa-f]{6})$/.test(hex);
-                  if (vinylColor && !isValidHex) {
-                    setVinylError("Please enter a valid HEX code like #FF5733.");
+                const hasImage = vinylImageFile || vinylImageUrl;
+                if (!hasImage) {
+                  setVinylError("Please upload your vinyl wrap design.");
                     return;
-                  }
                 }
               }
 
@@ -1965,15 +1947,20 @@ if (addon.optionId === pedestalOptionId) {
     optionId === signageOptionId ? signageText : "",
 
   vinylColor:
-    optionId === vinylOptionId ? vinylColor : "",
+    optionId === vinylOptionId ? "" : "",
 
   vinylHex:
-    optionId === vinylOptionId ? vinylHex : "",
+    optionId === vinylOptionId ? "" : "",
 
   vinylImageUrl:
     optionId === vinylOptionId
       ? (resolvedVinylImageUrl || vinylImageUrl || "")
       : "",
+
+  vinylWidthInches:
+    optionId === vinylOptionId ? (Number(vinylWidthInches) || 0) : undefined,
+  vinylHeightInches:
+    optionId === vinylOptionId ? (Number(vinylHeightInches) || 0) : undefined,
 
   shelvingData:
     optionId === shelvingOptionId && a.shelvingData
@@ -2029,7 +2016,7 @@ if (editItem) {
   replaceCartItem(editItem.cartKey, rentalCartItem);
   navigate("/cart");
 } else {
-  addToCart(rentalCartItem);
+              addToCart(rentalCartItem);
 }
               // still needed for modal UI
               setChosenProduct(rentalCartItem);

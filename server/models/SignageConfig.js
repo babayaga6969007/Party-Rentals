@@ -29,6 +29,13 @@ const signageConfigSchema = new mongoose.Schema(
       min: 0,
     },
 
+    // Print file preparation fee (added to every acrylic/vinyl sign order)
+    printFilePrepFee: {
+      type: Number,
+      default: 25,
+      min: 0,
+    },
+
     // Active status
     isActive: {
       type: Boolean,
@@ -54,6 +61,7 @@ signageConfigSchema.statics.getConfig = async function () {
       ],
       basePrice: 0,
       pricePerSqInch: 0,
+      printFilePrepFee: 25,
     });
   }
   return config;

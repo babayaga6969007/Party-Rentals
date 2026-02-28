@@ -13,6 +13,8 @@ const AdminSignageConfig = () => {
   const [error, setError] = useState("");
   const [pricePerSqInch, setPricePerSqInch] = useState("");
   const [savingPrice, setSavingPrice] = useState(false);
+  const [printFilePrepFee, setPrintFilePrepFee] = useState("");
+  const [savingPrepFee, setSavingPrepFee] = useState(false);
   const [widthFt, setWidthFt] = useState("");
   const [heightFt, setHeightFt] = useState("");
   const [savingDimensions, setSavingDimensions] = useState(false);
@@ -50,6 +52,11 @@ const AdminSignageConfig = () => {
         res.config.pricePerSqInch != null && res.config.pricePerSqInch !== ""
           ? String(res.config.pricePerSqInch)
           : ""
+      );
+      setPrintFilePrepFee(
+        res.config.printFilePrepFee != null && res.config.printFilePrepFee !== ""
+          ? String(res.config.printFilePrepFee)
+          : "25"
       );
       setWidthFt(res.config.widthFt != null ? String(res.config.widthFt) : "4");
       setHeightFt(res.config.heightFt != null ? String(res.config.heightFt) : "8");
@@ -146,6 +153,33 @@ const AdminSignageConfig = () => {
     }
   };
 
+  const handleSavePrintFilePrepFee = async () => {
+    const val = printFilePrepFee === "" ? 25 : Number(printFilePrepFee);
+    if (val < 0 || isNaN(val)) {
+      toast.error("Print file prep fee must be 0 or a positive number");
+      return;
+    }
+    try {
+      setSavingPrepFee(true);
+      const token = localStorage.getItem("admin_token");
+      const res = await api("/signage-config/admin", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ printFilePrepFee: val }),
+      });
+      setConfig(res.config);
+      setPrintFilePrepFee(String(val));
+      toast.success("Print file prep fee saved");
+    } catch (err) {
+      toast.error(err?.message || "Failed to save print file prep fee");
+    } finally {
+      setSavingPrepFee(false);
+    }
+  };
+
   if (loading) {
     return (
       <AdminLayout>
@@ -204,6 +238,34 @@ const AdminSignageConfig = () => {
             >
               {savingPrice ? "Saving..." : "Save price"}
             </button>
+          </div>
+
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-sm text-gray-600 mb-2">
+              This fee is added to every acrylic or vinyl sign order (in addition to the size-based or area-based price).
+            </p>
+            <div className="flex flex-wrap items-end gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Print file preparation fee ($)</label>
+                <input
+                  type="number"
+                  value={printFilePrepFee}
+                  onChange={(e) => setPrintFilePrepFee(e.target.value)}
+                  className="border rounded px-3 py-2 w-32"
+                  min="0"
+                  step="0.01"
+                  placeholder="25"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleSavePrintFilePrepFee}
+                disabled={savingPrepFee}
+                className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition disabled:opacity-60"
+              >
+                {savingPrepFee ? "Saving..." : "Save"}
+              </button>
+            </div>
           </div>
         </div>
 
