@@ -65,6 +65,8 @@ if (!customer?.addressLine) {
           vinylImageUrl: addon.vinylImageUrl || "",
           vinylWidthInches: addon.vinylWidthInches != null ? Number(addon.vinylWidthInches) : 0,
           vinylHeightInches: addon.vinylHeightInches != null ? Number(addon.vinylHeightInches) : 0,
+          vinylSizeKey: addon.vinylSizeKey || "",
+          vinylSizeLabel: addon.vinylSizeLabel || "",
           shelvingData: addon.shelvingData ? {
             tier: addon.shelvingData.tier || "",
             size: addon.shelvingData.size || "",

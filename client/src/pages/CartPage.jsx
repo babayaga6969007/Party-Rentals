@@ -149,12 +149,22 @@ className="flex flex-col sm:flex-row items-start sm:items-center justify-between
                 >
                   <div className="flex items-center gap-4">
 
-  {/* Product Image */}
-  <img
-    src={item.image}
-    alt={item.name}
-className="w-20 h-20 rounded-lg object-cover border border-gray-300"
-  />
+  {/* Product Image — vinyl-printing: aesthetic placeholder (no image) */}
+  {item.productType === "vinyl-printing" || !item.image ? (
+    <div
+      className="relative w-20 h-20 rounded-lg border border-gray-200 flex items-center justify-center shrink-0 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden"
+      aria-hidden
+    >
+      <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 6px)" }} />
+      <span className="relative text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Vinyl</span>
+    </div>
+  ) : (
+    <img
+      src={item.image}
+      alt={item.name}
+      className="w-20 h-20 rounded-lg object-cover border border-gray-300 shrink-0"
+    />
+  )}
 
   {/* Product Details */}
   <div>

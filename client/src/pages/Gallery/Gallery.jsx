@@ -65,7 +65,7 @@ const Gallery = () => {
               className="text-[#2D2926]/80 text-xl max-w-2xl mx-auto leading-relaxed"
               style={{ fontFamily: '"Cormorant Garamond", serif' }}
             >
-              Custom signage and vinyl wrap designs for your events
+              Immersive event builds that turn spaces into experiences. From concept to installation, we create event environments that make an impact.
             </p>
           </div>
 

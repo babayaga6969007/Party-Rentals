@@ -10,7 +10,7 @@ const buildCartKey = (item) => {
       ? item.addons
           .map(
             (a) =>
-              `${a.optionId || a.name}:${a.vinylColor || ""}:${a.vinylImageUrl || ""}`
+              `${a.optionId || a.name}:${a.vinylColor || ""}:${a.vinylHex || ""}:${a.vinylImageUrl || ""}`
           )
           .join("|")
       : "";

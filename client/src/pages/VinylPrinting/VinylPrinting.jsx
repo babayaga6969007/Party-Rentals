@@ -71,6 +71,8 @@ const VinylPrinting = () => {
   const rushFee = rushProduction && selectedSize ? Math.round(selectedSize.price * 0.3 * 100) / 100 : 0;
   const lineTotal = basePrice + rushFee;
 
+  const MINIMUM_ORDER = 95;
+
   const handleAddToCart = async () => {
     if (!selectedSize) {
       toast.error("Please select a size.");
@@ -78,6 +80,10 @@ const VinylPrinting = () => {
     }
     if (!file && !fileUrl) {
       toast.error("Please upload your file.");
+      return;
+    }
+    if (lineTotal < MINIMUM_ORDER) {
+      toast.error(`Minimum order is $${MINIMUM_ORDER}. Your total is $${lineTotal.toFixed(2)}. Please choose a larger size or add Rush Production.`);
       return;
     }
 
@@ -276,10 +282,15 @@ const VinylPrinting = () => {
                 )}
               </div>
             )}
+            {lineTotal > 0 && lineTotal < MINIMUM_ORDER && (
+              <p className="mb-3 text-sm text-amber-600">
+                Minimum order is ${MINIMUM_ORDER}. Your total is ${lineTotal.toFixed(2)}.
+              </p>
+            )}
             <button
               type="button"
               onClick={handleAddToCart}
-              disabled={!selectedSize || (!file && !fileUrl) || uploading || addingToCart}
+              disabled={!selectedSize || (!file && !fileUrl) || uploading || addingToCart || lineTotal < MINIMUM_ORDER}
               className="inline-flex items-center justify-center gap-2 w-full max-w-sm py-3.5 px-6 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition shadow-lg shadow-black/10"
             >
               <FiShoppingCart className="w-5 h-5" />
@@ -302,7 +313,7 @@ const VinylPrinting = () => {
                 <li>All sign and vinyl orders have a 7 day lead time.</li>
                 <li>All vinyl print orders must be picked up at our location in Anaheim.</li>
                 <li>Any acrylic sign or vinyl orders added to current rental orders will be delivered with rental items.</li>
-                <li>Questions? Message us on our <button type="button" onClick={() => navigate("/contact")} className="text-black underline hover:no-underline">contact page</button>.</li>
+                <li>Questions? Message us on our <a href="/contact" target="_blank" rel="noopener noreferrer" className="text-black underline hover:no-underline">contact page</a>.</li>
               </ul>
             </div>
           </div>
