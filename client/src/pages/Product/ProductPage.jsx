@@ -544,12 +544,27 @@ tier: a.option?.tier || null,
     const n = normalize(a.name);
     return n === "shelving" || n.includes("shelving");
   };
-  const addonsForDisplay =
-    renderedAddons?.filter((a, i, arr) => {
-      if (!isShelvingLike(a)) return true;
-      const firstShelvingIndex = arr.findIndex(isShelvingLike);
-      return i === firstShelvingIndex;
-    }) ?? [];
+  const isSignageLike = (a) => {
+  const n = normalize(a.name);
+  return n.includes("signage");
+};
+
+const isPedestalLike = (a) => {
+  const n = normalize(a.name);
+  return n === "pedestal" || n === "pedestals";
+};
+
+const addonsForDisplay =
+  renderedAddons?.filter((a, i, arr) => {
+    // Remove signage & pedestal from single page
+    if (isSignageLike(a) || isPedestalLike(a)) return false;
+
+    // Keep only one shelving
+    if (!isShelvingLike(a)) return true;
+
+    const firstShelvingIndex = arr.findIndex(isShelvingLike);
+    return i === firstShelvingIndex;
+  }) ?? [];
 
   // find signage addon from renderedAddons (if exists for this product)
   const signageAddon = renderedAddons.find((a) => {
@@ -1384,76 +1399,7 @@ next[addon.optionId] = {
                 })}
 
               </div>
-                {/* ====================
-    PEDESTALS DROPDOWN
-==================== */}
-{pedestalOptionId && isPedestalSelected && (
-  <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-    <h4 className="font-semibold text-[#2D2926] mb-3">Pedestals</h4>
-
-    <label className="block text-sm font-medium text-gray-700 mb-2">
-      Select a pedestal (dimension + price)
-    </label>
-
-    <select
-      className="w-full p-2 border rounded-lg bg-white"
-      value={selectedPedestalIndex}
-      onChange={(e) => {
-        const idxStr = e.target.value;
-        setSelectedPedestalIndex(idxStr);
-
-        // if user chose "Select..."
-        if (idxStr === "") {
-          setSelectedAddons((prev) => ({
-            ...prev,
-            [pedestalOptionId]: {
-              ...prev[pedestalOptionId],
-              price: 0,
-              pedestalData: null,
-            },
-          }));
-          return;
-        }
-
-        const idx = Number(idxStr);
-        const chosen = pedestalItems[idx];
-
-        setSelectedAddons((prev) => ({
-          ...prev,
-          [pedestalOptionId]: {
-            ...prev[pedestalOptionId],
-            price: Number(chosen?.price) || 0,
-            pedestalData: chosen ? { dimension: chosen.dimension, price: Number(chosen.price) || 0 } : null,
-          },
-        }));
-      }}
-    >
-      <option value="">— Select pedestal —</option>
-
-      {pedestalItems.map((p, idx) => (
-        <option key={idx} value={String(idx)}>
-          {p.dimension} (+ $ {Number(p.price || 0)})
-        </option>
-      ))}
-    </select>
-
-    {selectedAddons[pedestalOptionId]?.pedestalData && (
-      <div className="mt-3 text-sm text-gray-700">
-        Selected:{" "}
-        <span className="font-semibold">
-          {selectedAddons[pedestalOptionId].pedestalData.dimension}
-        </span>{" "}
-        (+ $ {selectedAddons[pedestalOptionId].pedestalData.price})
-      </div>
-    )}
-
-    {pedestalItems.length === 0 && (
-      <div className="mt-3 text-sm text-red-600">
-        No pedestal options found for this product.
-      </div>
-    )}
-  </div>
-)}
+               
               {/* Shelving: single tier from product addon (no tier selector on client) */}
               {shelvingOptionId && isShelvingSelected && (
                 <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -1923,6 +1869,10 @@ next[addon.optionId] = {
                 productId: product._id,
                 name: product.title,
                 productType: "rental",
+                hasPedestal: !!pedestalOptionId,
+hasSignage: !!signageOptionId,
+pedestalItems: pedestalItems || [],
+signagePrice: signageAddon?.finalPrice || 0,
 
                 qty: productQty,
                 unitPrice: effectivePricePerDay,

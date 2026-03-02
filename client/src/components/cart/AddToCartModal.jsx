@@ -2,15 +2,27 @@ import { FiX } from "react-icons/fi";
 
 import { useCart } from "../../context/CartContext";
 import { useNavigate } from "react-router-dom";
-
+import { useState } from "react";
 export default function AddToCartModal({ open, onClose, product, addons, onGoToCart, onAddRecommended }) {
-  const { addToCart } = useCart();
+const { addToCart, replaceCartItem } = useCart();
 const navigate = useNavigate();
+const [selectedPedestalIndex, setSelectedPedestalIndex] = useState("");
 
-  if (!open) return null;
+if (!open) return null;
+const baseAddonTotal = (product.addons || []).reduce(
+  (sum, a) => sum + (Number(a.price) || 0),
+  0
+);
 
- 
+const baseProductTotal =
+  Number(product.lineTotal || 0) - baseAddonTotal;
 
+const computedTotal =
+  baseProductTotal +
+  (product.addons || []).reduce(
+    (sum, a) => sum + (Number(a.price) || 0),
+    0
+  );
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-start pt-20 z-50">
 
@@ -32,7 +44,7 @@ const navigate = useNavigate();
             <p className="font-semibold">{product.name}</p>
             <p className="text-sm text-gray-500">Qty: {product.qty}</p>
 <p className="text-sm text-gray-700 mt-1">
-  ${product.lineTotal}
+${computedTotal.toFixed(2)}
 </p>
           </div>
         </div>
@@ -74,17 +86,97 @@ const navigate = useNavigate();
 
         </div>
 
-        <div className="mt-6 border-t pt-4 text-center">
-  <button
-    onClick={() => {
-      onClose();
-      navigate("/category");
-    }}
-  className="w-full py-3 rounded-lg bg-black text-white hover:bg-gray-200 hover:text-black text-sm font-semibold transition"
-  >
-    View More Rental Products
-  </button>
-</div>
+       {/* Pedestal / Signage Options (Moved from product page) */}
+{(product?.hasPedestal || product?.hasSignage) && (
+  <div className="mt-5 border-t pt-4">
+
+    <h3 className="font-semibold mb-3 text-sm text-gray-800">
+      Additional Options
+    </h3>
+
+    {/* Pedestal */}
+    {product.hasPedestal && product.pedestalItems?.length > 0 && (
+  <div className="mb-4">
+    <label className="block text-sm font-medium mb-2">
+      Select Pedestal
+    </label>
+
+    <select
+      className="w-full p-2 border rounded-lg"
+      value={selectedPedestalIndex}
+      onChange={(e) => {
+        const idx = e.target.value;
+        setSelectedPedestalIndex(idx);
+
+        if (idx === "") return;
+
+const chosen = product?.pedestalItems?.[idx];
+if (!chosen) return;
+        const pedestalPrice = Number(chosen.price) || 0;
+
+// remove old pedestal if exists
+const filteredAddons = (product.addons || []).filter(
+  (a) => a.name !== "Pedestals"
+);
+
+const updatedAddons = [
+  ...filteredAddons,
+  {
+    optionId: "pedestal",
+    name: "Pedestals",
+    price: pedestalPrice,
+    pedestalData: {
+      dimension: chosen.dimension,
+      price: pedestalPrice,
+    },
+  },
+];
+
+// calculate new total
+const addonsTotal = updatedAddons.reduce(
+  (sum, a) => sum + (Number(a.price) || 0),
+  0
+);
+
+const baseWithoutAddons =
+  Number(product.lineTotal || 0) -
+  (product.addons || []).reduce(
+    (sum, a) => sum + (Number(a.price) || 0),
+    0
+  );
+
+const updatedItem = {
+  ...product,
+  addons: updatedAddons,
+  lineTotal: baseWithoutAddons + addonsTotal,
+};
+
+replaceCartItem(updatedItem);
+      }}
+    >
+      <option value="">Select pedestal</option>
+      {product.pedestalItems.map((p, idx) => (
+        <option key={idx} value={idx}>
+          {p.dimension} (+ ${p.price})
+        </option>
+      ))}
+    </select>
+  </div>
+)}
+    {/* Signage */}
+    {product.hasSignage && (
+      <div className="mb-4">
+        <button
+          onClick={() => navigate("/signage")}
+          className="w-full border rounded-lg px-4 py-3 flex justify-between items-center hover:bg-gray-50"
+        >
+          <span>Add Signage</span>
+          <span>+ ${product.signagePrice}</span>
+        </button>
+      </div>
+    )}
+  </div>
+)}
 
 
       </div>
