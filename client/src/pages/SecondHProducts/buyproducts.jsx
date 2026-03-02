@@ -1168,7 +1168,7 @@ if (!product) {
 
       {/* Title */}
       <h2 className="text-2xl font-bold text-[#2D2926] mb-4">
-        Just Added to Your Bag
+        Just Added to Your Cart
       </h2>
 
       {/* PRODUCT ROW */}
@@ -1204,7 +1204,7 @@ if (!product) {
 <Link to="/cart" className="flex-1">
 
           <button className="w-full py-3 rounded-full bg-black text-white hover:bg-gray-800">
-            Bag & Checkout →
+            Checkout →
           </button>
         </Link>
       </div>

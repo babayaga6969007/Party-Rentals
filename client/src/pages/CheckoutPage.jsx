@@ -16,11 +16,11 @@ const STAIRS_COST = 250;
 // DELIVERY / PICKUP TIME SLOTS
 // ====================
 const TIME_SLOTS = [
-  { label: "6:00am - 8:00am", fee: 50, type: "early" },
+  { label: "6:00am - 8:00am", fee: 100, type: "early" },
   { label: "9:00am - 12:00pm", fee: 0 },
   { label: "1:00pm - 3:00pm", fee: 0 },
-  { label: "4:00pm - 7:00pm", fee: 0 },
-  { label: "8:00pm - 10:00pm", fee: 50, type: "late" },
+  { label: "4:00pm - 8:00pm", fee: 0 },
+  { label: "9:00pm - 10:00pm", fee: 100, type: "late" },
 ];
 
 // ====================
@@ -412,7 +412,7 @@ if (!agreeToTerms) {
   <option value="">Select time</option>
   {TIME_SLOTS.map((t) => (
     <option key={t.label} value={t.label}>
-      {t.label}{t.fee ? " (+$50)" : ""}
+      {t.label}{t.fee ? " (+$100)" : ""}
     </option>
   ))}
 </select>
@@ -446,7 +446,7 @@ if (!agreeToTerms) {
   <option value="">Select time</option>
   {TIME_SLOTS.map((t) => (
     <option key={t.label} value={t.label}>
-      {t.label}{t.fee ? " (+$50)" : ""}
+      {t.label}{t.fee ? " (+$100)" : ""}
     </option>
   ))}
 </select>

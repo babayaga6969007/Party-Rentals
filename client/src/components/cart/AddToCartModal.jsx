@@ -69,7 +69,7 @@ const navigate = useNavigate();
 
   className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-900"
 >
-  Bag & Checkout
+  Checkout
 </button>
 
         </div>
