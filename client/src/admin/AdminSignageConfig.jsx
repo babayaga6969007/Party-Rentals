@@ -221,7 +221,7 @@ const AdminSignageConfig = () => {
   return (
     <AdminLayout>
       <div className="p-6">
-        <h1 className="text-2xl font-bold mb-6">Signage Configuration</h1>
+        <h1 className="text-2xl font-bold mb-6">Acrylic Vinyl Signage Configuration</h1>
 
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4">Pricing (per square inch)</h2>

@@ -247,7 +247,7 @@ const Gallery = () => {
     <AdminLayout>
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-semibold">Visual Showcase Management</h1>
+          <h1 className="text-3xl font-semibold">Showcase / Vinyl Management</h1>
           <button
             onClick={() => setShowAddModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition"

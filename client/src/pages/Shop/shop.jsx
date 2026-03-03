@@ -475,7 +475,7 @@ width: `${((priceRange[1] - priceRange[0]) / PRICE_MAX) * 100}%`,
       </div>
     ) : (
       <>
-        {/* Custom Signage Design Card - First Position */}
+        {/* Acrylic and Vinyl Signage Card - First Position */}
         <div
           className="flex flex-col h-full border-2 border-black rounded-xl shadow-lg
             transition-all duration-300 group hover:shadow-xl hover:scale-[1.02]
@@ -486,15 +486,15 @@ width: `${((priceRange[1] - priceRange[0]) / PRICE_MAX) * 100}%`,
               <svg className="w-12 h-12 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
               </svg>
-              <p className="text-xs font-semibold">Custom Signage</p>
+              <p className="text-xs font-semibold">Acrylic & Vinyl</p>
             </div>
           </div>
           <div className="p-4 flex flex-col flex-1 min-h-0">
             <h3 className="font-bold text-base text-[#2D2926]">
-              Custom Signage Design
+              Acrylic and Vinyl Signage
             </h3>
             <p className="text-sm text-gray-600 mt-2 line-clamp-2">
-              Create personalized signage with custom text, fonts, colors, and backgrounds for your events.
+              Create personalized acrylic and vinyl signage with custom text, fonts, colors, and backgrounds for your events.
             </p>
             <div className="mt-auto pt-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
               <button
