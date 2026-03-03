@@ -349,8 +349,12 @@ const SignageEditorContent = () => {
       const cw = canvasWidth || 600;
       const ch = canvasHeight || 1200;
       const b = getBoardBounds(cw, ch);
-      const clampedW = Math.min(b.width, newWidth);
-      const clampedH = Math.min(b.height, newHeight);
+      // Keep box inside board with small inset so right/bottom don't overshoot
+      const RESIZE_INSET = 6;
+      const maxWFromRight = Math.max(0, b.left + b.width - anchorX - RESIZE_INSET);
+      const maxHFromBottom = Math.max(0, b.top + b.height - anchorY - RESIZE_INSET);
+      const clampedW = Math.max(40, Math.min(newWidth, b.width, maxWFromRight));
+      const clampedH = Math.max(24, Math.min(newHeight, b.height, maxHFromBottom));
       const centerX = anchorX + clampedW / 2;
       const centerY = anchorY + clampedH / 2;
       setTextBoxWidth(clampedW);
@@ -391,8 +395,12 @@ const SignageEditorContent = () => {
       const cw = canvasWidth || 600;
       const ch = canvasHeight || 1200;
       const b = getBoardBounds(cw, ch);
-      const clampedW = Math.min(b.width, newWidth);
-      const clampedH = Math.min(b.height, newHeight);
+      // Keep box inside board with small inset so right/bottom don't overshoot
+      const RESIZE_INSET = 6;
+      const maxWFromRight = Math.max(0, b.left + b.width - anchorX - RESIZE_INSET);
+      const maxHFromBottom = Math.max(0, b.top + b.height - anchorY - RESIZE_INSET);
+      const clampedW = Math.max(40, Math.min(newWidth, b.width, maxWFromRight));
+      const clampedH = Math.max(24, Math.min(newHeight, b.height, maxHFromBottom));
       const centerX = anchorX + clampedW / 2;
       const centerY = anchorY + clampedH / 2;
       setTextBoxWidth(clampedW);
@@ -541,10 +549,10 @@ const SignageEditorContent = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center mb-4 bg-gray-50 -mx-6 px-6 py-4 rounded-lg">
             <div className="flex justify-center order-2 lg:order-1">
               <h2
-                className="text-4xl font-bold text-[#2D2926]"
+                className="text-2xl md:text-3xl font-bold text-[#2D2926]"
                 style={{ fontFamily: "'Public Sans', sans-serif" }}
               >
-                Signage
+                Acrylic and Vinyl Signage
               </h2>
             </div>
             <div className="lg:col-span-2 flex items-center justify-between order-1 lg:order-2 flex-wrap gap-2">
@@ -577,7 +585,7 @@ const SignageEditorContent = () => {
                 )}
                 <div className="text-sm text-gray-600 mt-0.5" title="Text area size (updates with scale)">
                   {widthInches != null && heightInches != null && (widthInches > 0 || heightInches > 0)
-                    ? `${Number(widthInches).toFixed(2)} in × ${Number(heightInches).toFixed(2)} in`
+                    ? `${Number(widthInches * (90 / 35)).toFixed(2)} in × ${Number(heightInches).toFixed(2)} in`
                     : ""}
                 </div>
               </div>

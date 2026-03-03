@@ -56,9 +56,9 @@ exports.uploadGalleryImage = async (req, res) => {
   try {
     const { title, subtitle, category, order } = req.body;
 
-    if (!title || !category) {
+    if (!category) {
       return res.status(400).json({ 
-        message: "Title and category are required" 
+        message: "Category is required" 
       });
     }
 
@@ -89,7 +89,7 @@ exports.uploadGalleryImage = async (req, res) => {
 
     // Save to database
     const galleryImage = await GalleryImage.create({
-      title: title.trim(),
+      title: (title && typeof title === "string" ? title.trim() : "") || "",
       subtitle: subtitle?.trim() || "",
       category,
       image: {

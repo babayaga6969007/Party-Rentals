@@ -4,7 +4,7 @@ const galleryImageSchema = new mongoose.Schema(
   {
     title: {
       type: String,
-      required: [true, "Image title is required"],
+      default: "",
       trim: true,
     },
     subtitle: {

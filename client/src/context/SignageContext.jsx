@@ -97,7 +97,8 @@ export const SignageProvider = ({ children }) => {
   const [canvasHeight, setCanvasHeight] = useState(DEFAULT_CANVAS_HEIGHT);
   const [widthFt, setWidthFt] = useState(4);
   const [heightFt, setHeightFt] = useState(8);
-  const [pricePerSqInch, setPricePerSqInch] = useState(0);
+  const [pricePerSqInchAcrylic, setPricePerSqInchAcrylic] = useState(0);
+  const [pricePerSqInchVinyl, setPricePerSqInchVinyl] = useState(0);
   const [printFilePrepFee, setPrintFilePrepFee] = useState(25);
   const [configLoading, setConfigLoading] = useState(true);
 
@@ -161,9 +162,12 @@ export const SignageProvider = ({ children }) => {
           if (res.config.backgroundGradients && res.config.backgroundGradients.length > 0) {
             setBackgroundGradients(res.config.backgroundGradients);
           }
-          // Price per square inch (1" × 1") for scale-based pricing
+          // Price per square inch for acrylic and vinyl (use type-specific or fallback to legacy pricePerSqInch)
           const ppi = Number(res.config.pricePerSqInch);
-          setPricePerSqInch(Number.isFinite(ppi) && ppi >= 0 ? ppi : 0);
+          const ppiAcrylic = res.config.pricePerSqInchAcrylic != null ? Number(res.config.pricePerSqInchAcrylic) : ppi;
+          const ppiVinyl = res.config.pricePerSqInchVinyl != null ? Number(res.config.pricePerSqInchVinyl) : ppi;
+          setPricePerSqInchAcrylic(Number.isFinite(ppiAcrylic) && ppiAcrylic >= 0 ? ppiAcrylic : 0);
+          setPricePerSqInchVinyl(Number.isFinite(ppiVinyl) && ppiVinyl >= 0 ? ppiVinyl : 0);
           // Print file preparation fee (added to every sign order)
           const prepFee = Number(res.config.printFilePrepFee);
           setPrintFilePrepFee(Number.isFinite(prepFee) && prepFee >= 0 ? prepFee : 25);
@@ -271,6 +275,7 @@ export const SignageProvider = ({ children }) => {
   // Get current price: base (scale-based or size-based) + print file preparation fee
   const widthInches = canvasWidth > 0 ? (textBoxWidth * widthFt * 12) / canvasWidth : 0;
   const heightInches = canvasHeight > 0 ? (textBoxHeight * heightFt * 12) / canvasHeight : 0;
+  const pricePerSqInch = signageType === "vinyl" ? pricePerSqInchVinyl : pricePerSqInchAcrylic;
   const scaleBasedPrice = (pricePerSqInch || 0) * widthInches * heightInches;
   const basePrice =
     pricePerSqInch > 0

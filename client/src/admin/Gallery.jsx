@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { FiPlus, FiEdit2, FiTrash2, FiX } from "react-icons/fi";
+import { FiPlus, FiEdit2, FiTrash2, FiX, FiInfo } from "react-icons/fi";
 import AdminLayout from "./AdminLayout";
 import { api } from "../utils/api";
 import toast from "react-hot-toast";
+import ConfirmDeleteModal from "../components/admin/ConfirmDeleteModal";
 
 const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024; // 3MB
 
@@ -30,6 +31,10 @@ const Gallery = () => {
   const [editingPreview, setEditingPreview] = useState("");
   const [editingOrder, setEditingOrder] = useState(0);
   const [editingIsActive, setEditingIsActive] = useState(true);
+
+  // Delete confirmation
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null });
+  const [deleting, setDeleting] = useState(false);
 
   /* =========================
      FETCH IMAGES
@@ -88,10 +93,6 @@ const Gallery = () => {
      ADD IMAGE
   ========================= */
   const addImage = async () => {
-    if (!newTitle.trim()) {
-      toast.error("Title is required");
-      return;
-    }
     if (!newImage) {
       toast.error("Image is required");
       return;
@@ -102,7 +103,7 @@ const Gallery = () => {
       const token = localStorage.getItem("admin_token");
 
       const fd = new FormData();
-      fd.append("title", newTitle.trim());
+      fd.append("title", (newTitle || "").trim());
       fd.append("subtitle", newSubtitle.trim());
       fd.append("category", newCategory);
       fd.append("order", String(newOrder));
@@ -148,17 +149,12 @@ const Gallery = () => {
   };
 
   const updateImage = async () => {
-    if (!editingTitle.trim()) {
-      toast.error("Title is required");
-      return;
-    }
-
     try {
       setUploading(true);
       const token = localStorage.getItem("admin_token");
 
       const fd = new FormData();
-      fd.append("title", editingTitle.trim());
+      fd.append("title", (editingTitle || "").trim());
       fd.append("subtitle", editingSubtitle.trim());
       fd.append("category", editingCategory);
       fd.append("order", String(editingOrder));
@@ -191,10 +187,20 @@ const Gallery = () => {
   /* =========================
      DELETE IMAGE
   ========================= */
-  const deleteImage = async (id) => {
-    if (!confirm("Are you sure you want to delete this image?")) return;
+  const openDeleteConfirm = (id) => {
+    setDeleteConfirm({ isOpen: true, id });
+  };
+
+  const closeDeleteConfirm = () => {
+    if (!deleting) setDeleteConfirm({ isOpen: false, id: null });
+  };
+
+  const confirmDeleteImage = async () => {
+    const id = deleteConfirm.id;
+    if (!id) return;
 
     try {
+      setDeleting(true);
       const token = localStorage.getItem("admin_token");
 
       await api(`/gallery/admin/${id}`, {
@@ -205,10 +211,13 @@ const Gallery = () => {
       });
 
       toast.success("Image deleted successfully");
+      setDeleteConfirm({ isOpen: false, id: null });
       fetchImages();
     } catch (err) {
       console.error(err);
       toast.error(err.message || "Failed to delete image");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -247,6 +256,18 @@ const Gallery = () => {
           </button>
         </div>
 
+        {/* Info section */}
+        <div className="mb-6 p-4 rounded-xl bg-gray-50 border border-gray-200 flex gap-3">
+          <FiInfo className="w-5 h-5 text-gray-500 shrink-0 mt-0.5" />
+          <div className="text-sm text-gray-700">
+            <p className="font-medium text-gray-800 mb-1">Where these images appear</p>
+            <ul className="list-disc list-inside space-y-0.5 text-gray-600">
+              <li><strong>Showcase</strong> — shown on the Visual Showcase page.</li>
+              <li><strong>Vinyl Wraps</strong> — shown in a section below on the Vinyl Printing page.</li>
+            </ul>
+          </div>
+        </div>
+
         {/* Filter */}
         <div className="flex gap-2 mb-6">
           {["all", "signage", "vinyl-wraps"].map((f) => (
@@ -264,7 +285,7 @@ const Gallery = () => {
               {f === "all"
                 ? "All"
                 : f === "signage"
-                ? "Signage"
+                ? "Showcase"
                 : "Vinyl Wraps"}
             </button>
           ))}
@@ -313,7 +334,7 @@ const Gallery = () => {
                         }
                       `}
                     >
-                      {img.category === "signage" ? "Signage" : "Vinyl Wraps"}
+                      {img.category === "signage" ? "Showcase" : "Vinyl Wraps"}
                     </span>
                     <span className="text-xs text-gray-500">Order: {img.order}</span>
                   </div>
@@ -325,7 +346,7 @@ const Gallery = () => {
                       <FiEdit2 /> Edit
                     </button>
                     <button
-                      onClick={() => deleteImage(img._id)}
+                      onClick={() => openDeleteConfirm(img._id)}
                       className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition"
                     >
                       <FiTrash2 /> Delete
@@ -355,13 +376,13 @@ const Gallery = () => {
               </div>
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Title *</label>
+                  <label className="block text-sm font-medium mb-2">Title</label>
                   <input
                     type="text"
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg"
-                    placeholder="Enter title"
+                    placeholder="Enter title (optional)"
                   />
                 </div>
                 <div>
@@ -381,7 +402,7 @@ const Gallery = () => {
                     onChange={(e) => setNewCategory(e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg"
                   >
-                    <option value="signage">Signage</option>
+                    <option value="signage">Showcase</option>
                     <option value="vinyl-wraps">Vinyl Wraps</option>
                   </select>
                 </div>
@@ -449,12 +470,13 @@ const Gallery = () => {
               </div>
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Title *</label>
+                  <label className="block text-sm font-medium mb-2">Title</label>
                   <input
                     type="text"
                     value={editingTitle}
                     onChange={(e) => setEditingTitle(e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg"
+                    placeholder="Optional"
                   />
                 </div>
                 <div>
@@ -473,7 +495,7 @@ const Gallery = () => {
                     onChange={(e) => setEditingCategory(e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg"
                   >
-                    <option value="signage">Signage</option>
+                    <option value="signage">Showcase</option>
                     <option value="vinyl-wraps">Vinyl Wraps</option>
                   </select>
                 </div>
@@ -533,6 +555,16 @@ const Gallery = () => {
             </div>
           </div>
         )}
+
+        {/* Delete confirmation modal */}
+        <ConfirmDeleteModal
+          isOpen={deleteConfirm.isOpen}
+          onClose={closeDeleteConfirm}
+          onConfirm={confirmDeleteImage}
+          title="Delete image"
+          message="Are you sure you want to delete this image from the showcase? This action cannot be undone."
+          isLoading={deleting}
+        />
       </div>
     </AdminLayout>
   );

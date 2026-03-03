@@ -11,7 +11,8 @@ const AdminSignageConfig = () => {
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [pricePerSqInch, setPricePerSqInch] = useState("");
+  const [pricePerSqInchAcrylic, setPricePerSqInchAcrylic] = useState("");
+  const [pricePerSqInchVinyl, setPricePerSqInchVinyl] = useState("");
   const [savingPrice, setSavingPrice] = useState(false);
   const [printFilePrepFee, setPrintFilePrepFee] = useState("");
   const [savingPrepFee, setSavingPrepFee] = useState(false);
@@ -48,10 +49,15 @@ const AdminSignageConfig = () => {
 
       setConfig(res.config);
       setError("");
-      setPricePerSqInch(
-        res.config.pricePerSqInch != null && res.config.pricePerSqInch !== ""
-          ? String(res.config.pricePerSqInch)
-          : ""
+      setPricePerSqInchAcrylic(
+        res.config.pricePerSqInchAcrylic != null && res.config.pricePerSqInchAcrylic !== ""
+          ? String(res.config.pricePerSqInchAcrylic)
+          : res.config.pricePerSqInch != null ? String(res.config.pricePerSqInch) : ""
+      );
+      setPricePerSqInchVinyl(
+        res.config.pricePerSqInchVinyl != null && res.config.pricePerSqInchVinyl !== ""
+          ? String(res.config.pricePerSqInchVinyl)
+          : res.config.pricePerSqInch != null ? String(res.config.pricePerSqInch) : ""
       );
       setPrintFilePrepFee(
         res.config.printFilePrepFee != null && res.config.printFilePrepFee !== ""
@@ -127,9 +133,10 @@ const AdminSignageConfig = () => {
   }, [widthFt, heightFt, config]);
 
   const handleSavePricePerSqInch = async () => {
-    const val = pricePerSqInch === "" ? 0 : Number(pricePerSqInch);
-    if (val < 0 || isNaN(val)) {
-      toast.error("Price must be 0 or a positive number");
+    const acrylic = pricePerSqInchAcrylic === "" ? 0 : Number(pricePerSqInchAcrylic);
+    const vinyl = pricePerSqInchVinyl === "" ? 0 : Number(pricePerSqInchVinyl);
+    if (acrylic < 0 || isNaN(acrylic) || vinyl < 0 || isNaN(vinyl)) {
+      toast.error("Prices must be 0 or positive numbers");
       return;
     }
     try {
@@ -141,11 +148,15 @@ const AdminSignageConfig = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ pricePerSqInch: val }),
+        body: JSON.stringify({
+          pricePerSqInchAcrylic: acrylic,
+          pricePerSqInchVinyl: vinyl,
+        }),
       });
       setConfig(res.config);
-      setPricePerSqInch(val === 0 ? "" : String(val));
-      toast.success("Initial price saved");
+      setPricePerSqInchAcrylic(acrylic === 0 ? "" : String(acrylic));
+      setPricePerSqInchVinyl(vinyl === 0 ? "" : String(vinyl));
+      toast.success("Acrylic and vinyl prices saved");
     } catch (err) {
       toast.error(err?.message || "Failed to save price");
     } finally {
@@ -213,17 +224,29 @@ const AdminSignageConfig = () => {
         <h1 className="text-2xl font-bold mb-6">Signage Configuration</h1>
 
         <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">Pricing (scale-based)</h2>
+          <h2 className="text-xl font-semibold mb-4">Pricing (per square inch)</h2>
           <p className="text-sm text-gray-600 mb-4">
-            Set the price per 1 inch × 1 inch. The customer&apos;s total is calculated as this rate × text area width (in) × text area height (in).
+            Set the price per 1&quot; × 1&quot; separately for acrylic and vinyl. The customer&apos;s initial price is this rate × text area width (in) × text area height (in), based on the signage type they choose.
           </p>
-          <div className="flex flex-wrap items-end gap-4">
+          <div className="flex flex-wrap items-end gap-6">
             <div>
-              <label className="block text-sm font-medium mb-2">Initial price — per 1&quot; × 1&quot; ($)</label>
+              <label className="block text-sm font-medium mb-2">Acrylic — price per sq in ($)</label>
               <input
                 type="number"
-                value={pricePerSqInch}
-                onChange={(e) => setPricePerSqInch(e.target.value)}
+                value={pricePerSqInchAcrylic}
+                onChange={(e) => setPricePerSqInchAcrylic(e.target.value)}
+                className="border rounded px-3 py-2 w-32"
+                min="0"
+                step="0.01"
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Vinyl — price per sq in ($)</label>
+              <input
+                type="number"
+                value={pricePerSqInchVinyl}
+                onChange={(e) => setPricePerSqInchVinyl(e.target.value)}
                 className="border rounded px-3 py-2 w-32"
                 min="0"
                 step="0.01"
@@ -236,7 +259,7 @@ const AdminSignageConfig = () => {
               disabled={savingPrice}
               className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition disabled:opacity-60"
             >
-              {savingPrice ? "Saving..." : "Save price"}
+              {savingPrice ? "Saving..." : "Save pricing"}
             </button>
           </div>
 
