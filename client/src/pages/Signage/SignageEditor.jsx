@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import React from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import { api } from "../../utils/api";
 import { useCart } from "../../context/CartContext";
@@ -64,18 +64,58 @@ const SignageEditorContent = () => {
     configLoading,
     verticalBoardImageUrl,
     signageType,
+    setSignageType,
+    setRushProduction,
     printFilePrepFee,
     rushProduction,
     basePrice,
     rushFee,
+    contentMinSizeRef,
   } = useSignage();
+
+  const location = useLocation();
+  const editItemFromCart = location.state?.editItem;
 
   // Track if we've initialized the position for this session
   const positionInitializedRef = useRef(false);
+  const editFromCartLoadedRef = useRef(false);
 
-  // Ensure text is centered in banner on initial load (for all new signages, not shared ones)
+  // Load signage data when arriving from cart "Edit" (editItemFromCart)
   useEffect(() => {
-    if (!token && !loading && !isSharedView && !configLoading && !positionInitializedRef.current && canvasWidth && canvasHeight) {
+    if (
+      editItemFromCart?.productType === "signage" &&
+      editItemFromCart?.signageData &&
+      !token &&
+      !loading &&
+      !configLoading &&
+      !editFromCartLoadedRef.current
+    ) {
+      editFromCartLoadedRef.current = true;
+      const sd = editItemFromCart.signageData;
+      const payload = {
+        ...sd,
+        backgroundImage: sd.backgroundImageUrl ? { url: sd.backgroundImageUrl } : undefined,
+      };
+      loadSignage(payload);
+      if (sd.textWidth != null) setTextBoxWidth(sd.textWidth);
+      if (sd.textHeight != null) setTextBoxHeight(sd.textHeight);
+      setSignageType(sd.signageType === "vinyl" ? "vinyl" : "acrylic");
+      setRushProduction(!!sd.rushProduction);
+    }
+  }, [editItemFromCart, token, loading, configLoading, loadSignage, setTextBoxWidth, setTextBoxHeight, setSignageType, setRushProduction]);
+
+  // Ensure text is centered in banner on initial load (for all new signages, not shared ones; skip when loading from cart edit)
+  useEffect(() => {
+    if (
+      !token &&
+      !loading &&
+      !isSharedView &&
+      !configLoading &&
+      !positionInitializedRef.current &&
+      !editItemFromCart?.signageData &&
+      canvasWidth &&
+      canvasHeight
+    ) {
       const bounds = getBoardBounds(canvasWidth, canvasHeight);
       const centeredPosition = {
         x: bounds.left + bounds.width / 2,
@@ -84,7 +124,7 @@ const SignageEditorContent = () => {
       setTextPosition(centeredPosition);
       positionInitializedRef.current = true;
     }
-  }, [token, loading, isSharedView, configLoading, canvasWidth, canvasHeight, setTextPosition]);
+  }, [token, loading, isSharedView, configLoading, editItemFromCart, canvasWidth, canvasHeight, setTextPosition]);
 
   // Fetch product data or shared signage (productId is optional)
   useEffect(() => {
@@ -337,11 +377,14 @@ const SignageEditorContent = () => {
     const s = previewScale || 1;
     const anchorX = textPosition.x - textBoxWidth / 2;
     const anchorY = textPosition.y - textBoxHeight / 2;
-    resizeAnchorRef.current = { anchorX, anchorY };
+    const startWidth = textBoxWidth;
+    const startHeight = textBoxHeight;
+    resizeAnchorRef.current = { anchorX, anchorY, startWidth, startHeight };
     isResizingRef.current = true;
     setIsResizing(true);
 
     const onMove = (ev) => {
+      const { startWidth: sw, startHeight: sh } = resizeAnchorRef.current || { startWidth: textBoxWidth, startHeight: textBoxHeight };
       const canvasX = (ev.clientX - rect.left) / s;
       const canvasY = (ev.clientY - rect.top) / s;
       const newWidth = Math.max(40, canvasX - anchorX);
@@ -349,12 +392,27 @@ const SignageEditorContent = () => {
       const cw = canvasWidth || 600;
       const ch = canvasHeight || 1200;
       const b = getBoardBounds(cw, ch);
-      // Keep box inside board with small inset so right/bottom don't overshoot
       const RESIZE_INSET = 6;
       const maxWFromRight = Math.max(0, b.left + b.width - anchorX - RESIZE_INSET);
       const maxHFromBottom = Math.max(0, b.top + b.height - anchorY - RESIZE_INSET);
-      const clampedW = Math.max(40, Math.min(newWidth, b.width, maxWFromRight));
-      const clampedH = Math.max(24, Math.min(newHeight, b.height, maxHFromBottom));
+      // Min/max width in inches (same display formula as SignagePreview: widthInches = textBoxWidth * wFt * 12 / cw * (90/35))
+      const MIN_WIDTH_INCHES = 25;
+      const MAX_WIDTH_INCHES = 90.9;
+      const wFt = widthFt ?? 4;
+      const minWFromInches = (MIN_WIDTH_INCHES * 35 * cw) / (90 * wFt * 12);
+      const maxWFromInches = (MAX_WIDTH_INCHES * 35 * cw) / (90 * wFt * 12);
+      // Uniform scale only: preserve aspect ratio (no independent horizontal/vertical resize)
+      const scaleW = sw > 0 ? newWidth / sw : 1;
+      const scaleH = sh > 0 ? newHeight / sh : 1;
+      let scale = Math.min(scaleW, scaleH);
+      const contentMin = contentMinSizeRef?.current ?? { w: 0, h: 0 };
+      const minScale = Math.max(40 / sw, 24 / sh, minWFromInches / sw, (contentMin.w || 0) / sw, (contentMin.h || 0) / sh);
+      const maxScale = Math.min(maxWFromRight / sw, maxHFromBottom / sh, maxWFromInches / sw);
+      scale = Math.max(minScale, Math.min(scale, maxScale));
+      let clampedW = sw * scale;
+      let clampedH = sh * scale;
+      clampedW = Math.max(clampedW, contentMin.w || 0);
+      clampedH = Math.max(clampedH, contentMin.h || 0);
       const centerX = anchorX + clampedW / 2;
       const centerY = anchorY + clampedH / 2;
       setTextBoxWidth(clampedW);
@@ -382,12 +440,15 @@ const SignageEditorContent = () => {
     const s = previewScale || 1;
     const anchorX = textPosition.x - textBoxWidth / 2;
     const anchorY = textPosition.y - textBoxHeight / 2;
-    resizeAnchorRef.current = { anchorX, anchorY };
+    const startWidth = textBoxWidth;
+    const startHeight = textBoxHeight;
+    resizeAnchorRef.current = { anchorX, anchorY, startWidth, startHeight };
     isResizingRef.current = true;
     setIsResizing(true);
 
     const onMove = (ev) => {
       const touch = ev.touches[0];
+      const { startWidth: sw, startHeight: sh } = resizeAnchorRef.current || { startWidth: textBoxWidth, startHeight: textBoxHeight };
       const canvasX = (touch.clientX - rect.left) / s;
       const canvasY = (touch.clientY - rect.top) / s;
       const newWidth = Math.max(40, canvasX - anchorX);
@@ -395,12 +456,27 @@ const SignageEditorContent = () => {
       const cw = canvasWidth || 600;
       const ch = canvasHeight || 1200;
       const b = getBoardBounds(cw, ch);
-      // Keep box inside board with small inset so right/bottom don't overshoot
       const RESIZE_INSET = 6;
       const maxWFromRight = Math.max(0, b.left + b.width - anchorX - RESIZE_INSET);
       const maxHFromBottom = Math.max(0, b.top + b.height - anchorY - RESIZE_INSET);
-      const clampedW = Math.max(40, Math.min(newWidth, b.width, maxWFromRight));
-      const clampedH = Math.max(24, Math.min(newHeight, b.height, maxHFromBottom));
+      // Min/max width in inches (same display formula as SignagePreview: widthInches = textBoxWidth * wFt * 12 / cw * (90/35))
+      const MIN_WIDTH_INCHES = 25;
+      const MAX_WIDTH_INCHES = 90.9;
+      const wFt = widthFt ?? 4;
+      const minWFromInches = (MIN_WIDTH_INCHES * 35 * cw) / (90 * wFt * 12);
+      const maxWFromInches = (MAX_WIDTH_INCHES * 35 * cw) / (90 * wFt * 12);
+      // Uniform scale only: preserve aspect ratio (no independent horizontal/vertical resize)
+      const scaleW = sw > 0 ? newWidth / sw : 1;
+      const scaleH = sh > 0 ? newHeight / sh : 1;
+      let scale = Math.min(scaleW, scaleH);
+      const contentMin = contentMinSizeRef?.current ?? { w: 0, h: 0 };
+      const minScale = Math.max(40 / sw, 24 / sh, minWFromInches / sw, (contentMin.w || 0) / sw, (contentMin.h || 0) / sh);
+      const maxScale = Math.min(maxWFromRight / sw, maxHFromBottom / sh, maxWFromInches / sw);
+      scale = Math.max(minScale, Math.min(scale, maxScale));
+      let clampedW = sw * scale;
+      let clampedH = sh * scale;
+      clampedW = Math.max(clampedW, contentMin.w || 0);
+      clampedH = Math.max(clampedH, contentMin.h || 0);
       const centerX = anchorX + clampedW / 2;
       const centerY = anchorY + clampedH / 2;
       setTextBoxWidth(clampedW);
@@ -610,9 +686,9 @@ const SignageEditorContent = () => {
               navigate={navigate}
             />
 
-            {/* RIGHT SIDE - CANVAS */}
-            <div className="lg:col-span-2 flex flex-col max-h-[calc(100vh-200px)] min-h-[560px]">
-              <div className="bg-white p-5 rounded-xl shadow flex-1 min-h-0 flex flex-col overflow-hidden">
+            {/* RIGHT SIDE - Preview + Note (sticky together) */}
+            <div className="lg:col-span-2 flex flex-col gap-6 lg:sticky lg:top-24 lg:self-start">
+              <div className="bg-white p-5 rounded-xl shadow flex flex-col min-h-[400px]">
                 <SignagePreview
                   ref={previewRef}
                   isEditable={!isSharedView}
@@ -637,21 +713,21 @@ const SignageEditorContent = () => {
                   </p>
                 )}
               </div>
+
+              {/* Note section below preview */}
+              {!isSharedView && (
+                <div className="p-5 bg-white border border-gray-200 rounded-xl shadow-sm">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Note:</h3>
+                  <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                    <li>All sign and vinyl orders have a 7 day lead time.</li>
+                    <li>Minimum $95 per acrylic or vinyl order.</li>
+                    <li>All acrylic and vinyl sign orders must be picked up at our location in Anaheim.</li>
+                    <li>Any acrylic sign or vinyl orders added to current rental orders will be delivered with rental items.</li>
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Note section at bottom of page */}
-          {!isSharedView && (
-            <div className="mt-8 p-5 bg-white border border-gray-200 rounded-xl shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Note:</h3>
-              <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                <li>All sign and vinyl orders have a 7 day lead time.</li>
-                <li>Minimum $95 per acrylic or vinyl order.</li>
-                <li>All acrylic and vinyl sign orders must be picked up at our location in Anaheim.</li>
-                <li>Any acrylic sign or vinyl orders added to current rental orders will be delivered with rental items.</li>
-              </ul>
-            </div>
-          )}
         </div>
       </div>
     </>

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useMemo, useCallback, useEffect } from "react";
+import { createContext, useContext, useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { api } from "../utils/api";
 
 // Default constants (fallback) - Using local fonts from public/fonts
@@ -236,6 +236,12 @@ export const SignageProvider = ({ children }) => {
   const [textBoxWidth, setTextBoxWidth] = useState(250);
   const [textBoxHeight, setTextBoxHeight] = useState(60);
 
+  // Minimum container size that fits current text (set by SignagePreview after measure; editor clamps resize to this)
+  const contentMinSizeRef = useRef({ w: 0, h: 0 });
+  const setContentMinSize = useCallback((w, h) => {
+    contentMinSizeRef.current = { w: Number(w) || 0, h: Number(h) || 0 };
+  }, []);
+
   // Drag state (moved to local in SignageEditor, but kept here for compatibility)
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -415,6 +421,8 @@ export const SignageProvider = ({ children }) => {
     setUserTextScale,
     setTextBoxWidth,
     setTextBoxHeight,
+    setContentMinSize,
+    contentMinSizeRef,
     setSignageType,
     setRushProduction,
     setIsDragging,
@@ -486,6 +494,7 @@ export const SignageProvider = ({ children }) => {
     effectiveTextSize,
     textBoxWidth,
     textBoxHeight,
+    contentMinSizeRef,
 
     // Stable setters
     ...stableSetters,

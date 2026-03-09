@@ -21,6 +21,14 @@ const buildCartKey = (item) => {
     const vp = item.vinylPrintingData || {};
     return `vinyl-printing__${vp.sizeKey || ""}__${vp.fileUrl || ""}__${vp.rushProduction ? "rush" : ""}`;
   }
+  if (item.productType === "signage") {
+    const sd = item.signageData || {};
+    const type = sd.signageType || "";
+    const w = sd.textWidth ?? sd.widthInches ?? "";
+    const h = sd.textHeight ?? sd.heightInches ?? "";
+    const textSig = (sd.texts && sd.texts.length) ? sd.texts.map((t) => t.content).join("|") : (sd.textContent || "");
+    return `signage__${item.productId}__${type}__${w}_${h}__${String(textSig).slice(0, 80)}`;
+  }
   const titleKey = (item.customTitle && String(item.customTitle).trim()) ? String(item.customTitle).trim() : "";
   return `${item.productId}__purchase__${titleKey}`;
 };

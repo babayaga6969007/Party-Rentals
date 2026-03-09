@@ -5,6 +5,8 @@ const PADDING_X = 4;
 const PADDING_Y = 0;
 const MIN_BOX_WIDTH = 48;
 const MIN_BOX_HEIGHT = 28;
+const MIN_WIDTH_INCHES = 25;
+const MAX_WIDTH_INCHES = 90.9; // cap container so it doesn't exceed 90.9 in
 
 const SignagePreview = forwardRef(({
   isEditable = true,
@@ -43,7 +45,6 @@ const SignagePreview = forwardRef(({
     userTextScale,
     effectiveFontSize,
     effectiveTextSize,
-    getTextLines,
     canvasWidth,
     canvasHeight,
     widthFt,
@@ -52,12 +53,12 @@ const SignagePreview = forwardRef(({
     textBoxHeight,
     setTextBoxWidth,
     setTextBoxHeight,
+    setContentMinSize,
     verticalBoardImageUrl,
   } = useSignage();
   const textMeasureRef = useRef(null);
-  const lastMeasuredHeightRef = useRef(null);
-  const measuredTextWidthRef = useRef(0);
-  const measuredTextHeightRef = useRef(0);
+  const [baseBoxHeightState, setBaseBoxHeightState] = useState((textSize?.height ?? 60) * (userTextScale ?? 1));
+  const [capScaleFactor, setCapScaleFactor] = useState(1); // when container is capped at max width, scale font to fit
 
   const cw = canvasWidth || 600;
   const ch = canvasHeight || 1200;
@@ -124,9 +125,8 @@ const SignagePreview = forwardRef(({
       ? (liveDragPosition || localDragPosition)
       : textPosition;
 
-  let lines = getTextLines();
-  if (lines.length === 0 && textContent?.trim()) lines = [textContent.trim()];
-  if (lines.length === 0) lines = ["Hello"];
+  // Single line: no line breaks; newlines in input become spaces
+  const displayText = (textContent?.trim() || "Hello").replace(/\n/g, " ").trim() || "Hello";
 
   // Background and fallback color so something is always visible.
   const containerBackgroundStyle =
@@ -136,7 +136,6 @@ const SignagePreview = forwardRef(({
         ? { backgroundColor: backgroundColor || "#F8F9FA" }
         : { backgroundColor: "#e5e7eb" };
 
-  const displayText = (textContent?.trim() || lines.join(' ') || "Hello").trim() || "Hello";
   const b = getBoardBounds(cw, ch);
   const hasSize = containerSize.width > 0 && containerSize.height > 0;
   const rawCenterX = displayPosition.x != null ? displayPosition.x : b.left + b.width / 2;
@@ -162,40 +161,37 @@ const SignagePreview = forwardRef(({
   const WIDTH_DISPLAY_RATIO = 90 / 35;
   const widthInches = widthInchesRaw != null ? widthInchesRaw * WIDTH_DISPLAY_RATIO : null;
   const formatInches = (v) => (v != null ? `${Number(v).toFixed(2)} in` : "—");
-  // Base box height: use last measured height so auto-fit box has scale 1; when user resizes, font scales with box
-  const baseBoxHeight = lastMeasuredHeightRef.current ?? (textSize?.height ?? 60) * (userTextScale ?? 1);
+  const baseBoxHeight = baseBoxHeightState;
   const fontScaleFromBox = baseBoxHeight > 0 ? textBoxHeight / baseBoxHeight : 1;
-  let scaledFontSize = hasSize ? effectiveFontSize * fontScaleFromBox * scale : effectiveFontSize;
-  // Scale down font so text never exceeds the container (fit inside box, with buffer for shadow/script overshoot)
-  const mW = measuredTextWidthRef.current || 1;
-  const mH = measuredTextHeightRef.current || 1;
-  const FIT_BUFFER_PX = 6; // inset so shadow and script tails stay inside when resized
-  if (mW > 0 && mH > 0 && textBoxWidth > 0 && textBoxHeight > 0) {
-    const innerW = Math.max(1, textBoxWidth - FIT_BUFFER_PX);
-    const innerH = Math.max(1, textBoxHeight - FIT_BUFFER_PX);
-    const fitScaleW = innerW / mW;
-    const fitScaleH = innerH / mH;
-    const fitScale = Math.min(fitScaleW, fitScaleH, 1);
-    scaledFontSize = scaledFontSize * fitScale;
-  }
+  // Text size scales with container; when container is capped at 90.9 in we scale font down so text fits
+  const scaledFontSize = hasSize ? effectiveFontSize * fontScaleFromBox * scale * capScaleFactor : effectiveFontSize;
 
-  // Measure text natural size (canvas pixels) and optionally size container to fit; store measured size for fit scaling
+  // Measure text and size container to fit; store min size so editor won't resize box smaller (layout-based: adjust container, not font)
+  const CONTENT_BUFFER = 24; // extra px so cursive/script doesn't touch edges
   useLayoutEffect(() => {
     if (!scale || scale <= 0 || !textMeasureRef.current) return;
     const el = textMeasureRef.current;
     const rect = el.getBoundingClientRect();
     const measuredW = rect.width / scale;
     const measuredH = rect.height / scale;
-    measuredTextWidthRef.current = measuredW;
-    measuredTextHeightRef.current = measuredH;
-    const w = measuredW + PADDING_X;
-    const h = measuredH + PADDING_Y;
-    const newW = Math.max(MIN_BOX_WIDTH, Math.ceil(w));
+    const w = measuredW + PADDING_X + CONTENT_BUFFER;
+    const h = measuredH + PADDING_Y + CONTENT_BUFFER;
+    const wFt = widthFt ?? 4;
+    const minWFromInches = (MIN_WIDTH_INCHES * 35 * cw) / (90 * wFt * 12);
+    const maxWFromInches = (MAX_WIDTH_INCHES * 35 * cw) / (90 * wFt * 12);
+    let newW = Math.max(MIN_BOX_WIDTH, minWFromInches, Math.ceil(w));
     const newH = Math.max(MIN_BOX_HEIGHT, Math.ceil(h));
-    lastMeasuredHeightRef.current = newH;
+    if (newW > maxWFromInches) {
+      setCapScaleFactor(maxWFromInches / newW);
+      newW = maxWFromInches;
+    } else {
+      setCapScaleFactor(1);
+    }
+    setBaseBoxHeightState(newH);
     setTextBoxWidth(newW);
     setTextBoxHeight(newH);
-  }, [displayText, selectedFont, effectiveFontSize, scale, setTextBoxWidth, setTextBoxHeight]);
+    setContentMinSize(newW, newH);
+  }, [displayText, selectedFont, effectiveFontSize, scale, setTextBoxWidth, setTextBoxHeight, setContentMinSize, cw, widthFt]);
 
   const setContainerRef = (el) => {
     containerRef.current = el;
@@ -224,9 +220,9 @@ const SignagePreview = forwardRef(({
           fontFamily: selectedFont ? `${selectedFont}, Georgia, serif` : "Georgia, serif",
           fontSize: (effectiveFontSize || 0) * (scale || 1),
           fontWeight: "bold",
-          whiteSpace: "pre-line",
+          whiteSpace: "nowrap",
           display: "inline-block",
-          lineHeight: 1,
+          lineHeight: 0.85,
         }}
       >
         {displayText}
@@ -297,7 +293,7 @@ const SignagePreview = forwardRef(({
           data-text-content={displayText}
           onMouseDown={onTextMouseDown}
           onTouchStart={onTouchStart}
-          className="absolute flex flex-col items-center justify-end touch-none"
+          className="absolute flex flex-col items-center justify-center touch-none"
           style={{
             cursor: isEditable ? (isDragging ? "grabbing" : "grab") : "default",
             left: hasSize && textLeftPx != null ? textLeftPx - boardLeft : "50%",
@@ -309,23 +305,23 @@ const SignagePreview = forwardRef(({
             minHeight: textBoxHeightPx > 0 ? textBoxHeightPx : undefined,
             border: "1px dotted rgba(0,0,0,0.5)",
             boxSizing: "border-box",
-            padding: "2px",
+            padding: "10px 8px",
+            containerType: "size",
             fontFamily: selectedFont ? `${selectedFont}, Georgia, serif` : "Georgia, serif",
             fontSize: scaledFontSize,
             fontWeight: "bold",
             color: selectedTextColor && selectedTextColor !== "transparent" ? normalizeHexColor(selectedTextColor) : "#1a1a1a",
             textShadow: "0 0 8px #fff, 2px 2px 4px rgba(0,0,0,0.4)",
-            whiteSpace: "pre-line",
+            whiteSpace: "nowrap",
             textAlign: "center",
             pointerEvents: isEditable ? "auto" : "none",
           }}
         >
           <span
-            className="flex items-end justify-center shrink-0"
+            className="flex items-center justify-center w-full text-center flex-1 min-h-0"
             style={{
-              padding: "0 2px 0 2px",
+              padding: "0 4px",
               lineHeight: 0.85,
-              paddingBottom: 0,
             }}
           >
             {displayText}

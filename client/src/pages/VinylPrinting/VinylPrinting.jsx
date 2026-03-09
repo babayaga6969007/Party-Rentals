@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiMaximize2, FiUploadCloud, FiShoppingCart, FiInfo, FiChevronLeft } from "react-icons/fi";
+import { FiMaximize2, FiUploadCloud, FiShoppingCart, FiInfo, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { api } from "../../utils/api";
 import ImageGalleryPopup from "../../components/ImageGalleryPopup";
 import { useCart } from "../../context/CartContext";
@@ -30,6 +30,23 @@ const VinylPrinting = () => {
   const [loadingFeatured, setLoadingFeatured] = useState(true);
   const [galleryPopupOpen, setGalleryPopupOpen] = useState(false);
   const [galleryPopupIndex, setGalleryPopupIndex] = useState(0);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const trackRef = useRef(null);
+  const CARD_WIDTH = 304; // card + gap for carousel step
+  const getVisibleCards = () => {
+    if (typeof window === "undefined") return 3;
+    const w = window.innerWidth;
+    if (w < 640) return 1;
+    if (w < 768) return 2;
+    if (w < 1024) return 3;
+    return 4;
+  };
+  const [visibleCards, setVisibleCards] = useState(getVisibleCards());
+  useEffect(() => {
+    const onResize = () => setVisibleCards(getVisibleCards());
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   useEffect(() => {
     const fetchSizes = async () => {
@@ -319,14 +336,14 @@ const VinylPrinting = () => {
           </div>
         </div>
 
-        {/* Featured — Vinyl Wraps (same API as Gallery / visual showcase) */}
-        <section className="mt-16 pt-12 border-t border-gray-200">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#2D2926] mb-2" style={{ fontFamily: "'Public Sans', sans-serif" }}>
+        {/* Featured — Vinyl Wraps carousel (same style as Event Stories on landing) */}
+        <section className="mt-16 pt-12 border-t border-gray-200 w-full">
+          <div className="text-center mb-8 px-6">
+            <h2 className="text-3xl font-semibold text-[#2D2926]" style={{ fontFamily: '"Cormorant Garamond", serif' }}>
               Vinyl Wraps
             </h2>
-            <p className="text-gray-600 max-w-xl mx-auto text-sm md:text-base">
-              See what&apos;s possible with custom vinyl printing
+            <p className="text-[#2D2926]/80 mt-2 max-w-2xl mx-auto">
+              See what&apos;s possible with custom vinyl printing. Click any image to view full size.
             </p>
           </div>
 
@@ -336,42 +353,97 @@ const VinylPrinting = () => {
             </div>
           ) : vinylWraps.length > 0 ? (
             <>
-              <div className="columns-1 sm:columns-2 lg:columns-3 gap-5 space-y-5">
-                {vinylWraps.map((img, index) => (
+              <div className="flex items-center justify-center gap-4 md:gap-6 w-full max-w-[1200px] mx-auto px-4">
+                <button
+                  type="button"
+                  onClick={() => setCarouselIndex((i) => Math.max(0, i - 1))}
+                  disabled={carouselIndex === 0}
+                  className="hidden md:flex flex-shrink-0 w-12 h-12 bg-black text-white rounded-full shadow-lg hover:bg-gray-800 items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+                  aria-label="Previous"
+                >
+                  <FiChevronLeft size={24} />
+                </button>
+                <div className="flex-1 min-w-0 overflow-hidden max-w-[1136px] relative">
                   <div
-                    key={img._id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => {
-                      setGalleryPopupIndex(index);
-                      setGalleryPopupOpen(true);
+                    ref={trackRef}
+                    className="flex transition-transform duration-300 ease-out gap-4"
+                    style={{
+                      transform: `translateX(-${carouselIndex * CARD_WIDTH}px)`,
                     }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setGalleryPopupIndex(index);
-                        setGalleryPopupOpen(true);
-                      }
-                    }}
-                    className="break-inside-avoid mb-5 group cursor-pointer"
                   >
-                    <div className="relative overflow-hidden rounded-2xl shadow-md hover:shadow-xl transition-all duration-300">
-                      <img
-                        src={img.image?.url}
-                        alt={img.title || "Vinyl wrap"}
-                        className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <div className="absolute bottom-0 left-0 right-0 p-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <h3 className="font-semibold text-lg">{img.title}</h3>
-                        {img.subtitle && (
-                          <p className="text-sm text-white/90 mt-0.5">{img.subtitle}</p>
-                        )}
+                    {vinylWraps.map((img, index) => (
+                      <div
+                        key={img._id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => {
+                          setGalleryPopupIndex(index);
+                          setGalleryPopupOpen(true);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setGalleryPopupIndex(index);
+                            setGalleryPopupOpen(true);
+                          }
+                        }}
+                        className="relative flex-shrink-0 w-[85vw] max-w-[280px] h-[320px] rounded-2xl overflow-hidden shadow-xl border border-black/10 bg-white cursor-pointer group"
+                      >
+                        <img
+                          src={img.image?.url}
+                          alt={img.title || "Vinyl wrap"}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 right-0 p-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                          <h3 className="font-semibold text-lg">{img.title || "Vinyl wrap"}</h3>
+                          {img.subtitle && (
+                            <p className="text-sm text-white/90 mt-0.5">{img.subtitle}</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCarouselIndex((i) =>
+                      Math.min(Math.max(0, vinylWraps.length - visibleCards), i + 1)
+                    )
+                  }
+                  disabled={carouselIndex >= Math.max(0, vinylWraps.length - visibleCards)}
+                  className="hidden md:flex flex-shrink-0 w-12 h-12 bg-black text-white rounded-full shadow-lg hover:bg-gray-800 items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+                  aria-label="Next"
+                >
+                  <FiChevronRight size={24} />
+                </button>
+              </div>
+              {/* Mobile swipe hint + visible prev/next */}
+              <div className="flex md:hidden justify-center gap-4 mt-4">
+                <button
+                  type="button"
+                  onClick={() => setCarouselIndex((i) => Math.max(0, i - 1))}
+                  disabled={carouselIndex === 0}
+                  className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center disabled:opacity-40"
+                  aria-label="Previous"
+                >
+                  <FiChevronLeft size={20} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCarouselIndex((i) =>
+                      Math.min(Math.max(0, vinylWraps.length - 1), i + 1)
+                    )
+                  }
+                  disabled={carouselIndex >= vinylWraps.length - 1}
+                  className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center disabled:opacity-40"
+                  aria-label="Next"
+                >
+                  <FiChevronRight size={20} />
+                </button>
               </div>
               <ImageGalleryPopup
                 isOpen={galleryPopupOpen}

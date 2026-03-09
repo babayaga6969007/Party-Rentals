@@ -236,17 +236,21 @@ className="flex flex-col sm:flex-row items-start sm:items-center justify-between
                     </div>
 
                     <div className="flex gap-3">
-  <button
-    type="button"
-    className="text-xs text-blue-600 hover:text-blue-700"
-    onClick={() =>
-      navigate(`/product/${item.productId}`, {
-        state: { editItem: item },
-      })
-    }
-  >
-    Edit
-  </button>
+  {item.productType !== "signage" && (
+    <button
+      type="button"
+      className="text-xs text-blue-600 hover:text-blue-700"
+      onClick={() => {
+        if (item.productType === "vinyl-printing") {
+          navigate("/vinyl-printing", { state: { editItem: item } });
+        } else {
+          navigate(`/product/${item.productId}`, { state: { editItem: item } });
+        }
+      }}
+    >
+      Edit
+    </button>
+  )}
 
   <button
     type="button"
