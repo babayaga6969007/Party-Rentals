@@ -147,7 +147,7 @@ const selectedDays =
   const [shelvingSize, setShelvingSize] = useState("");
   const [shelvingQuantity, setShelvingQuantity] = useState(1);
 
-  // Vinyl wrap addon — image upload + size (inches)
+  // Vinyl wrap addon — size dropdown + image or hex
   const [vinylError, setVinylError] = useState("");
   const [vinylImageFile, setVinylImageFile] = useState(null);
   const [vinylImagePreview, setVinylImagePreview] = useState("");
@@ -155,7 +155,10 @@ const selectedDays =
   const [vinylImageUploading, setVinylImageUploading] = useState(false);
   const [vinylWidthInches, setVinylWidthInches] = useState("");
   const [vinylHeightInches, setVinylHeightInches] = useState("");
-  const [vinylPricePerSqInch, setVinylPricePerSqInch] = useState(0);
+  const [vinylSizes, setVinylSizes] = useState([]);
+  const [selectedVinylSizeKey, setSelectedVinylSizeKey] = useState("");
+  const [vinylHex, setVinylHex] = useState("");
+  const [vinylImageOrColor, setVinylImageOrColor] = useState("image");
 
   // Date selection
   const [selectedDate, setSelectedDate] = useState("");
@@ -211,19 +214,28 @@ const unitPrice = effectivePrice;
   if (isVinylSelected) {
     const w = Number(vinylWidthInches);
     const h = Number(vinylHeightInches);
-    if (!Number.isFinite(w) || w <= 0 || !Number.isFinite(h) || h <= 0) {
-      setVinylError("Please enter width and height in inches (both must be greater than 0).");
+    if (!selectedVinylSizeKey || !Number.isFinite(w) || w <= 0 || !Number.isFinite(h) || h <= 0) {
+      setVinylError("Please select a size from the dropdown.");
       return;
     }
-    if (!vinylImageFile && !vinylImageUrl) {
-      setVinylError("Please upload your vinyl wrap design.");
-      return;
+    if (vinylImageOrColor === "image") {
+      if (!vinylImageFile && !vinylImageUrl) {
+        setVinylError("Please upload your vinyl wrap design.");
+        return;
+      }
+    } else {
+      const hex = vinylHex.trim();
+      const normalizedHex = hex.startsWith("#") ? hex : `#${hex}`;
+      if (!hex || !/^#?[0-9A-Fa-f]{6}$/.test(normalizedHex)) {
+        setVinylError("Please enter a valid 6-digit hex color (e.g. #FF5733 or FF5733).");
+        return;
+      }
     }
   }
   setVinylError("");
 
   let resolvedVinylImageUrl = vinylImageUrl;
-  if (isVinylSelected && vinylImageFile) {
+  if (isVinylSelected && vinylImageOrColor === "image" && vinylImageFile) {
     try {
       setVinylImageUploading(true);
       const formData = new FormData();
@@ -245,11 +257,15 @@ const unitPrice = effectivePrice;
     name: a.name,
     price: a.price ?? 0,
     shelvingData: a.shelvingData ?? null,
-    vinylColor: optionId === vinylOptionId ? "" : "",
-    vinylHex: optionId === vinylOptionId ? "" : "",
-    vinylImageUrl: optionId === vinylOptionId ? (resolvedVinylImageUrl || "") : "",
+    vinylColor: optionId === vinylOptionId ? (vinylImageOrColor === "hex" ? "custom" : "") : "",
+    vinylHex: optionId === vinylOptionId && vinylImageOrColor === "hex" && vinylHex.trim()
+      ? (vinylHex.trim().startsWith("#") ? vinylHex.trim() : `#${vinylHex.trim()}`)
+      : optionId === vinylOptionId ? "" : "",
+    vinylImageUrl: optionId === vinylOptionId ? (vinylImageOrColor === "image" ? (resolvedVinylImageUrl || "") : "") : "",
     vinylWidthInches: optionId === vinylOptionId ? (Number(vinylWidthInches) || 0) : undefined,
     vinylHeightInches: optionId === vinylOptionId ? (Number(vinylHeightInches) || 0) : undefined,
+    vinylSizeKey: optionId === vinylOptionId ? (selectedVinylSizeKey || "") : undefined,
+    vinylSizeLabel: optionId === vinylOptionId ? (vinylSizes.find((s) => s.key === selectedVinylSizeKey)?.label || "") : undefined,
   }));
   const addonsTotalForCart = addonsLine.reduce((s, a) => s + (Number(a.price) || 0), 0);
   const lineTotal = unitPrice * productQty + addonsTotalForCart;
@@ -476,17 +492,18 @@ useEffect(() => {
     setVinylImageUrl("");
     setVinylWidthInches("");
     setVinylHeightInches("");
+    setSelectedVinylSizeKey("");
+    setVinylHex("");
+    setVinylImageOrColor("image");
   }
 }, [isVinylSelected]);
 
-// Fetch vinyl config (price per square inch)
+// Fetch vinyl config (size options with fixed prices)
 useEffect(() => {
   const fetchVinylConfig = async () => {
     try {
       const res = await api("/vinyl-config");
-      if (res?.config?.pricePerSqInch != null) {
-        setVinylPricePerSqInch(Number(res.config.pricePerSqInch));
-      }
+      if (res?.config && Array.isArray(res.config.sizes)) setVinylSizes(res.config.sizes);
     } catch (err) {
       console.error("Failed to load vinyl config:", err);
     }
@@ -494,13 +511,11 @@ useEffect(() => {
   fetchVinylConfig();
 }, []);
 
-// Update vinyl addon price when size or pricePerSqInch changes
+// Update vinyl addon price when selected size changes (use size's fixed price)
 useEffect(() => {
-  if (!vinylOptionId || !isVinylSelected) return;
-  const w = Number(vinylWidthInches);
-  const h = Number(vinylHeightInches);
-  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return;
-  const price = vinylPricePerSqInch * w * h;
+  if (!vinylOptionId || !isVinylSelected || !selectedVinylSizeKey) return;
+  const size = vinylSizes.find((s) => String(s.key) === selectedVinylSizeKey);
+  const price = size && Number(size.price) >= 0 ? Number(size.price) : 0;
   setSelectedAddons((prev) => {
     if (!prev[vinylOptionId]) return prev;
     return {
@@ -508,7 +523,7 @@ useEffect(() => {
       [vinylOptionId]: { ...prev[vinylOptionId], price },
     };
   });
-}, [vinylOptionId, isVinylSelected, vinylWidthInches, vinylHeightInches, vinylPricePerSqInch]);
+}, [vinylOptionId, isVinylSelected, selectedVinylSizeKey, vinylSizes]);
 
 // Sync selectedAddons price when shelving tier/size/quantity changes
 useEffect(() => {
@@ -880,110 +895,139 @@ if (!product) {
                           </div>
                         </div>
                       )}
-                      {/* Vinyl wrap: size (inches) + image upload when selected */}
+                      {/* Vinyl wrap: size dropdown + image or hex */}
                       {addon.optionId === vinylOptionId && selected && (
                         <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Size (inches)
-                          </label>
-                          <div className="flex flex-wrap gap-4 mb-4">
-                            <div>
-                              <span className="text-xs text-gray-500 block mb-1">Width</span>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.5"
-                                value={vinylWidthInches}
-                                onChange={(e) => setVinylWidthInches(e.target.value)}
-                                placeholder="e.g. 12"
-                                className="w-24 p-2 border border-gray-300 rounded-lg text-sm"
-                              />
-                            </div>
-                            <div>
-                              <span className="text-xs text-gray-500 block mb-1">Height</span>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.5"
-                                value={vinylHeightInches}
-                                onChange={(e) => setVinylHeightInches(e.target.value)}
-                                placeholder="e.g. 24"
-                                className="w-24 p-2 border border-gray-300 rounded-lg text-sm"
-                              />
-                            </div>
-                            {vinylPricePerSqInch > 0 && Number(vinylWidthInches) > 0 && Number(vinylHeightInches) > 0 && (
-                              <div className="text-sm text-gray-600 flex items-end pb-2">
-                                ${(vinylPricePerSqInch * Number(vinylWidthInches) * Number(vinylHeightInches)).toFixed(2)} (price per sq in × width × height)
-                              </div>
-                            )}
-                          </div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Upload your vinyl wrap design
-                          </label>
-                          {vinylError && <p className="text-sm text-red-600 mb-2">{vinylError}</p>}
-                          <input
-                            type="file"
-                            accept=".jpg,.jpeg,.pdf,image/jpeg,application/pdf"
-                            className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:font-medium file:text-gray-700 hover:file:bg-gray-200"
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Size</label>
+                          <select
+                            value={selectedVinylSizeKey}
                             onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const allowed = ["image/jpeg", "application/pdf"];
-                                const ok = allowed.includes(file.type) || /\.(jpe?g|pdf)$/i.test(file.name || "");
-                                if (!ok) {
-                                  setVinylError("Only JPG, JPEG, and PDF files are allowed.");
-                                  e.target.value = "";
-                                  return;
-                                }
-                                if (file.size > 3 * 1024 * 1024) {
-                                  toast.error("Image is too large. Maximum size is 3MB.");
-                                  e.target.value = "";
-                                  return;
-                                }
-                                setVinylImageFile(file);
-                                setVinylImagePreview(file.type === "application/pdf" ? null : URL.createObjectURL(file));
-                                setVinylImageUrl("");
-                                setVinylError("");
+                              const key = e.target.value;
+                              setSelectedVinylSizeKey(key);
+                              const size = vinylSizes.find((s) => String(s.key) === key);
+                              if (size) {
+                                setVinylWidthInches(String(size.widthInches));
+                                setVinylHeightInches(String(size.heightInches));
                               } else {
-                                setVinylImageFile(null);
-                                setVinylImagePreview("");
-                                setVinylImageUrl("");
+                                setVinylWidthInches("");
+                                setVinylHeightInches("");
                               }
                             }}
-                          />
-                          {vinylImagePreview && (
-                            <div className="mt-3 flex items-center gap-3">
-                              <img src={vinylImagePreview} alt="Vinyl preview" className="w-20 h-20 object-cover rounded border" />
-                              <button
-                                type="button"
-                                onClick={() => {
+                            className="w-full max-w-xs p-2 border border-gray-300 rounded-lg text-sm"
+                          >
+                            <option value="">Select a size</option>
+                            {vinylSizes.map((s) => (
+                              <option key={s._id || s.key} value={s.key}>{s.label}</option>
+                            ))}
+                          </select>
+                          {selectedVinylSizeKey && (() => {
+                            const size = vinylSizes.find((s) => s.key === selectedVinylSizeKey);
+                            return size && Number(size.price) >= 0 ? (
+                              <div className="mt-2 text-sm text-gray-600">
+                                ${Number(size.price).toFixed(2)} for {size.label}
+                              </div>
+                            ) : null;
+                          })()}
+                          <label className="block text-sm font-medium text-gray-700 mt-4 mb-2">
+                            Design: upload image or enter solid color (hex)
+                          </label>
+                          <div className="flex gap-4 mb-3">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="vinylImageOrColor"
+                                checked={vinylImageOrColor === "image"}
+                                onChange={() => { setVinylImageOrColor("image"); setVinylError(""); }}
+                                className="rounded-full border-gray-300 text-black focus:ring-black"
+                              />
+                              <span className="text-sm">Upload image</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="vinylImageOrColor"
+                                checked={vinylImageOrColor === "hex"}
+                                onChange={() => {
+                                  setVinylImageOrColor("hex");
                                   setVinylImageFile(null);
                                   setVinylImagePreview("");
                                   setVinylImageUrl("");
+                                  setVinylError("");
                                 }}
-                                className="text-sm text-red-600 hover:text-red-700"
-                              >
-                                Remove image
-                              </button>
+                                className="rounded-full border-gray-300 text-black focus:ring-black"
+                              />
+                              <span className="text-sm">Solid color (hex)</span>
+                            </label>
+                          </div>
+                          {vinylImageOrColor === "image" && (
+                            <>
+                              {vinylError && <p className="text-sm text-red-600 mb-2">{vinylError}</p>}
+                              <input
+                                type="file"
+                                accept=".jpg,.jpeg,.pdf,image/jpeg,application/pdf"
+                                className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:font-medium file:text-gray-700 hover:file:bg-gray-200"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const allowed = ["image/jpeg", "application/pdf"];
+                                    const ok = allowed.includes(file.type) || /\.(jpe?g|pdf)$/i.test(file.name || "");
+                                    if (!ok) { setVinylError("Only JPG, JPEG, and PDF files are allowed."); e.target.value = ""; return; }
+                                    if (file.size > 3 * 1024 * 1024) { toast.error("Image is too large. Maximum size is 3MB."); e.target.value = ""; return; }
+                                    setVinylImageFile(file);
+                                    setVinylImagePreview(file.type === "application/pdf" ? null : URL.createObjectURL(file));
+                                    setVinylImageUrl("");
+                                    setVinylError("");
+                                  } else {
+                                    setVinylImageFile(null);
+                                    setVinylImagePreview("");
+                                    setVinylImageUrl("");
+                                  }
+                                }}
+                              />
+                              {vinylImagePreview && (
+                                <div className="mt-3 flex items-center gap-3">
+                                  <img src={vinylImagePreview} alt="Vinyl preview" className="w-20 h-20 object-cover rounded border" />
+                                  <button type="button" onClick={() => { setVinylImageFile(null); setVinylImagePreview(""); setVinylImageUrl(""); }} className="text-sm text-red-600 hover:text-red-700">Remove image</button>
+                                </div>
+                              )}
+                              {vinylImageFile && !vinylImagePreview && vinylImageFile.type === "application/pdf" && (
+                                <div className="mt-3 flex items-center gap-3">
+                                  <span className="text-sm font-medium text-gray-700">PDF file selected</span>
+                                  <button type="button" onClick={() => { setVinylImageFile(null); setVinylImagePreview(""); setVinylImageUrl(""); }} className="text-sm text-red-600 hover:text-red-700">Remove</button>
+                                </div>
+                              )}
+                              <p className="mt-1 text-xs text-gray-500">JPG, JPEG or PDF only. Max 3MB.</p>
+                            </>
+                          )}
+                          {vinylImageOrColor === "hex" && (
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="text"
+                                value={vinylHex}
+                                onChange={(e) => { setVinylHex(e.target.value); setVinylError(""); }}
+                                placeholder="#000000 or 000000"
+                                className="w-40 p-2 border border-gray-300 rounded-lg text-sm font-mono"
+                              />
+                              {vinylHex.trim() && (
+                                <div
+                                  className="w-10 h-10 rounded border border-gray-300 shrink-0"
+                                  style={{ backgroundColor: /^#?[0-9A-Fa-f]{3,6}$/.test(vinylHex.trim()) ? (vinylHex.trim().startsWith("#") ? vinylHex.trim() : `#${vinylHex.trim()}`) : "transparent" }}
+                                  title="Preview"
+                                />
+                              )}
+                              <p className="text-xs text-gray-500">Enter a hex color (e.g. #FF5733 or FF5733)</p>
                             </div>
                           )}
-                          {vinylImageFile && !vinylImagePreview && vinylImageFile.type === "application/pdf" && (
-                            <div className="mt-3 flex items-center gap-3">
-                              <span className="text-sm font-medium text-gray-700">PDF file selected</span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setVinylImageFile(null);
-                                  setVinylImagePreview("");
-                                  setVinylImageUrl("");
-                                }}
-                                className="text-sm text-red-600 hover:text-red-700"
-                              >
-                                Remove
-                              </button>
-                            </div>
-                          )}
-                          <p className="mt-1 text-xs text-gray-500">JPG, JPEG or PDF only. Max 3MB.</p>
+                          <div className="mt-5 p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-600">
+                            <p className="font-medium text-gray-700 mb-2">Note</p>
+                            <ul className="space-y-1 list-disc list-inside">
+                              <li>Minimum $95 per acrylic or vinyl order.</li>
+                              <li>All sign and vinyl orders have a 7 day lead time.</li>
+                              <li>All vinyl print orders must be picked up at our location in Anaheim.</li>
+                              <li>Any acrylic sign or vinyl orders added to current rental orders will be delivered with rental items.</li>
+                              <li>Questions? Message us on our <a href="/contact" target="_blank" rel="noopener noreferrer" className="text-black underline hover:no-underline">contact page</a>.</li>
+                            </ul>
+                          </div>
                         </div>
                       )}
                     </div>

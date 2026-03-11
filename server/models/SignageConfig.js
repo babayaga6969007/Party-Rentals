@@ -22,8 +22,18 @@ const signageConfigSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
-    // Price per 1" × 1" (square inch). Final price = pricePerSqInch × widthInches × heightInches
+    // Price per 1" × 1" (square inch) — acrylic and vinyl can have different rates
     pricePerSqInch: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    pricePerSqInchAcrylic: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    pricePerSqInchVinyl: {
       type: Number,
       default: 0,
       min: 0,
@@ -61,6 +71,8 @@ signageConfigSchema.statics.getConfig = async function () {
       ],
       basePrice: 0,
       pricePerSqInch: 0,
+      pricePerSqInchAcrylic: 0,
+      pricePerSqInchVinyl: 0,
       printFilePrepFee: 25,
     });
   }

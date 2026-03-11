@@ -99,7 +99,7 @@ const Sidebar = () => {
   Coupons
 </NavLink>
           <NavLink to="/admin/signage-config" className={linkClass}>
-            Signage Config
+            Acrylic Vinyl Signage Config
           </NavLink>
           <NavLink to="/admin/shelving-config" className={linkClass}>
             Shelving Config
@@ -143,7 +143,7 @@ const Sidebar = () => {
       {/* Gallery */}
       <NavLink to="/admin/gallery" className={linkClass}>
         <FiImage className="inline mr-2" />
-        Visual Showcase
+        Showcase/Vinyl
       </NavLink>
 
    {/* Reports */}

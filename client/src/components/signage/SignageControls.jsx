@@ -13,8 +13,8 @@ const SignageControls = memo(({ isSharedView, onAddToCart, isAddingToCart, produ
   const rushTooltip = "Check if you need the sign within 3–5 days. Rush production adds 30% to the initial price (excluding print file preparation).";
 
   return (
-    <div className="lg:col-span-1 relative flex flex-col max-h-[calc(100vh-280px)] min-h-0">
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-6 pr-2">
+    <div className="lg:col-span-1 relative flex flex-col space-y-6">
+      <div className="space-y-6">
         {!isSharedView && (
           <>
             {/* Signage type: Acrylic | Vinyl — outline only on selected */}

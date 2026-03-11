@@ -12,8 +12,8 @@ const TextInputSection = memo(() => {
       <textarea
         value={textContent}
         onChange={(e) => setTextContent(e.target.value)}
-        placeholder="Enter your text here...&#10;Each new line will appear on a new line"
-        rows={6}
+        placeholder="Enter your text here..."
+        rows={2}
         className="w-full p-3 border rounded-lg resize-none"
       />
     </div>

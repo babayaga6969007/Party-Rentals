@@ -516,11 +516,19 @@ if (!agreeToTerms) {
 
           <div className="mb-3 max-h-40 overflow-auto space-y-2 text-sm">
             {items.map((item, idx) => (
-              <div key={item.cartKey || `item-${idx}`} className="flex justify-between items-center text-xs">
-                <span className="text-gray-600">
+              <div key={item.cartKey || `item-${idx}`} className="flex items-center gap-2 text-xs">
+                {item.productType === "vinyl-printing" || !item.image ? (
+                  <div className="relative w-10 h-10 rounded-md border border-gray-200 flex items-center justify-center shrink-0 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                    <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "repeating-linear-gradient(-45deg, transparent, transparent 2px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 4px)" }} />
+                    <span className="relative text-[8px] font-semibold text-gray-500 uppercase">Vinyl</span>
+                  </div>
+                ) : (
+                  <img src={item.image} alt="" className="w-10 h-10 rounded-md object-cover border border-gray-200 shrink-0" />
+                )}
+                <span className="text-gray-600 flex-1 min-w-0 truncate">
                   {item.name} × {item.qty}
                 </span>
-                <span className="font-medium">
+                <span className="font-medium shrink-0">
                   ${Number(item.lineTotal).toFixed(2)}
                 </span>
               </div>

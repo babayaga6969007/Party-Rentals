@@ -58,6 +58,8 @@ const orderItemSchema = new mongoose.Schema(
       vinylImageUrl: { type: String, default: "" },
       vinylWidthInches: { type: Number, default: 0 },
       vinylHeightInches: { type: Number, default: 0 },
+      vinylSizeKey: { type: String, default: "" },
+      vinylSizeLabel: { type: String, default: "" },
       shelvingData: {
         tier: { type: String },
         size: { type: String },
