@@ -35,8 +35,7 @@ const ProductPage = () => {
 // DIMENSION-BASED VARIATION (Rental Variable)
 // ====================
 const [selectedVariationIndex, setSelectedVariationIndex] = useState(0);
-// which pedestal item (index) is chosen in dropdown
-const [selectedPedestalIndex, setSelectedPedestalIndex] = useState("");
+
 
   const [openPricingChart, setOpenPricingChart] = useState(false);
   const [openShippingModal, setOpenShippingModal] = useState(false); // ✅ ADD THIS
@@ -549,22 +548,19 @@ tier: a.option?.tier || null,
   return n.includes("signage");
 };
 
-const isPedestalLike = (a) => {
-  const n = normalize(a.name);
-  return n === "pedestal" || n === "pedestals";
-};
+
 
 const addonsForDisplay =
   renderedAddons?.filter((a, i, arr) => {
-    // Remove signage & pedestal from single page
-    if (isSignageLike(a) || isPedestalLike(a)) return false;
+    if (isSignageLike(a)) return false;
 
-    // Keep only one shelving
     if (!isShelvingLike(a)) return true;
 
     const firstShelvingIndex = arr.findIndex(isShelvingLike);
     return i === firstShelvingIndex;
   }) ?? [];
+
+  
 
   // find signage addon from renderedAddons (if exists for this product)
   const signageAddon = renderedAddons.find((a) => {
@@ -611,32 +607,6 @@ const addonsForDisplay =
   const isShelvingSelected = shelvingOptionId
     ? !!selectedAddons[shelvingOptionId]
     : false;
-
-
-
-// ===== PEDESTALS ADDON DETECTION =====
-const pedestalAddon = renderedAddons.find((a) => {
-  const n = normalize(a.name);
-  return n === "pedestals" || n === "pedestal";
-});
-
-const pedestalOptionId = pedestalAddon?.optionId || null;
-
-const isPedestalSelected = pedestalOptionId
-  ? !!selectedAddons[pedestalOptionId]
-  : false;
-const pedestalItems =
-  pedestalOptionId && Array.isArray(product?.addons)
-    ? (product.addons.find((a) => {
-        const oid =
-          typeof a.optionId === "string"
-            ? a.optionId
-            : a.optionId?._id
-            ? String(a.optionId._id)
-            : "";
-        return oid === String(pedestalOptionId);
-      })?.pedestals || [])
-    : [];
 
 
   // Shelving config state
@@ -867,15 +837,12 @@ useEffect(() => {
           setShelvingQuantity(1);
           setShelvingError("");
         }
-        // if this addon is pedestals, clear pedestal selection
-if (addon.optionId === pedestalOptionId) {
-  setSelectedPedestalIndex("");
-}
+      
 
       } else {
 next[addon.optionId] = {
   name: addon.name,
-          price: addon.optionId === pedestalOptionId ? 0 : addon.finalPrice,
+price: addon.finalPrice,
           realOptionId: addon.realOptionId ?? addon.optionId,
 };
       }
@@ -1869,9 +1836,7 @@ next[addon.optionId] = {
                 productId: product._id,
                 name: product.title,
                 productType: "rental",
-                hasPedestal: !!pedestalOptionId,
 hasSignage: !!signageOptionId,
-pedestalItems: pedestalItems || [],
 signagePrice: signageAddon?.finalPrice || 0,
 
                 qty: productQty,
@@ -1890,8 +1855,6 @@ signagePrice: signageAddon?.finalPrice || 0,
   name: a.name,
   price: a.price,
 
-  pedestalData:
-    optionId === pedestalOptionId ? a.pedestalData || null : null,
 
   signageText:
     optionId === signageOptionId ? signageText : "",

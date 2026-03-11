@@ -2,7 +2,8 @@ import { FiX } from "react-icons/fi";
 import { useCart } from "../../context/CartContext";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-
+import heroSignage from "../../assets/home2/hero2.png";
+import heroPedestal from "../../assets/home2/hero4.png";
 export default function AddToCartModal({
   open,
   onClose,
@@ -11,8 +12,6 @@ export default function AddToCartModal({
 }) {
 const { addToCart, replaceCartItem } = useCart();  const navigate = useNavigate();
 
-  const [selectedPedestalIndex, setSelectedPedestalIndex] = useState("");
-  const [selectedPedestal, setSelectedPedestal] = useState(null);
 
   if (!open) return null;
 
@@ -25,13 +24,12 @@ const { addToCart, replaceCartItem } = useCart();  const navigate = useNavigate(
     0
   );
 
-  const pedestalPrice = selectedPedestal?.price || 0;
 
   const baseProductTotal =
     Number(product?.lineTotal || 0) - existingAddonTotal;
 
   const computedTotal =
-    baseProductTotal + existingAddonTotal + pedestalPrice;
+    baseProductTotal + existingAddonTotal;
 
   /* ============================
      RENDER
@@ -93,21 +91,7 @@ const { addToCart, replaceCartItem } = useCart();  const navigate = useNavigate(
           </div>
         )}
 
-        {/* SELECTED PEDESTAL DISPLAY */}
-        {selectedPedestal && (
-          <div className="mb-4 border-t pt-3">
-            <p className="font-medium mb-2 text-sm text-gray-800">
-              Selected Pedestal:
-            </p>
-
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>{selectedPedestal.dimension}</span>
-              <span>
-                + ${selectedPedestal.price.toFixed(2)}
-              </span>
-            </div>
-          </div>
-        )}
+        
 
         {/* BUTTONS */}
         <div className="flex justify-between mt-4">
@@ -120,27 +104,10 @@ const { addToCart, replaceCartItem } = useCart();  const navigate = useNavigate(
 
           <button
 onClick={() => {
-  if (!selectedPedestal) {
-    onGoToCart();
-    return;
-  }
 
-  const updatedAddons = [
-    ...(product.addons || []),
-    {
-      optionId: "pedestal",
-      name: "Pedestals",
-      price: selectedPedestal.price,
-      pedestalData: {
-        dimension: selectedPedestal.dimension,
-        price: selectedPedestal.price,
-      },
-    },
-  ];
 
   const updatedItem = {
     ...product,
-    addons: updatedAddons,
     lineTotal: computedTotal,
   };
 
@@ -155,69 +122,68 @@ onClick={() => {
           </button>
         </div>
 
-        {/* PEDESTAL / SIGNAGE SECTION */}
-        {(product?.hasPedestal || product?.hasSignage) && (
-          <div className="mt-5 border-t pt-4">
-            <h3 className="font-semibold mb-3 text-sm text-gray-800">
-              Additional Options
-            </h3>
+       {/* PEDESTAL / SIGNAGE SECTION */}
+{product?.hasSignage && (
+  <div className="mt-5 border-t pt-4">
 
-            {/* PEDESTAL */}
-            {product?.hasPedestal &&
-              product?.pedestalItems?.length > 0 && (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2">
-                    Select Pedestal
-                  </label>
+    <h3 className="font-semibold mb-4 text-sm text-gray-800">
+      Additional Options
+    </h3>
 
-                  <select
-                    className="w-full p-2 border rounded-lg"
-                    value={selectedPedestalIndex}
-                    onChange={(e) => {
-                      const idx = e.target.value;
-                      setSelectedPedestalIndex(idx);
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                      if (idx === "") {
-                        setSelectedPedestal(null);
-                        return;
-                      }
+      {/* PEDESTAL */}
+      <div
+  onClick={() => {
+    onClose(); // close modal
+    navigate("/product/698a8795db89f542c7adf6a0");
+  }}
+        className="cursor-pointer border rounded-xl overflow-hidden hover:shadow-md transition"
+      >
+        <img
+          src={heroPedestal}
+          alt="Pedestal"
+          className="w-full h-32 object-cover"
+        />
 
-                      const chosen =
-                        product?.pedestalItems?.[idx];
-                      if (!chosen) return;
+        <div className="p-3 flex justify-between items-center">
+          <span className="font-medium text-gray-800">
+            Pedestal
+          </span>
 
-                      setSelectedPedestal({
-                        dimension: chosen.dimension,
-                        price: Number(chosen.price) || 0,
-                      });
-                    }}
-                  >
-                    <option value="">Select pedestal</option>
-                    {product.pedestalItems.map((p, idx) => (
-                      <option key={idx} value={idx}>
-                        {p.dimension} (+ ${p.price})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+          <span className="text-sm text-gray-500">
+            View →
+          </span>
+        </div>
+      </div>
 
-            {/* SIGNAGE */}
-            {product?.hasSignage && (
-              <div className="mb-4">
-                <button
-                  onClick={() => navigate("/signage")}
-                  className="w-full border rounded-lg px-4 py-3 flex justify-between items-center hover:bg-gray-50"
-                >
-                  <span>Add Signage</span>
-                  <span>
-                    + ${product?.signagePrice || 0}
-                  </span>
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+      {/* SIGNAGE */}
+      <div
+onClick={() => {
+  onClose();
+  navigate("/signage");
+}}        className="cursor-pointer border rounded-xl overflow-hidden hover:shadow-md transition"
+      >
+        <img
+          src={heroSignage}
+          alt="Signage"
+          className="w-full h-32 object-cover"
+        />
+
+        <div className="p-3 flex justify-between items-center">
+          <span className="font-medium text-gray-800">
+            Add Signage
+          </span>
+
+          <span className="text-sm text-gray-500">
+            + ${product?.signagePrice || 0}
+          </span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+)}
       </div>
     </div>
   );
