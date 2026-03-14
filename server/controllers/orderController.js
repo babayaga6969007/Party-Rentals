@@ -91,11 +91,21 @@ if (!customer?.addressLine) {
           optionImageUrls: Array.isArray(ps.optionImageUrls) ? ps.optionImageUrls : [],
           price: ps.price || 0
         })) : [],
-        // Explicitly preserve signageData for signage items (including signageType, rushProduction)
+        // Explicitly preserve full signageData for signage items
         signageData: item.productType === "signage" ? {
           texts: (item.signageData && item.signageData.texts) ? item.signageData.texts : [],
+          textContent: (item.signageData && item.signageData.textContent) || "",
+          fontFamily: (item.signageData && item.signageData.fontFamily) || "",
+          fontSize: item.signageData && item.signageData.fontSize != null ? Number(item.signageData.fontSize) : null,
+          textColor: (item.signageData && item.signageData.textColor) || "",
+          textWidth: item.signageData && item.signageData.textWidth != null ? Number(item.signageData.textWidth) : null,
+          textHeight: item.signageData && item.signageData.textHeight != null ? Number(item.signageData.textHeight) : null,
+          widthInches: item.signageData && item.signageData.widthInches != null ? Number(item.signageData.widthInches) : null,
+          heightInches: item.signageData && item.signageData.heightInches != null ? Number(item.signageData.heightInches) : null,
+          size: (item.signageData && item.signageData.size) || "",
           backgroundType: (item.signageData && item.signageData.backgroundType) || "",
           backgroundColor: (item.signageData && item.signageData.backgroundColor) || "",
+          backgroundGradient: (item.signageData && item.signageData.backgroundGradient) || "",
           backgroundImageUrl: (item.signageData && item.signageData.backgroundImageUrl) || "",
           signageType: (item.signageData && item.signageData.signageType) === "vinyl" ? "vinyl" : "acrylic",
           rushProduction: !!(item.signageData && item.signageData.rushProduction),

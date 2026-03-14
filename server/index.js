@@ -77,6 +77,7 @@ const vinylConfigRoutes = require("./routes/vinylConfigRoutes");
 const vinylPrintingConfigRoutes = require("./routes/vinylPrintingConfigRoutes");
 const galleryRoutes = require("./routes/galleryRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
+const placesRoutes = require("./routes/placesRoutes");
 
 /* =========================
    DATABASE
@@ -134,6 +135,9 @@ app.use("/api/gallery", galleryRoutes);
 
 // 📤 Upload (vinyl image for cart)
 app.use("/api/upload", uploadRoutes);
+
+// 📍 Places (address autocomplete via Google; key server-side only)
+app.use("/api/places", placesRoutes);
 
 /* =========================
    ERROR HANDLER (e.g. multer LIMIT_FILE_SIZE)
