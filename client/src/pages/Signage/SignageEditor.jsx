@@ -498,12 +498,20 @@ const SignageEditorContent = () => {
     document.addEventListener("touchcancel", onEnd, { capture: true });
   };
 
+  const MIN_SIGNAGE_ORDER = 95; // Minimum $95 per acrylic or vinyl order
+
   // Add to cart (saves signage metadata directly in cart, no separate entity)
   const handleAddToCart = async () => {
     try {
       const texts = getTextsFromContent();
       if (texts.length === 0) {
         toast.error("Please enter some text");
+        return;
+      }
+
+      const price = currentPrice ?? product?.pricePerDay ?? 0;
+      if (price < MIN_SIGNAGE_ORDER) {
+        toast.error(`Minimum $${MIN_SIGNAGE_ORDER} per acrylic or vinyl order. Current total: $${Number(price).toFixed(2)}`);
         return;
       }
 
@@ -571,6 +579,8 @@ const SignageEditorContent = () => {
               textColor: selectedTextColor,
               textWidth: effectiveTextSize.width,
               textHeight: effectiveTextSize.height,
+              widthInches: widthInches != null ? Math.round(widthInches * 100) / 100 : null,
+              heightInches: heightInches != null ? Math.round(heightInches * 100) / 100 : null,
               size: selectedSize,
               signageType: signageType === "vinyl" ? "vinyl" : "acrylic",
               rushProduction: !!rushProduction,

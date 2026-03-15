@@ -15,6 +15,7 @@ const Orders = () => {
   const [statusDraft, setStatusDraft] = useState({});
 
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [orderDetailsLoading, setOrderDetailsLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, orderId: null });
 
   const updateStatus = async (orderId, newStatus) => {
@@ -73,6 +74,8 @@ const Orders = () => {
   };
 
   const openOrderDetails = async (orderId) => {
+    setOrderDetailsLoading(true);
+    setSelectedOrder(null);
     try {
       const token = localStorage.getItem("admin_token");
 
@@ -83,6 +86,8 @@ const Orders = () => {
       setSelectedOrder(res.order);
     } catch {
       toast.error("Failed to load order details");
+    } finally {
+      setOrderDetailsLoading(false);
     }
   };
 
@@ -465,6 +470,15 @@ const Orders = () => {
       <p className="text-sm text-gray-500 mt-6">
         Rental orders include date ranges to manage product availability and scheduling.
       </p>
+      {/* Loading overlay when fetching order details */}
+      {orderDetailsLoading && (
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50" aria-busy="true">
+          <div className="bg-white rounded-xl shadow-xl px-8 py-6 flex flex-col items-center gap-4">
+            <div className="w-10 h-10 border-4 border-gray-200 border-t-[#2D2926] rounded-full animate-spin" />
+            <p className="text-gray-700 font-medium">Loading order details...</p>
+          </div>
+        </div>
+      )}
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-start z-50 p-4 overflow-y-auto">
           <div className="bg-white w-full max-w-4xl my-8 rounded-xl shadow-xl">
@@ -672,66 +686,235 @@ const Orders = () => {
                         </div>
                       )}
 
-                      {/* Signage Details */}
-                      {item.productType === "signage" && item.signageData && (
-                        <div className="mt-3 pt-3 border-t bg-purple-50 p-3 rounded">
-                          <p className="font-medium text-sm mb-3 text-purple-900">Signage Details:</p>
-
-                          {/* Preview Image */}
-                          {item.image && (
-                            <div className="mb-3">
-                              <p className="font-medium text-xs mb-2 text-purple-900">Preview:</p>
-                              <img
-                                src={item.image}
-                                alt="Signage preview"
-                                className="max-w-full max-h-64 rounded-lg border-2 border-purple-200 shadow-sm"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                }}
-                              />
-                            </div>
-                          )}
-
-                          {/* Text Content */}
-                          <div>
-                            <p className="text-xs font-semibold text-purple-800 mb-2">Text Content:</p>
-                            <div className="text-sm text-gray-700 bg-white p-3 rounded">
+                      {/* Vinyl Printing Details */}
+                      {item.productType === "vinyl-printing" && item.vinylPrintingData && (
+                        <div className="mt-3 pt-3 border-t border-gray-200 bg-gray-50 p-3 rounded">
+                          <p className="font-medium text-sm mb-3 text-[#2D2926]">Vinyl Printing Details</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-700">
+                            {item.vinylPrintingData.sizeLabel != null && item.vinylPrintingData.sizeLabel !== "" && (
+                              <div>
+                                <span className="text-gray-600 font-medium">Size:</span>
+                                <span className="ml-2">{item.vinylPrintingData.sizeLabel}</span>
+                              </div>
+                            )}
+                            {item.vinylPrintingData.sizeKey != null && item.vinylPrintingData.sizeKey !== "" && (
+                              <div>
+                                <span className="text-gray-600 font-medium">Size key:</span>
+                                <span className="ml-2">{item.vinylPrintingData.sizeKey}</span>
+                              </div>
+                            )}
+                            {item.vinylPrintingData.price != null && (
+                              <div>
+                                <span className="text-gray-600 font-medium">Size price:</span>
+                                <span className="ml-2">${Number(item.vinylPrintingData.price).toFixed(2)}</span>
+                              </div>
+                            )}
+                            {item.vinylPrintingData.rushProduction != null && (
+                              <div>
+                                <span className="text-gray-600 font-medium">Rush (3–5 days):</span>
+                                <span className="ml-2">{item.vinylPrintingData.rushProduction ? "Yes" : "No"}</span>
+                              </div>
+                            )}
+                          </div>
+                          {item.vinylPrintingData.fileUrl != null && item.vinylPrintingData.fileUrl !== "" && (
+                            <div className="mt-3 pt-3 border-t border-gray-200">
+                              <span className="text-gray-600 font-medium text-sm block mb-2">Print file</span>
+                              <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <a
+                                  href={item.vinylPrintingData.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-2 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 rounded text-gray-700 text-xs font-medium"
+                                >
+                                  Open in new tab
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    const url = item.vinylPrintingData.fileUrl;
+                                    const name = item.name || "vinyl-print";
+                                    const filename = (url.split("/").pop()?.split("?")[0]) || `${name.replace(/\s+/g, "-")}.pdf`;
+                                    try {
+                                      const res = await fetch(url, { mode: "cors" });
+                                      if (!res.ok) throw new Error("Fetch failed");
+                                      const blob = await res.blob();
+                                      const blobUrl = URL.createObjectURL(blob);
+                                      const a = document.createElement("a");
+                                      a.href = blobUrl;
+                                      a.download = filename;
+                                      a.rel = "noopener";
+                                      document.body.appendChild(a);
+                                      a.click();
+                                      document.body.removeChild(a);
+                                      URL.revokeObjectURL(blobUrl);
+                                    } catch {
+                                      window.open(url, "_blank", "noopener");
+                                      toast("Opened in new tab. Use the browser’s save option to download.");
+                                    }
+                                  }}
+                                  className="inline-flex items-center gap-1 px-2 py-1.5 bg-[#2D2926] hover:bg-gray-800 text-white rounded text-xs font-medium"
+                                >
+                                  Download
+                                </button>
+                              </div>
+                              {/* Preview: image formats show thumbnail; PDF/other show placeholder */}
                               {(() => {
-                                const textContent = item.signageData.textContent;
-                                const texts = item.signageData.texts;
-                                
-                                // Try to extract text from various formats
-                                let textLines = [];
-                                
-                                if (textContent && textContent.trim()) {
-                                  // If textContent exists, split by newlines
-                                  textLines = textContent.split('\n').filter(line => line.trim());
-                                } else if (texts && Array.isArray(texts) && texts.length > 0) {
-                                  // Handle array of strings or objects
-                                  textLines = texts
-                                    .map(t => {
-                                      if (typeof t === 'string') return t.trim();
-                                      if (typeof t === 'object' && t !== null) {
-                                        return (t.content || t.text || t.value || '').trim();
-                                      }
-                                      return String(t || '').trim();
-                                    })
-                                    .filter(Boolean);
-                                }
-                                
-                                if (textLines.length > 0) {
+                                const url = item.vinylPrintingData.fileUrl || "";
+                                const ext = (url.split(".").pop() || "").split("?")[0].toLowerCase();
+                                const isImage = ["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext);
+                                if (isImage) {
                                   return (
-                                    <div className="space-y-1">
-                                      {textLines.map((line, idx) => (
-                                        <p key={idx} className="pl-2 border-l-2 border-purple-300">{line}</p>
-                                      ))}
+                                    <div className="mt-2">
+                                      <p className="text-xs text-gray-500 mb-1">Preview</p>
+                                      <div className="inline-block max-w-full max-h-48 rounded-lg border border-gray-200 overflow-hidden bg-white">
+                                        <img
+                                          src={item.vinylPrintingData.fileUrl}
+                                          alt="Print file preview"
+                                          className="max-w-full max-h-48 w-auto h-auto object-contain"
+                                          onError={(e) => {
+                                            e.target.style.display = "none";
+                                            e.target.nextSibling?.classList.remove("hidden");
+                                          }}
+                                        />
+                                        <span className="hidden text-sm text-gray-500 p-2">Preview not available</span>
+                                      </div>
                                     </div>
                                   );
-                                } else {
-                                  return <p className="text-gray-500 italic">No text content provided</p>;
                                 }
+                                if (ext === "pdf") {
+                                  return (
+                                    <div className="mt-2">
+                                      <p className="text-xs text-gray-500 mb-1">Preview</p>
+                                      <div className="rounded-lg border border-gray-200 bg-white p-4 flex items-center justify-center min-h-[120px]">
+                                        <object
+                                          data={`${item.vinylPrintingData.fileUrl}#toolbar=0`}
+                                          type="application/pdf"
+                                          className="w-full min-h-[200px] rounded"
+                                          title="PDF preview"
+                                        >
+                                          <p className="text-sm text-gray-500">PDF — use Open or Download to view</p>
+                                        </object>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return (
+                                  <p className="text-xs text-gray-500 mt-1 break-all">{item.vinylPrintingData.fileUrl}</p>
+                                );
                               })()}
                             </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Signage Details — metadata + styled text preview */}
+                      {item.productType === "signage" && item.signageData && (
+                        <div className="mt-3 pt-3 border-t border-gray-200 bg-gray-50 p-3 rounded">
+                          <p className="font-medium text-sm mb-3 text-[#2D2926]">Signage details</p>
+                          {/* Styled text preview — real font, size, color (from texts[0] or top-level) */}
+                          {(() => {
+                            const sd = item.signageData;
+                            const firstText = sd.texts && Array.isArray(sd.texts) && sd.texts.length > 0 ? sd.texts[0] : null;
+                            const displayText = (sd.textContent != null && String(sd.textContent).trim() !== "")
+                              ? String(sd.textContent).trim()
+                              : (sd.texts != null && Array.isArray(sd.texts) && sd.texts.length > 0)
+                                ? sd.texts.map((t) => (typeof t === "object" && t && (t.content || t.text || t.value)) || (typeof t === "string" ? t : "")).filter(Boolean).join(" ")
+                                : "";
+                            if (!displayText) return null;
+                            const fontFamily = (firstText && firstText.fontFamily && String(firstText.fontFamily).trim()) || (sd.fontFamily && String(sd.fontFamily).trim()) ? ((firstText && firstText.fontFamily) || sd.fontFamily) : "'Farmhouse', cursive";
+                            const fontSizePx = (firstText && firstText.fontSize != null) ? Number(firstText.fontSize) : (sd.fontSize != null ? Number(sd.fontSize) : 48);
+                            const previewSize = Math.min(Math.max(fontSizePx * 0.6, 18), 42);
+                            const colorRaw = (firstText && firstText.color && String(firstText.color).trim()) || (sd.textColor && String(sd.textColor).trim());
+                            const color = colorRaw ? (colorRaw.startsWith("#") ? colorRaw : `#${colorRaw}`) : "#1a1a1a";
+                            return (
+                              <div className="mb-4 p-4 rounded-lg border border-gray-200 bg-white">
+                                <p className="text-xs text-gray-500 mb-2">Text preview</p>
+                                <p
+                                  className="font-bold text-center whitespace-pre-wrap break-words"
+                                  style={{
+                                    fontFamily: `${fontFamily}, Georgia, serif`,
+                                    fontSize: `${previewSize}px`,
+                                    color,
+                                    lineHeight: 1.1,
+                                    textShadow: "0 0 8px #fff, 1px 1px 2px rgba(0,0,0,0.2)",
+                                  }}
+                                >
+                                  {displayText}
+                                </p>
+                              </div>
+                            );
+                          })()}
+                          {/* Text metadata — font and color from texts array (or top-level fallback) */}
+                          {(() => {
+                            const sd = item.signageData;
+                            const texts = sd.texts && Array.isArray(sd.texts) ? sd.texts : [];
+                            const firstText = texts.length > 0 ? texts[0] : null;
+                            const fontFamily = (firstText && (firstText.fontFamily != null && String(firstText.fontFamily).trim() !== "")) ? firstText.fontFamily : (sd.fontFamily != null && String(sd.fontFamily).trim() !== "" ? sd.fontFamily : null);
+                            const textColor = (firstText && (firstText.color != null && String(firstText.color).trim() !== "")) ? firstText.color : (sd.textColor != null && String(sd.textColor).trim() !== "" ? sd.textColor : null);
+                            return (
+                              <div className="mb-4 p-3 rounded-lg border border-gray-200 bg-white">
+                                <p className="text-xs font-medium text-gray-500 mb-2">Text</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                                  <div>
+                                    <span className="text-gray-600 font-medium">Font:</span>
+                                    <span className="ml-2 text-gray-800">{fontFamily || "—"}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-gray-600 font-medium">Text color:</span>
+                                    {textColor ? (
+                                      <>
+                                        <span className="inline-block w-5 h-5 rounded border border-gray-300 shrink-0" style={{ backgroundColor: (textColor || "").startsWith("#") ? textColor : `#${textColor}` }} title={textColor} />
+                                        <span className="text-gray-800">{textColor}</span>
+                                      </>
+                                    ) : (
+                                      <span className="text-gray-500">—</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-700">
+                            {(item.signageData.widthInches != null || item.signageData.heightInches != null) && (
+                              <>
+                                {item.signageData.widthInches != null && (
+                                  <div>
+                                    <span className="text-gray-600 font-medium">Width (in):</span>
+                                    <span className="ml-2">{Number(item.signageData.widthInches).toFixed(2)}</span>
+                                  </div>
+                                )}
+                                {item.signageData.heightInches != null && (
+                                  <div>
+                                    <span className="text-gray-600 font-medium">Height (in):</span>
+                                    <span className="ml-2">{Number(item.signageData.heightInches).toFixed(2)}</span>
+                                  </div>
+                                )}
+                                {item.signageData.widthInches != null && item.signageData.heightInches != null && (
+                                  <div>
+                                    <span className="text-gray-600 font-medium">Square inches:</span>
+                                    <span className="ml-2">{(Number(item.signageData.widthInches) * Number(item.signageData.heightInches)).toFixed(2)}</span>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                            {item.signageData.size != null && String(item.signageData.size).trim() !== "" && (
+                              <div>
+                                <span className="text-gray-600 font-medium">Signage size:</span>
+                                <span className="ml-2 capitalize">{item.signageData.size}</span>
+                              </div>
+                            )}
+                            {item.signageData.signageType != null && String(item.signageData.signageType).trim() !== "" && (
+                              <div>
+                                <span className="text-gray-600 font-medium">Signage type:</span>
+                                <span className="ml-2 capitalize">{item.signageData.signageType}</span>
+                              </div>
+                            )}
+                            {item.signageData.rushProduction != null && (
+                              <div>
+                                <span className="text-gray-600 font-medium">Rush (3–5 days):</span>
+                                <span className="ml-2">{item.signageData.rushProduction ? "Yes" : "No"}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
@@ -764,50 +947,87 @@ const Orders = () => {
                                       </div>
                                     )}
 
-                                    {/* Vinyl Wrap */}
+                                    {/* Vinyl Wrap — same layout as Vinyl Printing Details */}
                                     {(addon.vinylColor || addon.vinylHex || addon.vinylImageUrl) && (
-                                      <div className="mt-2 text-xs">
+                                      <div className="mt-3 pt-3 border-t border-gray-200 bg-gray-50 p-3 rounded">
+                                        <p className="font-medium text-sm mb-3 text-[#2D2926]">Vinyl wrap</p>
                                         {addon.vinylImageUrl ? (
                                           <>
-                                            <span className="font-medium text-gray-700 block mb-1">Vinyl Design (image):</span>
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                              <img
-                                                src={addon.vinylImageUrl}
-                                                alt="Vinyl design"
-                                                className="w-16 h-16 object-cover rounded border border-gray-300"
-                                              />
+                                            <div className="flex flex-wrap items-center gap-2 mb-2">
                                               <a
                                                 href={addon.vinylImageUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-1 px-2 py-1.5 bg-gray-100 hover:bg-gray-200 rounded text-gray-700 text-xs font-medium"
+                                                className="inline-flex items-center gap-1 px-2 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 rounded text-gray-700 text-xs font-medium"
                                               >
                                                 Open in new tab
                                               </a>
-                                              <a
-                                                href={addon.vinylImageUrl}
-                                                download
-                                                className="inline-flex items-center gap-1 px-2 py-1.5 bg-black text-white rounded text-xs font-medium hover:bg-gray-800"
+                                              <button
+                                                type="button"
+                                                onClick={async () => {
+                                                  const url = addon.vinylImageUrl;
+                                                  const filename = (url.split("/").pop()?.split("?")[0]) || "vinyl-design";
+                                                  try {
+                                                    const res = await fetch(url, { mode: "cors" });
+                                                    if (!res.ok) throw new Error("Fetch failed");
+                                                    const blob = await res.blob();
+                                                    const blobUrl = URL.createObjectURL(blob);
+                                                    const a = document.createElement("a");
+                                                    a.href = blobUrl;
+                                                    a.download = filename;
+                                                    a.rel = "noopener";
+                                                    document.body.appendChild(a);
+                                                    a.click();
+                                                    document.body.removeChild(a);
+                                                    URL.revokeObjectURL(blobUrl);
+                                                  } catch {
+                                                    window.open(url, "_blank", "noopener");
+                                                    toast("Opened in new tab. Use the browser's save option to download.");
+                                                  }
+                                                }}
+                                                className="inline-flex items-center gap-1 px-2 py-1.5 bg-[#2D2926] hover:bg-gray-800 text-white rounded text-xs font-medium"
                                               >
-                                                Download image
-                                              </a>
+                                                Download
+                                              </button>
+                                            </div>
+                                            <div className="mt-2">
+                                              <p className="text-xs text-gray-500 mb-1">Preview</p>
+                                              <div className="inline-block max-w-full max-h-48 rounded-lg border border-gray-200 overflow-hidden bg-white">
+                                                <img
+                                                  src={addon.vinylImageUrl}
+                                                  alt="Vinyl design"
+                                                  className="max-w-full max-h-48 w-auto h-auto object-contain"
+                                                  onError={(e) => {
+                                                    e.target.style.display = "none";
+                                                    e.target.nextSibling?.classList.remove("hidden");
+                                                  }}
+                                                />
+                                                <span className="hidden text-sm text-gray-500 p-2">Preview not available</span>
+                                              </div>
                                             </div>
                                           </>
                                         ) : (
-                                          <>
-                                            <span className="font-medium text-gray-700">Vinyl Color:</span>
-                                            <div className="flex items-center gap-2 mt-1">
+                                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-700">
+                                            <div className="flex items-center gap-2">
+                                              <span className="text-gray-600 font-medium">Color:</span>
                                               {addon.vinylHex && (
                                                 <span
-                                                  className="inline-block w-5 h-5 rounded border border-gray-400"
+                                                  className="inline-block w-5 h-5 rounded border border-gray-300 shrink-0"
                                                   style={{ backgroundColor: addon.vinylHex }}
-                                                ></span>
+                                                  title={addon.vinylHex}
+                                                />
                                               )}
-                                              <span className="text-gray-600">
-                                                {addon.vinylColor === "custom" ? `Custom (${addon.vinylHex})` : addon.vinylColor}
+                                              <span>
+                                                {addon.vinylColor === "custom" ? `Custom (${addon.vinylHex})` : (addon.vinylColor || "—")}
                                               </span>
                                             </div>
-                                          </>
+                                            {(addon.vinylSizeLabel || addon.vinylSizeKey) && (
+                                              <div>
+                                                <span className="text-gray-600 font-medium">Size:</span>
+                                                <span className="ml-2">{addon.vinylSizeLabel || addon.vinylSizeKey}</span>
+                                              </div>
+                                            )}
+                                          </div>
                                         )}
                                       </div>
                                     )}

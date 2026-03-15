@@ -34,48 +34,55 @@ const ShippingRatesModal = ({ isOpen, onClose, onShippingCalculated }) => {
     return R * c;
   };
 
-  // Search addresses using Photon API (free, no API key required)
+  // Search addresses: backend (Google Places) first, then Photon fallback
   const searchAddress = async (query) => {
-    if (query.length < 3) {
+    if (query.length < 2) {
       setSuggestions([]);
       return;
     }
 
+    setIsSearching(true);
+    setSuggestions([]);
+
     try {
-      setIsSearching(true);
-      // Photon API with location bias to prioritize results near warehouse
+      // 1) Try our backend (calls Google Places; key stays on server)
+      const res = await api(`/places/autocomplete?input=${encodeURIComponent(query)}`);
+      const list = res.suggestions || [];
+      if (list.length > 0) {
+        setSuggestions(list.map((s) => ({ placeId: s.placeId, description: s.description })));
+        setIsSearching(false);
+        return;
+      }
+    } catch {
+      // Backend failed or no key: fall back to Photon
+    }
+
+    try {
+      // 2) Fallback: Photon (free, no key)
       const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5&lat=${warehouse.lat}&lon=${warehouse.lng}`;
       const response = await fetch(url);
-
-      if (!response.ok) {
-        throw new Error("Address search service unavailable");
-      }
-
+      if (!response.ok) throw new Error("Address search unavailable");
       const data = await response.json();
-
       if (!data.features || data.features.length === 0) {
         setSuggestions([]);
         return;
       }
-
-      // Map Photon results to our format
-      const mappedSuggestions = data.features.map((f) => {
+      const mapped = data.features.map((f) => {
         const parts = [
           f.properties.name,
           f.properties.city,
           f.properties.state,
           f.properties.postcode,
         ].filter(Boolean);
-
+        const label = parts.join(", ");
         return {
-          label: parts.join(", "),
-          lat: f.geometry.coordinates[1], // Photon returns [lng, lat]
+          label,
+          fullAddress: label,
+          lat: f.geometry.coordinates[1],
           lon: f.geometry.coordinates[0],
-          fullAddress: parts.join(", "),
         };
       });
-
-      setSuggestions(mappedSuggestions);
+      setSuggestions(mapped);
     } catch (error) {
       console.error("Address search error:", error);
       setSuggestions([]);
@@ -214,29 +221,46 @@ const ShippingRatesModal = ({ isOpen, onClose, onShippingCalculated }) => {
     };
   };
 
-  // Handle address selection from dropdown
-  const handleAddressSelect = async (selectedAddress) => {
-    setAddressInput(selectedAddress.label);
-    setSuggestions([]);
-    setAddressError("");
-    setDetectedZone(null);
-    setIsLoading(true);
+  // Handle address selection: if from Google (placeId), fetch details first; then run distance
+  const handleAddressSelect = async (suggestion) => {
+    let addressData = suggestion;
+
+    if (suggestion.placeId) {
+      setAddressInput(suggestion.description || "");
+      setSuggestions([]);
+      setAddressError("");
+      setDetectedZone(null);
+      setIsLoading(true);
+      try {
+        const details = await api(`/places/details?place_id=${encodeURIComponent(suggestion.placeId)}`);
+        addressData = {
+          label: details.formatted_address,
+          fullAddress: details.formatted_address,
+          lat: details.lat,
+          lon: details.lng,
+        };
+      } catch {
+        setAddressError("Could not get address details. Try again.");
+        setIsLoading(false);
+        return;
+      }
+    } else {
+      setAddressInput(addressData.label || addressData.fullAddress || "");
+      setSuggestions([]);
+      setAddressError("");
+      setDetectedZone(null);
+      setIsLoading(true);
+    }
 
     try {
-      const { distance: distanceInMiles, address } = await calculateDistanceFromAddress(selectedAddress);
-      
+      const { distance: distanceInMiles, address } = await calculateDistanceFromAddress(addressData);
       const pricing = calculateShippingPrice(distanceInMiles);
-      
-      const result = {
+      setDetectedZone({
         distance: distanceInMiles,
-        address: address,
+        address,
         distanceRange: pricing.distanceRange,
         price: pricing.price,
-      };
-      
-      setDetectedZone(result);
-      
-      // Don't auto-call callback - let user review and click "Apply" button
+      });
     } catch (error) {
       setAddressError(
         error.message || "Unable to calculate distance. Please try again or contact support."
@@ -286,7 +310,7 @@ const ShippingRatesModal = ({ isOpen, onClose, onShippingCalculated }) => {
             <input
               type="text"
               value={addressInput}
-              placeholder="Enter ZIP code"
+              placeholder="Enter address or ZIP (min 2 characters)"
               className="w-full p-3 border rounded-lg"
               onChange={(e) => {
                 const value = e.target.value;
@@ -295,18 +319,13 @@ const ShippingRatesModal = ({ isOpen, onClose, onShippingCalculated }) => {
                 setDetectedZone(null);
                 searchAddress(value);
               }}
-              onBlur={() => {
-                // Delay hiding suggestions to allow click
-                setTimeout(() => setSuggestions([]), 200);
-              }}
+              onBlur={() => setTimeout(() => setSuggestions([]), 200)}
               onFocus={() => {
-                if (addressInput.length >= 3) {
-                  searchAddress(addressInput);
-                }
+                if (addressInput.length >= 2) searchAddress(addressInput);
               }}
             />
 
-            {/* Autocomplete Suggestions Dropdown */}
+            {/* Suggestions: from backend (Google) or Photon fallback */}
             {suggestions.length > 0 && (
               <div className="absolute z-30 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                 {isSearching && (
@@ -316,12 +335,14 @@ const ShippingRatesModal = ({ isOpen, onClose, onShippingCalculated }) => {
                 )}
                 {suggestions.map((suggestion, index) => (
                   <button
-                    key={index}
+                    key={suggestion.placeId || index}
                     type="button"
                     className="w-full text-left px-4 py-3 hover:bg-gray-100 border-b border-gray-100 last:border-b-0 transition-colors"
                     onClick={() => handleAddressSelect(suggestion)}
                   >
-                    <div className="text-sm text-[#2D2926]">{suggestion.label}</div>
+                    <div className="text-sm text-[#2D2926]">
+                      {suggestion.description ?? suggestion.label}
+                    </div>
                   </button>
                 ))}
               </div>
