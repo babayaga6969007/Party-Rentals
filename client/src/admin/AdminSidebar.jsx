@@ -9,6 +9,7 @@ import {
   FiUsers,
   FiCalendar,
   FiLogOut,
+  FiLock
 } from "react-icons/fi";
 
 const Sidebar = () => {
@@ -164,7 +165,10 @@ const Sidebar = () => {
   Availability Calendar
 </NavLink>
 
-
+<NavLink to="/admin/change-password" className={linkClass}>
+  <FiLock className="inline mr-2" />
+  Change Password
+</NavLink>
       {/* Logout */}
       <button
         onClick={() => {

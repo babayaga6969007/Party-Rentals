@@ -1,3 +1,4 @@
+const authMiddleware = require("../middleware/authAdmin");
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -68,5 +69,27 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+router.put("/change-password", authMiddleware, async (req, res) => {
+  const bcrypt = require("bcryptjs");
+  const Admin = require("../models/Admin");
 
+  try {
+    const adminId = req.admin.id;
+    const { currentPassword, newPassword } = req.body;
+
+    const admin = await Admin.findById(adminId);
+
+    const valid = await bcrypt.compare(currentPassword, admin.password);
+    if (!valid) {
+      return res.status(400).json({ message: "Current password incorrect" });
+    }
+
+    admin.password = await bcrypt.hash(newPassword, 10);
+    await admin.save();
+
+    res.json({ message: "Password updated successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
 module.exports = router;

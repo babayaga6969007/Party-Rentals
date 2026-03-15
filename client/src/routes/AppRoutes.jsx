@@ -55,7 +55,7 @@ import AdminShippingConfig from "../admin/AdminShippingConfig";
 import AdminVinylConfig from "../admin/AdminVinylConfig";
 import AdminVinylPrintingConfig from "../admin/AdminVinylPrintingConfig";
 import GalleryAdmin from "../admin/Gallery";
-
+import ChangePassword from "../admin/ChangePassword";
 
 const AppRoutes = () => {
   return (
@@ -115,6 +115,14 @@ const AppRoutes = () => {
       <AdminCoupons />
     </ProtectedAdminRoute>
   }
+/>
+<Route
+ path="/admin/change-password"
+ element={
+   <ProtectedAdminRoute>
+     <ChangePassword />
+   </ProtectedAdminRoute>
+ }
 />
 <Route
   path="/admin/signages"
