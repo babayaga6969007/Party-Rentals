@@ -1,3 +1,4 @@
+import heroImg from "../../assets/about/main_founder.png";
 const FounderSection = () => {
   return (
 <section className="pt-0 pb-20 bg-[#FFF]">
@@ -33,11 +34,11 @@ Elisamarie and Eddie
 
         {/* RIGHT IMAGE */}
         <div className="relative">
-          <img
-            src="https://images.pexels.com/photos/3184611/pexels-photo-3184611.jpeg?auto=compress&cs=tinysrgb&w=800"
-            alt="Founder"
-            className="rounded-2xl shadow-xl object-cover w-full max-h-[420px]"
-          />
+         <img
+  src={heroImg}
+  alt="Founder"
+  className="rounded-2xl shadow-xl object-cover w-full max-h-[500px]"
+/>
 
           {/* Decorative Corners */}
           <div className="absolute top-4 left-4 w-10 h-10 border-t-4 border-l-4 border-black rounded-tl-lg"></div>
