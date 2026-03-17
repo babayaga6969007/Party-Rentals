@@ -243,14 +243,14 @@ const inTags =
       <div className="page-wrapper max-w-4xl mx-auto text-center mb-10">
         <h1 className="text-4xl md:text-5xl font-semibold text-[#2D2926]"
             style={{ fontFamily: '"Cormorant Garamond", serif' }}>
-          Browse Our Shop
+          One Stop Shop
         </h1>
 
         <p
           className="text-[#2D2926]/80 text-[18px] mt-4 leading-relaxed max-w-2xl mx-auto"
           style={{ fontFamily: '"Cormorant Garamond", serif' }}
         >
-          Here you get to buy used products for your use at a reasonable pricing.
+          Browse our collection and unique finds.
         </p>
       </div>
 
