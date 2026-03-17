@@ -7,8 +7,7 @@ const Admin = require("../models/Admin");
 const router = express.Router();
 
 // One-time route to create an admin
-router.post("/register", async (req, res) => {
-  try {
+router.post("/register", authMiddleware, async (req, res) => {  try {
     const { name, email, password } = req.body;
 
     const existing = await Admin.findOne({ email });
