@@ -1,4 +1,9 @@
-import { DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT, getBoardBounds } from "../context/SignageContext";
+import {
+  DEFAULT_CANVAS_WIDTH,
+  DEFAULT_CANVAS_HEIGHT,
+  DEFAULT_SIGNAGE_FONT,
+  getBoardBounds,
+} from "../context/SignageContext";
 import { waitForFonts as waitForFontsUtil, preloadFontsWithFontFace } from "./fontLoader";
 
 const MAX_EXPORT_LONG_SIDE = 1200;
@@ -166,7 +171,7 @@ export const createCanvasPreview = (
     if (!texts || texts.length === 0) return;
     
     // Get unique font families from texts
-    const fontFamilies = [...new Set(texts.map(t => t.fontFamily || "'Farmhouse', cursive"))];
+    const fontFamilies = [...new Set(texts.map((t) => t.fontFamily || DEFAULT_SIGNAGE_FONT))];
     
     console.log("waitForFontsLocal: Waiting for fonts:", fontFamilies);
     
@@ -405,7 +410,7 @@ const drawTexts = (context, getTextsFromContent, designWidth = null, designHeigh
     }
     
     // Set font - clean up font family string and use fallback
-    let fontFamily = (text.fontFamily || "'Farmhouse', cursive")
+    let fontFamily = (text.fontFamily || DEFAULT_SIGNAGE_FONT)
       .replace(/'/g, '')
       .replace(/, cursive/g, '')
       .replace(/, sans-serif/g, '')

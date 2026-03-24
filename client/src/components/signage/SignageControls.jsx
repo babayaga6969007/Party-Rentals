@@ -3,7 +3,6 @@ import { FiHelpCircle } from "react-icons/fi";
 import TextInputSection from "./TextInputSection";
 import FontSelector from "./FontSelector";
 import TextColorPicker from "./TextColorPicker";
-import VerticalBoardSelector from "./VerticalBoardSelector";
 import AddToCartButton from "./AddToCartButton";
 import { useSignage } from "../../context/SignageContext";
 
@@ -49,7 +48,6 @@ const SignageControls = memo(({ isSharedView, onAddToCart, isAddingToCart, produ
             <TextInputSection />
             <FontSelector />
             <TextColorPicker />
-            <VerticalBoardSelector />
 
             {/* Rush production: last in section — sign within 3–5 days, +30% of initial (excl. print prep) */}
             <div className="bg-white p-5 rounded-xl shadow">

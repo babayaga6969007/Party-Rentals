@@ -2,9 +2,12 @@ import { createContext, useContext, useState, useMemo, useCallback, useEffect, u
 import { api } from "../utils/api";
 
 // Default constants (fallback) - Using local fonts from public/fonts
+/** Default font stack for new signage, reset, and missing-font fallbacks */
+export const DEFAULT_SIGNAGE_FONT = "'BlackMango-Bold', sans-serif";
+
 export const DEFAULT_FONTS = [
+  { name: "Black Mango Bold", value: DEFAULT_SIGNAGE_FONT },
   { name: "Farmhouse", value: "'Farmhouse', cursive" },
-  { name: "Black Mango Bold", value: "'BlackMango-Bold', sans-serif" },
   { name: "Bodoni 72 Smallcaps", value: "'Bodoni 72 Smallcaps', serif" },
   { name: "Bright", value: "'Bright', sans-serif" },
   { name: "Futura", value: "'Futura', sans-serif" },
@@ -34,24 +37,126 @@ export const DEFAULT_TEXT_SIZES = {
 
 // Pixels per foot for canvas (so physical size in ft maps to display size)
 const PX_PER_FT = 150;
+
+/** Physical sign board size in feet — fixed in code; not editable in admin. */
+export const SIGNAGE_BOARD_WIDTH_FT = 4;
+export const SIGNAGE_BOARD_HEIGHT_FT = 8;
+
+/** Horizontal printable span for text (8 ft); maps to painted board width in canvas px. */
+export const SIGNAGE_TEXT_BOUNDARY_WIDTH_FT = 8;
+export const SIGNAGE_TEXT_BOUNDARY_WIDTH_INCHES = SIGNAGE_TEXT_BOUNDARY_WIDTH_FT * 12;
+
+/** Convert text box width (canvas px) to inches using the board’s horizontal text boundary. */
+export const textBoxWidthPxToInches = (textBoxWidthPx, boundaryWidthPx) => {
+  const bw = Number(boundaryWidthPx);
+  if (!Number.isFinite(bw) || bw <= 0) return 0;
+  return (Number(textBoxWidthPx) || 0) * (SIGNAGE_TEXT_BOUNDARY_WIDTH_INCHES / bw);
+};
+
+/** Vertical printable span on the board (8 ft); maps to painted board height in canvas px. */
+export const SIGNAGE_TEXT_BOUNDARY_HEIGHT_INCHES = SIGNAGE_BOARD_HEIGHT_FT * 12;
+
+/** Convert text box height (canvas px) to inches using painted board height (same idea as width). */
+export const textBoxHeightPxToInches = (textBoxHeightPx, boundaryHeightPx) => {
+  const bh = Number(boundaryHeightPx);
+  if (!Number.isFinite(bh) || bh <= 0) return 0;
+  return (Number(textBoxHeightPx) || 0) * (SIGNAGE_TEXT_BOUNDARY_HEIGHT_INCHES / bh);
+};
+
+/** Reference pair: width 90″ ↔ height 26″ for box labels and pricing height. */
+export const SIGNAGE_TEXT_ASPECT_REF_WIDTH_IN = 90;
+export const SIGNAGE_TEXT_ASPECT_REF_HEIGHT_IN = 26;
+export const SIGNAGE_TEXT_ASPECT_H_PER_W =
+  SIGNAGE_TEXT_ASPECT_REF_HEIGHT_IN / SIGNAGE_TEXT_ASPECT_REF_WIDTH_IN;
+
+export const signageTextHeightInchesForWidthInches = (widthInches) =>
+  (Number(widthInches) || 0) * SIGNAGE_TEXT_ASPECT_H_PER_W;
+
+/**
+ * Canvas px height for a given box width so inches match height = width × (26/90).
+ * Uses painted board aspect (bh/bw) so width/height inches scale together with the 90×26 rule.
+ */
+export const textBoxHeightPxForAspectWidthPx = (widthPx, boundaryWidthPx, boundaryHeightPx) => {
+  const bw = Number(boundaryWidthPx);
+  const bh = Number(boundaryHeightPx);
+  const w = Number(widthPx) || 0;
+  if (!Number.isFinite(bw) || bw <= 0) return w * SIGNAGE_TEXT_ASPECT_H_PER_W;
+  const boardRatio = Number.isFinite(bh) && bh > 0 ? bh / bw : 1;
+  return w * boardRatio * SIGNAGE_TEXT_ASPECT_H_PER_W;
+};
+
+const aspectK = (boardWidth, boardHeight) =>
+  (Number(boardHeight) || 1) / (Number(boardWidth) || 1) * SIGNAGE_TEXT_ASPECT_H_PER_W;
+
+/**
+ * Bottom-right resize: width from cursor (uniform scale hint), height = f(width) for 90×26″ physical rule.
+ */
+export const signageResizeBoxWithAspect = ({
+  startWidth: sw,
+  startHeight: sh,
+  pointerWidth: nw,
+  pointerHeight: nh,
+  anchorX,
+  anchorY,
+  board: b,
+  contentMinW = 0,
+  contentMinH = 0,
+}) => {
+  const k = aspectK(b.width, b.height);
+  const maxW = Math.max(0, Math.min(b.left + b.width - anchorX, b.width));
+  const maxH = Math.max(0, Math.min(b.top + b.height - anchorY, b.height));
+  const scale = sw > 0 && sh > 0 ? Math.min(nw / sw, nh / sh) : 1;
+  let w = sw * scale;
+  w = Math.max(40, contentMinW, Math.min(w, maxW));
+  let h = textBoxHeightPxForAspectWidthPx(w, b.width, b.height);
+  if (h > maxH) {
+    h = maxH;
+    w = k > 0 ? h / k : w;
+  }
+  w = Math.max(40, contentMinW, Math.min(w, maxW));
+  h = textBoxHeightPxForAspectWidthPx(w, b.width, b.height);
+  if (h > maxH) {
+    h = maxH;
+    w = k > 0 ? h / k : w;
+    w = Math.max(40, contentMinW, Math.min(w, maxW));
+    h = textBoxHeightPxForAspectWidthPx(w, b.width, b.height);
+  }
+  const minH = Math.max(24, contentMinH);
+  if (h < minH) {
+    h = minH;
+    w = k > 0 ? h / k : w;
+    if (w > maxW) {
+      w = maxW;
+      h = textBoxHeightPxForAspectWidthPx(w, b.width, b.height);
+    }
+    w = Math.max(40, contentMinW, w);
+    h = textBoxHeightPxForAspectWidthPx(w, b.width, b.height);
+    if (h > maxH) {
+      h = maxH;
+      w = k > 0 ? h / k : w;
+    }
+  }
+  if (maxW > 0 && w >= maxW - 1.5) {
+    w = maxW;
+    h = textBoxHeightPxForAspectWidthPx(w, b.width, b.height);
+    if (h > maxH) {
+      h = maxH;
+      w = k > 0 ? h / k : w;
+    }
+  }
+  return { w, h };
+};
+
 // Reference canvas height for text size scaling (font sizes in config are at this height)
-const REFERENCE_CANVAS_HEIGHT = 1200;
+const REFERENCE_CANVAS_HEIGHT = Math.round(SIGNAGE_BOARD_HEIGHT_FT * PX_PER_FT);
 
-// Default canvas dimensions (will be overridden by config from widthFt/heightFt)
-export const DEFAULT_CANVAS_WIDTH = 600;
-export const DEFAULT_CANVAS_HEIGHT = 1200;
+export const DEFAULT_CANVAS_WIDTH = Math.round(SIGNAGE_BOARD_WIDTH_FT * PX_PER_FT);
+export const DEFAULT_CANVAS_HEIGHT = Math.round(SIGNAGE_BOARD_HEIGHT_FT * PX_PER_FT);
 
-// Vertical board: centered, attached to bottom. Text can only be moved within this area.
-export const BOARD_WIDTH_RATIO = 0.58;
+// Vertical board: centered, attached to bottom (fraction of canvas width / height).
+export const BOARD_WIDTH_RATIO = 0.7;
 export const BOARD_HEIGHT_RATIO = 0.72;
 export const VERTICAL_BOARD_IMAGE_URL = "/signage/vertical-board.png";
-
-export const VERTICAL_BOARD_OPTIONS = [
-  { label: "Default", path: "/signage/vertical-board.png" },
-  { label: "Style 1", path: "/signage/vertical-board-1.png" },
-  { label: "Style 2", path: "/signage/vertical-board-2.png" },
-  { label: "Style 3", path: "/signage/vertical-board-3.png" },
-];
 
 export const getBoardBounds = (cw, ch) => {
   const width = Math.round(cw * BOARD_WIDTH_RATIO);
@@ -61,6 +166,99 @@ export const getBoardBounds = (cw, ch) => {
     top: ch - height,
     width,
     height,
+  };
+};
+
+/**
+ * Actual painted rect of the vertical board PNG inside the outer board box (canvas px).
+ * Matches CSS object-fit: contain + object-position: bottom (horizontal center).
+ * If natural size is unknown, returns the same rect as getBoardBounds.
+ */
+export const getBoardPaintRect = (cw, ch, naturalW, naturalH) => {
+  const outer = getBoardBounds(cw, ch);
+  const nw = Number(naturalW);
+  const nh = Number(naturalH);
+  if (!Number.isFinite(nw) || !Number.isFinite(nh) || nw <= 0 || nh <= 0) {
+    return outer;
+  }
+  const boxW = outer.width;
+  const boxH = outer.height;
+  const scale = Math.min(boxW / nw, boxH / nh);
+  const paintedW = nw * scale;
+  const paintedH = nh * scale;
+  const offsetX = (boxW - paintedW) / 2;
+  const offsetY = boxH - paintedH;
+  return {
+    left: Math.round(outer.left + offsetX),
+    top: Math.round(outer.top + offsetY),
+    width: Math.round(paintedW),
+    height: Math.round(paintedH),
+  };
+};
+
+/** Extra half-width when clamping (keep 0 so a full-width box can reach 96″ on the board). */
+const CLAMP_BOX_HALF_WIDTH_PAD = 0;
+
+/**
+ * Clamp text anchor (center x/y) for the axis-aligned box [w×h] in canvas coordinates.
+ *
+ * Horizontal (left/right drag limit):
+ * 1. Pass the **painted** board rect from getBoardPaintRect (not the outer div) so text stays on the pink panel.
+ * 2. Canvas band: box stays inside [0, canvasWidth].
+ * halfW is inflated slightly by CLAMP_BOX_HALF_WIDTH_PAD for outline / rendering bleed.
+ *
+ * Vertical: intersect canvas [halfH, ch-halfH] with painted board vertical span.
+ *
+ * @param canvasWidth - required for horizontal canvas edge clamp (same as editor canvas logical width)
+ */
+export const clampTextCenterInBoard = (board, centerX, centerY, boxWidth, boxHeight, canvasHeight, canvasWidth) => {
+  const w = Number(boxWidth) || 0;
+  const h = Number(boxHeight) || 0;
+  const halfW = w / 2 + CLAMP_BOX_HALF_WIDTH_PAD;
+  const halfH = h / 2;
+  const { left, top, width, height } = board;
+  const right = left + width;
+
+  let minCX = left + halfW + 20;
+  let maxCX = right - halfW - 15;
+  if (minCX > maxCX) {
+    const mid = (left + right) / 2;
+    minCX = maxCX = mid;
+  }
+
+  const cw = canvasWidth != null && Number(canvasWidth) > 0 ? Number(canvasWidth) : null;
+  if (cw != null) {
+    const canvasMin = halfW;
+    const canvasMax = cw - halfW;
+    if (canvasMin <= canvasMax) {
+      minCX = Math.max(minCX, canvasMin);
+      maxCX = Math.min(maxCX, canvasMax);
+      if (minCX > maxCX) {
+        const mid = cw / 2;
+        minCX = maxCX = mid;
+      }
+    }
+  }
+
+  const ch =
+    canvasHeight != null && Number(canvasHeight) > 0 ? Number(canvasHeight) : top + height;
+  const boardBottom = top + height;
+  let minCY = halfH;
+  let maxCY = ch - halfH;
+  const boardMinCY = top + halfH;
+  const boardMaxCY = boardBottom - halfH;
+  if (boardMinCY <= boardMaxCY) {
+    minCY = Math.max(minCY, boardMinCY);
+    maxCY = Math.min(maxCY, boardMaxCY);
+  }
+  if (minCY > maxCY) {
+    const mid = (top + boardBottom) / 2;
+    minCY = maxCY = mid;
+  }
+
+  return {
+    x: Math.max(minCX, Math.min(centerX, maxCX)),
+    y: Math.max(minCY, Math.min(centerY, maxCY)),
   };
 };
 
@@ -75,6 +273,22 @@ export const normalizeHexColor = (str) => {
   if (hex.length !== 6 || !/^[0-9A-Fa-f]{6}$/.test(hex)) return "#000000";
   return "#" + hex.toLowerCase();
 };
+
+/** Acrylic signage on /signage: only these text colors (hex used for preview, cart, orders). */
+export const ACRYLIC_TEXT_COLORS = [
+  { name: "Black", value: "#000000" },
+  { name: "White", value: "#ffffff" },
+  {
+    name: "Mirrored Gold",
+    value: "#d4af37",
+    swatch: "linear-gradient(145deg, #fffef5 0%, #e8c547 35%, #b8941f 70%, #6b5918 100%)",
+  },
+  {
+    name: "Mirrored Silver",
+    value: "#b8c0cc",
+    swatch: "linear-gradient(145deg, #ffffff 0%, #d8dee8 40%, #9aa3b0 75%, #5c6570 100%)",
+  },
+];
 
 const SignageContext = createContext();
 
@@ -93,10 +307,10 @@ export const SignageProvider = ({ children }) => {
   const [textSizesConfig, setTextSizesConfig] = useState([]); // Raw config with labels
   const [textColors, setTextColors] = useState([]);
   const [backgroundGradients, setBackgroundGradients] = useState(BACKGROUND_GRADIENTS);
-  const [canvasWidth, setCanvasWidth] = useState(DEFAULT_CANVAS_WIDTH);
-  const [canvasHeight, setCanvasHeight] = useState(DEFAULT_CANVAS_HEIGHT);
-  const [widthFt, setWidthFt] = useState(4);
-  const [heightFt, setHeightFt] = useState(8);
+  const [canvasWidth] = useState(DEFAULT_CANVAS_WIDTH);
+  const [canvasHeight] = useState(DEFAULT_CANVAS_HEIGHT);
+  const widthFt = SIGNAGE_BOARD_WIDTH_FT;
+  const heightFt = SIGNAGE_BOARD_HEIGHT_FT;
   const [pricePerSqInchAcrylic, setPricePerSqInchAcrylic] = useState(0);
   const [pricePerSqInchVinyl, setPricePerSqInchVinyl] = useState(0);
   const [printFilePrepFee, setPrintFilePrepFee] = useState(25);
@@ -124,21 +338,19 @@ export const SignageProvider = ({ children }) => {
           const uniqueFonts = fontsArray.filter((font, index, self) =>
             index === self.findIndex((f) => f.value === font.value)
           );
-          
-          setFonts(uniqueFonts);
+          const bmIdx = uniqueFonts.findIndex((f) => f.value === DEFAULT_SIGNAGE_FONT);
+          const orderedFonts =
+            bmIdx > 0
+              ? [uniqueFonts[bmIdx], ...uniqueFonts.filter((_, i) => i !== bmIdx)]
+              : uniqueFonts;
+
+          setFonts(orderedFonts);
           
           // Store raw sizes config (with labels)
           setTextSizesConfig(res.config.sizes || []);
           
-          // Background dimensions in feet (admin-configurable)
-          const wFt = Number(res.config.widthFt) || 4;
-          const hFt = Number(res.config.heightFt) || 8;
-          setWidthFt(wFt);
-          setHeightFt(hFt);
-          // Derive canvas pixels from physical size (ft) so aspect ratio and scale are correct
-          setCanvasWidth(Math.round(wFt * PX_PER_FT));
-          setCanvasHeight(Math.round(hFt * PX_PER_FT));
-          
+          // Board width/height: SIGNAGE_BOARD_WIDTH_FT / SIGNAGE_BOARD_HEIGHT_FT (client constants)
+
           // Convert sizes array to object format (width/height scaled in the computed textSize below)
           const sizesObj = {};
           (res.config.sizes || []).forEach((size) => {
@@ -184,7 +396,7 @@ export const SignageProvider = ({ children }) => {
 
   // Text content and styling
   const [textContent, setTextContent] = useState("Hello");
-  const [selectedFont, setSelectedFont] = useState("'Farmhouse', cursive");
+  const [selectedFont, setSelectedFont] = useState(DEFAULT_SIGNAGE_FONT);
   const [selectedTextColor, setSelectedTextColor] = useState("#000000"); // Black by default
   const [selectedSize, setSelectedSize] = useState("medium");
   
@@ -195,27 +407,6 @@ export const SignageProvider = ({ children }) => {
     y: 520, // A bit below top
   });
   
-  // Update text position when canvas dimensions are loaded: use board center, or snap into board if currently outside
-  useEffect(() => {
-    if (canvasWidth && canvasHeight && !configLoading) {
-      const bounds = getBoardBounds(canvasWidth, canvasHeight);
-      const centerX = bounds.left + bounds.width / 2;
-      const centerY = bounds.top + bounds.height * 0.72;
-      setTextPosition(prev => {
-        if (prev.x === DEFAULT_CANVAS_WIDTH / 2 && prev.y === 520) {
-          return { x: centerX, y: centerY };
-        }
-        // If position is outside the board, snap it onto the board so "Hello" stays on the board
-        const inBoardX = prev.x >= bounds.left && prev.x <= bounds.left + bounds.width;
-        const inBoardY = prev.y >= bounds.top && prev.y <= bounds.top + bounds.height;
-        if (!inBoardX || !inBoardY) {
-          return { x: centerX, y: centerY };
-        }
-        return prev;
-      });
-    }
-  }, [canvasWidth, canvasHeight, configLoading]);
-
   // Background - Default to pink wallpaper image
   const [backgroundType, setBackgroundType] = useState("image");
   const [backgroundColor, setBackgroundColor] = useState("#F8F9FA");
@@ -223,11 +414,8 @@ export const SignageProvider = ({ children }) => {
     "linear-gradient(135deg, #FFE5B4 0%, #FFCCCB 50%, #FFDAB9 100%)"
   );
   const [backgroundImage, setBackgroundImage] = useState(null);
-  const [backgroundImageUrl, setBackgroundImageUrl] = useState("/signage/garden-bg.jpg");
+  const [backgroundImageUrl, setBackgroundImageUrl] = useState("/signage/signage-bg.jpeg");
   const [customBackgroundColor, setCustomBackgroundColor] = useState("#F8F9FA");
-
-  // Vertical board image (changeable; background is fixed)
-  const [verticalBoardImageUrl, setVerticalBoardImageUrl] = useState(VERTICAL_BOARD_IMAGE_URL);
 
   // User-adjustable text scale (0.5 = 50%, 2 = 200%)
   const [userTextScale, setUserTextScale] = useState(1);
@@ -235,6 +423,57 @@ export const SignageProvider = ({ children }) => {
   // Text box dimensions (visible on canvas; synced from size preset, updated when user resizes from handle)
   const [textBoxWidth, setTextBoxWidth] = useState(250);
   const [textBoxHeight, setTextBoxHeight] = useState(60);
+
+  /** naturalWidth/Height of vertical-board.png (set from preview onLoad). */
+  const [verticalBoardNaturalSize, setVerticalBoardNaturalSize] = useState(null);
+
+  const boardClampRect = useMemo(
+    () =>
+      getBoardPaintRect(
+        canvasWidth,
+        canvasHeight,
+        verticalBoardNaturalSize?.w,
+        verticalBoardNaturalSize?.h
+      ),
+    [canvasWidth, canvasHeight, verticalBoardNaturalSize]
+  );
+
+  // Default anchor: outer board box (same as before paint-rect work). Clamp still uses painted panel so drag stays on pink.
+  useEffect(() => {
+    if (!canvasWidth || !canvasHeight || configLoading) return;
+    const outer = getBoardBounds(canvasWidth, canvasHeight);
+    const defaultCX = outer.left + outer.width / 2;
+    const defaultCY = outer.top + outer.height * 0.72;
+    setTextPosition((prev) => {
+      const pristine = prev.x === DEFAULT_CANVAS_WIDTH / 2 && prev.y === 520;
+      const targetX = pristine ? defaultCX : prev.x;
+      const targetY = pristine ? defaultCY : prev.y;
+      const next = clampTextCenterInBoard(
+        boardClampRect,
+        targetX,
+        targetY,
+        textBoxWidth,
+        textBoxHeight,
+        canvasHeight,
+        canvasWidth
+      );
+      if (next.x === prev.x && next.y === prev.y) return prev;
+      return next;
+    });
+  }, [canvasWidth, canvasHeight, configLoading, textBoxWidth, textBoxHeight, boardClampRect]);
+
+  /** Illustrator-style bounds: physical size of rendered glyphs (set from SignagePreview measuring the live text span). */
+  const [textExtentInches, setTextExtentInchesState] = useState({ width: null, height: null });
+  const setTextExtentInches = useCallback((wIn, hIn) => {
+    if (wIn == null && hIn == null) {
+      setTextExtentInchesState({ width: null, height: null });
+      return;
+    }
+    setTextExtentInchesState({
+      width: wIn != null && Number.isFinite(wIn) && wIn > 0 ? wIn : null,
+      height: hIn != null && Number.isFinite(hIn) && hIn > 0 ? hIn : null,
+    });
+  }, []);
 
   // Minimum container size that fits current text (set by SignagePreview after measure; editor clamps resize to this)
   const contentMinSizeRef = useRef({ w: 0, h: 0 });
@@ -278,9 +517,11 @@ export const SignageProvider = ({ children }) => {
     height: textBoxHeight,
   };
 
-  // Get current price: base (scale-based or size-based) + print file preparation fee
-  const widthInches = canvasWidth > 0 ? (textBoxWidth * widthFt * 12) / canvasWidth : 0;
-  const heightInches = canvasHeight > 0 ? (textBoxHeight * heightFt * 12) / canvasHeight : 0;
+  // Pricing: text width inches vs horizontal boundary on the board (8 ft), not full canvas (4 ft wide)
+  const widthInches = textBoxWidthPxToInches(textBoxWidth, boardClampRect.width);
+  const heightInches = signageTextHeightInchesForWidthInches(widthInches);
+  const textWidthInches = textExtentInches.width;
+  const textHeightInches = textExtentInches.height;
   const pricePerSqInch = signageType === "vinyl" ? pricePerSqInchVinyl : pricePerSqInchAcrylic;
   const scaleBasedPrice = (pricePerSqInch || 0) * widthInches * heightInches;
   const basePrice =
@@ -292,19 +533,7 @@ export const SignageProvider = ({ children }) => {
   const rushFee = rushProduction ? Math.round(basePrice * 0.3 * 100) / 100 : 0;
   const currentPrice = basePrice + (Number(printFilePrepFee) || 0) + rushFee;
 
-  // Sync text box dimensions: width = 13.5 inch (from sign dimensions), height from size preset
-  const targetTextWidthInches = 13.5;
-  useEffect(() => {
-    const base = textSize
-      ? { w: textSize.width * userTextScale, h: textSize.height * userTextScale }
-      : { w: 250 * userTextScale, h: 60 * userTextScale };
-    const widthPx =
-      canvasWidth > 0 && widthFt > 0
-        ? (targetTextWidthInches * canvasWidth) / (widthFt * 12)
-        : base.w;
-    setTextBoxWidth(widthPx);
-    setTextBoxHeight(base.h);
-  }, [selectedSize, userTextScale, textSize?.width, textSize?.height, canvasWidth, widthFt]);
+  // Text box width/height are driven by SignagePreview measurement + user resize (no forced 13.5" width).
 
   // Memoize functions to prevent rerenders
   const memoizedGetLinePositions = useCallback(() => {
@@ -342,28 +571,27 @@ export const SignageProvider = ({ children }) => {
 
   const memoizedResetSignage = useCallback(() => {
     setTextContent("Hello");
-    setSelectedFont("'Farmhouse', cursive");
+    setSelectedFont(DEFAULT_SIGNAGE_FONT);
     setSelectedTextColor(normalizeHexColor("#000000"));
     setSelectedSize("medium");
     setUserTextScale(1);
-    // textBoxWidth/textBoxHeight will sync from size preset via useEffect
-    const bounds = getBoardBounds(canvasWidth, canvasHeight);
-    setTextPosition({
-      x: bounds.left + bounds.width / 2,
-      y: bounds.top + bounds.height * 0.72,
-    });
+    // textBoxWidth/textBoxHeight: next SignagePreview layout measure will fit "Hello" to the box
+    const outer = getBoardBounds(canvasWidth, canvasHeight);
+    const cx = outer.left + outer.width / 2;
+    const cy = outer.top + outer.height * 0.72;
+    setTextPosition(clampTextCenterInBoard(boardClampRect, cx, cy, textBoxWidth, textBoxHeight, canvasHeight, canvasWidth));
     setBackgroundType("image");
     setBackgroundColor("#F8F9FA");
     setBackgroundGradient("linear-gradient(135deg, #FFE5B4 0%, #FFCCCB 50%, #FFDAB9 100%)");
     setBackgroundImage(null);
-    setBackgroundImageUrl("/signage/garden-bg.jpg");
+    setBackgroundImageUrl("/signage/signage-bg.jpeg");
     setCustomBackgroundColor("#F8F9FA");
-    setVerticalBoardImageUrl(VERTICAL_BOARD_IMAGE_URL);
     setIsDragging(false);
     setDragOffset({ x: 0, y: 0 });
     setIsTextHovered(false);
     setIsTextClicked(false);
-  }, [canvasWidth, canvasHeight]);
+    setTextExtentInches(null, null);
+  }, [canvasWidth, canvasHeight, textBoxWidth, textBoxHeight, boardClampRect, setTextExtentInches]);
 
   const memoizedLoadSignage = useCallback((signageData) => {
     if (signageData.texts && signageData.texts.length > 0) {
@@ -375,11 +603,10 @@ export const SignageProvider = ({ children }) => {
         const lines = content.split('\n').filter(line => line.trim());
         const lineHeight = (firstText.fontSize || 48) * 1.5;
         const totalHeight = (lines.length - 1) * lineHeight;
-        setTextPosition({
-          x: firstText.x,
-          y: firstText.y + (totalHeight / 2),
-        });
-        setSelectedFont(firstText.fontFamily || "'Farmhouse', cursive");
+        const px = firstText.x;
+        const py = firstText.y + totalHeight / 2;
+        setTextPosition(clampTextCenterInBoard(boardClampRect, px, py, textBoxWidth, textBoxHeight, canvasHeight, canvasWidth));
+        setSelectedFont(firstText.fontFamily || DEFAULT_SIGNAGE_FONT);
         setSelectedTextColor(normalizeHexColor(firstText.color || "#000000"));
         
         const fs = firstText.fontSize || 48;
@@ -402,7 +629,7 @@ export const SignageProvider = ({ children }) => {
     if (signageData.backgroundImage?.url) {
       setBackgroundImageUrl(signageData.backgroundImage.url);
     }
-  }, []);
+  }, [canvasWidth, canvasHeight, textBoxWidth, textBoxHeight, boardClampRect]);
 
   // Memoize setters separately - they're stable but we want to ensure they don't change
   const stableSetters = useMemo(() => ({
@@ -417,10 +644,11 @@ export const SignageProvider = ({ children }) => {
     setBackgroundImage,
     setBackgroundImageUrl,
     setCustomBackgroundColor,
-    setVerticalBoardImageUrl,
     setUserTextScale,
     setTextBoxWidth,
     setTextBoxHeight,
+    setTextExtentInches,
+    setVerticalBoardNaturalSize,
     setContentMinSize,
     contentMinSizeRef,
     setSignageType,
@@ -460,7 +688,8 @@ export const SignageProvider = ({ children }) => {
     backgroundImage,
     backgroundImageUrl,
     customBackgroundColor,
-    verticalBoardImageUrl,
+    verticalBoardImageUrl: VERTICAL_BOARD_IMAGE_URL,
+    boardClampRect,
     isDragging,
     dragOffset,
     isTextHovered,
@@ -479,6 +708,8 @@ export const SignageProvider = ({ children }) => {
     currentPrice,
     widthInches,
     heightInches,
+    textWidthInches,
+    textHeightInches,
     configLoading,
     signageType,
     printFilePrepFee,
@@ -513,7 +744,7 @@ export const SignageProvider = ({ children }) => {
     backgroundImage,
     backgroundImageUrl,
     customBackgroundColor,
-    verticalBoardImageUrl,
+    boardClampRect,
     isDragging,
     dragOffset,
     isTextHovered,
@@ -537,6 +768,8 @@ export const SignageProvider = ({ children }) => {
     currentPrice,
     widthInches,
     heightInches,
+    textWidthInches,
+    textHeightInches,
     configLoading,
     signageType,
     printFilePrepFee,

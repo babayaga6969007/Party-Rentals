@@ -1,5 +1,9 @@
 import { useRef } from "react";
-import { DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT } from "../../context/SignageContext";
+import {
+  DEFAULT_CANVAS_WIDTH,
+  DEFAULT_CANVAS_HEIGHT,
+  DEFAULT_SIGNAGE_FONT,
+} from "../../context/SignageContext";
 
 /**
  * Static preview component that renders signage from saved data
@@ -21,7 +25,7 @@ const SignageStaticPreview = ({
     backgroundImageUrl,
     texts = [],
     textContent = "",
-    fontFamily = "'Farmhouse', cursive",
+    fontFamily = DEFAULT_SIGNAGE_FONT,
     fontSize = 48,
     textColor = "#000000",
   } = signageData;
