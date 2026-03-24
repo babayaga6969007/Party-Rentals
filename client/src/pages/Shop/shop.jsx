@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { FiArrowRight, FiGift, FiGrid, FiPackage, FiShoppingBag, FiTag } from "react-icons/fi";
 import { api } from "../../utils/api";
+
+const CATEGORY_ICONS = [FiShoppingBag, FiPackage, FiGift, FiTag, FiGrid];
 
 const ShopPage = () => {
   const [saleCategories, setSaleCategories] = useState([]);
@@ -35,7 +38,7 @@ const ShopPage = () => {
   }, []);
 
   return (
-    <section className="py-20 px-6 bg-white">
+    <section className="bg-[#faf9f7] px-6 py-20">
 
       <div className="page-wrapper max-w-4xl mx-auto text-center mb-10">
         <h1 className="text-4xl md:text-5xl font-semibold text-[#2D2926]"
@@ -51,54 +54,56 @@ const ShopPage = () => {
         </p>
       </div>
 
-      <div className="max-w-7xl mx-auto pb-12">
+      <div className="mx-auto max-w-7xl pb-16">
         {loadingCategories && (
-          <p className="text-center text-gray-400 text-lg">Loading categories…</p>
+          <p className="text-center text-lg text-gray-400">Loading categories…</p>
         )}
         {categoriesError && (
           <p className="text-center text-red-500">{categoriesError}</p>
         )}
         {!loadingCategories && !categoriesError && saleCategories.length === 0 && (
-          <p className="text-center text-gray-500 text-sm">
+          <p className="text-center text-sm text-gray-500">
             No sale categories yet. Add categories with type &quot;sale&quot; in admin.
           </p>
         )}
         {!loadingCategories && !categoriesError && saleCategories.length > 0 && (
-          <>
-            <h2
-              className="text-2xl md:text-3xl font-semibold text-[#2D2926] text-center mb-8"
-              style={{ fontFamily: '"Cormorant Garamond", serif' }}
-            >
-              Shop by category
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
-              {saleCategories.map((cat) => (
+          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-7 lg:grid-cols-3 lg:gap-8">
+            {saleCategories.map((cat, index) => {
+              const Icon = CATEGORY_ICONS[index % CATEGORY_ICONS.length];
+              return (
                 <Link
                   key={cat._id}
                   to={`/shop/category/${cat._id}`}
-                  className="group relative overflow-hidden rounded-2xl bg-white border border-[#e8e4df] shadow-sm transition-all duration-500 hover:shadow-xl hover:-translate-y-2 hover:border-[#2D2926] text-left w-full block"
+                  className="group relative block w-full overflow-hidden rounded-3xl border border-[#e8e3dc] bg-white shadow-[0_2px_20px_-4px_rgba(45,41,38,0.07)] transition-all duration-500 ease-out hover:-translate-y-1.5 hover:border-[#d4cdc3] hover:bg-[#faf9f7] hover:shadow-[0_24px_48px_-12px_rgba(45,41,38,0.14)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2D2926]"
                 >
-                  <div className="h-56 md:h-64 overflow-hidden">
-                    <img
-                      src={cat.image || "/placeholder-category.png"}
-                      alt={cat.name}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition duration-500" />
-                  </div>
-                  <div className="p-6 md:p-8 text-center">
+                  <div className="relative flex flex-col items-center px-7 py-11 text-center md:px-9 md:py-12">
+                    <div
+                      className="mb-7 flex h-[5.25rem] w-[5.25rem] items-center justify-center rounded-[1.35rem] bg-[#ede8e0] text-[#2D2926] ring-1 ring-[#e0d9cf] transition-all duration-500 group-hover:scale-[1.06] group-hover:bg-[#2D2926] group-hover:text-[#faf9f7] group-hover:shadow-[0_12px_28px_-8px_rgba(45,41,38,0.3)] group-hover:ring-[#2D2926] md:h-[5.75rem] md:w-[5.75rem]"
+                      aria-hidden
+                    >
+                      <Icon
+                        className="h-[2.125rem] w-[2.125rem] md:h-10 md:w-10"
+                        strokeWidth={1.15}
+                      />
+                    </div>
                     <h3
-                      className="text-xl md:text-2xl font-medium text-[#2D2926] transition-colors duration-300 group-hover:text-black"
+                      className="max-w-[14rem] text-[1.35rem] font-medium leading-snug tracking-tight text-[#2D2926] transition-colors duration-300 group-hover:text-[#1a1816] md:text-2xl md:max-w-[16rem]"
                       style={{ fontFamily: '"Cormorant Garamond", serif' }}
                     >
                       {cat.name}
                     </h3>
-                    <div className="w-12 h-[1px] bg-[#2D2926]/30 mx-auto mt-4 group-hover:w-20 transition-all duration-500" />
+                    <span className="mt-5 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#2D2926] transition-all duration-300 group-hover:gap-2.5 group-hover:text-[#1a1816]">
+                      Explore
+                      <FiArrowRight
+                        className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5"
+                        strokeWidth={2.25}
+                      />
+                    </span>
                   </div>
                 </Link>
-              ))}
-            </div>
-          </>
+              );
+            })}
+          </div>
         )}
       </div>
     </section>
