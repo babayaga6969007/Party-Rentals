@@ -413,6 +413,7 @@ const SignagePreview = forwardRef(
                 margin: 0,
                 verticalAlign: "middle",
                 maxWidth: "100%",
+                transform: "translateY(-0.07em)",
               }}
             >
               {displayText}
