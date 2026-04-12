@@ -15,7 +15,7 @@ const calculateOrderAmount = ({
   const laborCharge = subtotal * 0.14;
 
   // 3️⃣ Discount (keep your existing logic if needed)
-  const discount = subtotal * 0.1;
+  const discount = 0;
 
 
   // 4️⃣ Grand total
