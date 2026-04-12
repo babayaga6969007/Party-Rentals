@@ -128,6 +128,16 @@ coupon: {
   code: { type: String },
   discount: { type: Number },
 },
+stripePayment: {
+  paymentIntentId: {
+    type: String,
+    unique: true,
+    sparse: true, // allows null for non-stripe orders
+  },
+  status: {
+    type: String,
+  },
+},
     paymentStatus: {
       type: String,
       enum: ["pending", "paid", "failed", "refunded"],

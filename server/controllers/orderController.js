@@ -26,7 +26,16 @@ exports.createOrder = async (req, res) => {
   stripePayment,
 } = req.body;
 
-    // 🔒 Safety: ensure required customer fields exist
+if (stripePayment?.paymentIntentId) {
+  const existingOrder = await Order.findOne({
+    "stripePayment.paymentIntentId": stripePayment.paymentIntentId,
+  });
+
+  if (existingOrder) {
+    return res.status(200).json({ order: existingOrder });
+  }
+}
+    //  Safety: ensure required customer fields exist
 if (!customer?.addressLine) {
   return res.status(400).json({
     message: "Customer addressLine is required",
