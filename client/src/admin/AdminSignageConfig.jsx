@@ -1,10 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "./AdminLayout";
 import { api } from "../utils/api";
 import toast from "react-hot-toast";
-
-const DEBOUNCE_MS = 600;
 
 const AdminSignageConfig = () => {
   const navigate = useNavigate();
@@ -16,11 +14,6 @@ const AdminSignageConfig = () => {
   const [savingPrice, setSavingPrice] = useState(false);
   const [printFilePrepFee, setPrintFilePrepFee] = useState("");
   const [savingPrepFee, setSavingPrepFee] = useState(false);
-  const [widthFt, setWidthFt] = useState("");
-  const [heightFt, setHeightFt] = useState("");
-  const [savingDimensions, setSavingDimensions] = useState(false);
-  const initialLoadRef = useRef(true);
-
   const fetchConfig = async () => {
     try {
       setLoading(true);
@@ -64,8 +57,6 @@ const AdminSignageConfig = () => {
           ? String(res.config.printFilePrepFee)
           : "25"
       );
-      setWidthFt(res.config.widthFt != null ? String(res.config.widthFt) : "4");
-      setHeightFt(res.config.heightFt != null ? String(res.config.heightFt) : "8");
     } catch (err) {
       console.error("Config fetch error:", err);
       const raw = err?.response?.data?.error ?? err?.response?.data?.message ?? err?.message ?? "Failed to load configuration";
@@ -93,44 +84,6 @@ const AdminSignageConfig = () => {
   useEffect(() => {
     fetchConfig();
   }, []);
-
-  // Debounced real-time save for signage dimensions
-  useEffect(() => {
-    if (!config) return;
-    if (initialLoadRef.current) {
-      initialLoadRef.current = false;
-      return;
-    }
-    const w = Number(widthFt);
-    const h = Number(heightFt);
-    if (Number(config.widthFt) === w && Number(config.heightFt) === h) return;
-    if (w < 0.5 || h < 0.5 || isNaN(w) || isNaN(h)) return;
-
-    const token = localStorage.getItem("admin_token");
-    if (!token) return;
-
-    const id = setTimeout(async () => {
-      try {
-        setSavingDimensions(true);
-        const res = await api("/signage-config/admin", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ widthFt: w, heightFt: h }),
-        });
-        setConfig(res.config);
-        toast.success("Signage size updated");
-      } catch (err) {
-        toast.error(err?.message || "Failed to update dimensions");
-      } finally {
-        setSavingDimensions(false);
-      }
-    }, DEBOUNCE_MS);
-
-    return () => clearTimeout(id);
-  }, [widthFt, heightFt, config]);
 
   const handleSavePricePerSqInch = async () => {
     const acrylic = pricePerSqInchAcrylic === "" ? 0 : Number(pricePerSqInchAcrylic);
@@ -289,40 +242,6 @@ const AdminSignageConfig = () => {
                 {savingPrepFee ? "Saving..." : "Save"}
               </button>
             </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow mt-6">
-          <h2 className="text-xl font-semibold mb-4">Signage sizing</h2>
-          <p className="text-sm text-gray-600 mb-4">
-            Physical sign dimensions in feet. Used for aspect ratio and to convert text area to inches for pricing. Updates save automatically as you change values.
-          </p>
-          <div className="flex flex-wrap items-end gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Width (ft)</label>
-              <input
-                type="number"
-                value={widthFt}
-                onChange={(e) => setWidthFt(e.target.value)}
-                className="border rounded px-3 py-2 w-24"
-                min="0.5"
-                step="0.5"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Height (ft)</label>
-              <input
-                type="number"
-                value={heightFt}
-                onChange={(e) => setHeightFt(e.target.value)}
-                className="border rounded px-3 py-2 w-24"
-                min="0.5"
-                step="0.5"
-              />
-            </div>
-            {savingDimensions && (
-              <span className="text-sm text-gray-500">Saving…</span>
-            )}
           </div>
         </div>
       </div>

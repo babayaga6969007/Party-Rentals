@@ -9,6 +9,7 @@ import ConfirmDeleteModal from "../components/admin/ConfirmDeleteModal";
 // import { api } from "../utils/api";
 // import { api } from "./utils/api";
 import { api } from "../utils/api";
+import { DEFAULT_SIGNAGE_FONT } from "../context/SignageContext";
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
@@ -821,7 +822,7 @@ const Orders = () => {
                                 ? sd.texts.map((t) => (typeof t === "object" && t && (t.content || t.text || t.value)) || (typeof t === "string" ? t : "")).filter(Boolean).join(" ")
                                 : "";
                             if (!displayText) return null;
-                            const fontFamily = (firstText && firstText.fontFamily && String(firstText.fontFamily).trim()) || (sd.fontFamily && String(sd.fontFamily).trim()) ? ((firstText && firstText.fontFamily) || sd.fontFamily) : "'Farmhouse', cursive";
+                            const fontFamily = (firstText && firstText.fontFamily && String(firstText.fontFamily).trim()) || (sd.fontFamily && String(sd.fontFamily).trim()) ? ((firstText && firstText.fontFamily) || sd.fontFamily) : DEFAULT_SIGNAGE_FONT;
                             const fontSizePx = (firstText && firstText.fontSize != null) ? Number(firstText.fontSize) : (sd.fontSize != null ? Number(sd.fontSize) : 48);
                             const previewSize = Math.min(Math.max(fontSizePx * 0.6, 18), 42);
                             const colorRaw = (firstText && firstText.color && String(firstText.color).trim()) || (sd.textColor && String(sd.textColor).trim());

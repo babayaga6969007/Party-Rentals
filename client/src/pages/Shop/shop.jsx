@@ -1,592 +1,113 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import hero1 from "../../assets/home2/hero1.png";
-import hero2 from "../../assets/home2/hero2.png";
-import hero3 from "../../assets/home2/hero3.png";
-import hero4 from "../../assets/home2/hero4.png";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { FiArrowRight, FiGift, FiGrid, FiPackage, FiShoppingBag, FiTag } from "react-icons/fi";
 import { api } from "../../utils/api";
 
-// ====================
-//  HELPER
-// ====================
-const today = new Date().toISOString().split("T")[0];
+const CATEGORY_ICONS = [FiShoppingBag, FiPackage, FiGift, FiTag, FiGrid];
 
-const CategoryPage = () => {
-  const navigate = useNavigate();
-  
-  // ====================
-  //  FILTER STATES
-  // ====================
-  const [selectedCategories, setSelectedCategories] = useState([]);
-  const [selectedTags, setSelectedTags] = useState([]);
-const [attributes, setAttributes] = useState([]);
-const [tagAttribute, setTagAttribute] = useState(null);
-useEffect(() => {
-  const fetchAttributes = async () => {
-    try {
-      const res = await api("/admin/attributes");
+const ShopPage = () => {
+  const [saleCategories, setSaleCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [categoriesError, setCategoriesError] = useState("");
 
-      const allAttributes = Array.isArray(res)
-        ? res
-        : Array.isArray(res?.data)
-        ? res.data
-        : [];
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        setCategoriesError("");
 
-      const tagsAttr = allAttributes.find((a) => a.slug === "tags");
+        const res = await api("/categories");
+        const allCategoriesRaw = Array.isArray(res)
+          ? res
+          : Array.isArray(res?.data)
+            ? res.data
+            : [];
 
-      setAttributes(allAttributes);
-      setTagAttribute(tagsAttr || null);
-    } catch (err) {
-      console.error("Failed to fetch attributes", err);
-    }
-  };
-
-  fetchAttributes();
-}, []);
-const getCategoryNameById = (categoryId) => {
-  if (!categoryId) return "--";
-
-  const found = allCategories.find(
-    (c) => String(c._id) === String(categoryId)
-  );
-
-  return found ? found.name : "--";
-};
-
-
-const PRICE_MIN = 0;
-const PRICE_MAX = 5000;
-
-const [priceRange, setPriceRange] = useState([PRICE_MIN, PRICE_MAX]);
-const [showPriceTooltip, setShowPriceTooltip] = useState(false);
-  const [hoverPrice, setHoverPrice] = useState(null);
-  // ====================
-//  BACKEND DATA STATE
-// ====================
-const [products, setProducts] = useState([]);
-const [allCategories, setAllCategories] = useState([]);
-const [saleCategories, setSaleCategories] = useState([]);
-const [loadingProducts, setLoadingProducts] = useState(true);
-
-
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-
-  const toggleTag = (tag) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-  };
-
-  const handleRangeChange = (e, index) => {
-    const value = Number(e.target.value);
-    setPriceRange((prev) => {
-      const updated = [...prev];
-      updated[index] = value;
-
-      // Prevent cross-over
-      if (updated[0] > updated[1]) {
-        updated[index === 0 ? 1 : 0] = value;
+        const saleOnly = allCategoriesRaw.filter((c) => c.type === "sale");
+        setSaleCategories([...saleOnly].reverse());
+      } catch (err) {
+        console.error(err);
+        setCategoriesError("Failed to load categories");
+        setSaleCategories([]);
+      } finally {
+        setLoadingCategories(false);
       }
-      return updated;
-    });
-  };
-const handlePriceInput = (value, index) => {
-  let v = Number(value);
-  if (isNaN(v)) return;
+    };
 
-  if (v > PRICE_MAX) {
-    v = PRICE_MAX;
-    setShowPriceTooltip(true);
-    setTimeout(() => setShowPriceTooltip(false), 2000);
-  }
+    fetchCategories();
+  }, []);
 
-  if (v < PRICE_MIN) v = PRICE_MIN;
-
-  setPriceRange((prev) => {
-    const next = [...prev];
-    next[index] = v;
-
-    // prevent crossover
-    if (next[0] > next[1]) {
-      next[index === 0 ? 1 : 0] = v;
-    }
-    return next;
-  });
-};
-
-  const resetFilters = () => {
-  setSelectedCategories([]);
-  setSelectedTags([]);
-setPriceRange([PRICE_MIN, PRICE_MAX]);
-};
-// ====================
-//  FETCH PRODUCTS (SALE)
-// ====================
-useEffect(() => {
-  const fetchProducts = async () => {
-    try {
-      setLoadingProducts(true);
-
-const res = await api("/products?limit=1000");
-      const allProducts = res?.products || [];
-
-      // ✅ ONLY SALE PRODUCTS FOR SHOP PAGE
-      const saleProducts = allProducts.filter(
-        (p) => p.productType === "sale"
-      );
-
-      setProducts(saleProducts);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingProducts(false);
-    }
-  };
-
-  fetchProducts();
-}, []);
-// ====================
-//  FETCH SALE CATEGORIES
-// ====================
-useEffect(() => {
-  const fetchCategories = async () => {
-    try {
-      const res = await api("/categories");
-      const data = res?.data || res || [];
-
-      setAllCategories(data);
-
-      const saleOnly = data.filter((c) => c.type === "sale");
-      setSaleCategories(saleOnly);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  fetchCategories();
-}, []);
-
-// ====================
-//  AUTO SELECT ALL CATEGORIES
-// ====================
-useEffect(() => {
-  if (saleCategories.length > 0) {
-    setSelectedCategories(saleCategories.map((c) => String(c._id)));
-  }
-}, [saleCategories]);
-
-
-
-  // ====================
-  //  FILTERED PRODUCTS
-  // ====================
-  const filteredProducts = useMemo(() => {
-return products.filter((p) => {
-  const productCategoryId =
-  typeof p.category === "object" ? p.category._id : p.category;
-
-    const inCategory =
-  selectedCategories.length === 0 ||
-  selectedCategories.includes(String(productCategoryId));
-
-    const price = Number(p.salePrice ?? 0);
-const inPrice = price >= priceRange[0] && price <= priceRange[1];
-
-
-    const getId = (x) => {
-  if (!x) return "";
-  if (typeof x === "string") return x;
-  if (typeof x === "object") {
-    if (x._id) return String(x._id);
-    if (x.id) return String(x.id);
-  }
-  return String(x);
-};
-
-const tagsGroupId = getId(tagAttribute);
-
-const tagAttrSelection = Array.isArray(p.attributes)
-  ? p.attributes.find((a) => getId(a.groupId) === tagsGroupId)
-  : null;
-
-const optionLabelById = (tagAttribute?.options || []).reduce((acc, opt) => {
-  acc[getId(opt)] = (opt.label || "").toLowerCase();
-  return acc;
-}, {});
-
-const productTagLabels = tagAttrSelection
-  ? (tagAttrSelection.optionIds || [])
-      .map((oid) => optionLabelById[getId(oid)])
-      .filter(Boolean)
-  : [];
-
-const selected = selectedTags.map((t) => t.toLowerCase());
-
-const inTags =
-  selected.length === 0 ||
-  selected.every((t) => productTagLabels.includes(t));
-
-   
-
-    return inCategory && inPrice && inTags;
-  });
-}, [products, selectedCategories, selectedTags, priceRange, tagAttribute]);
-
-
-  // ====================
-  //  RENDER
-  // ====================
   return (
-    <section className="py-20 px-6 bg-white">
+    <section className="bg-[#faf9f7] px-6 py-20">
 
-      {/* PAGE HEADING */}
       <div className="page-wrapper max-w-4xl mx-auto text-center mb-10">
         <h1 className="text-4xl md:text-5xl font-semibold text-[#2D2926]"
             style={{ fontFamily: '"Cormorant Garamond", serif' }}>
-          Browse Our Shop
+          One Stop Shop
         </h1>
 
         <p
           className="text-[#2D2926]/80 text-[18px] mt-4 leading-relaxed max-w-2xl mx-auto"
           style={{ fontFamily: '"Cormorant Garamond", serif' }}
         >
-          Here you get to buy used products for your use at a reasonable pricing.
+          Browse our collection and unique finds.
         </p>
       </div>
 
-      {/* MAIN CONTENT AREA (SIDEBAR + PRODUCTS) */}
-      <div className="max-w-7xl mx-auto">
-
-        {/* MOBILE FILTER TOGGLE */}
-        <div className="md:hidden mb-4">
-          <button
-            onClick={() => setMobileFiltersOpen((prev) => !prev)}
-            className="w-full py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800"
-          >
-            {mobileFiltersOpen ? "Hide Filters" : "Show Filters"}
-          </button>
-        </div>
-
-        {/* GRID STRUCTURE */}
-        <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-8 items-start">
-
-          {/* ====================== */}
-          {/* SIDEBAR — STICKY ON DESKTOP / SLIDE ON MOBILE */}
-          {/* ====================== */}
-
-          <aside
-            className={`
-              bg-white rounded-2xl shadow-sm border border-gray-200 p-6
-              transition-all duration-300 overflow-hidden
-              ${mobileFiltersOpen ? "max-h-[1400px] opacity-100 mb-4" : "max-h-0 opacity-0 mb-0"}
-              md:max-h-none md:opacity-100 md:overflow-visible md:mb-0 md:sticky md:top-28
-            `}
-          >
-
-            {/* ===== Availability (CAN EXPAND LATER IF NEEDED) ===== */}
-
-            {/* ===== CATEGORY FILTERS ===== */}
-            <div className="mb-6">
-              <p className="text-sm font-semibold text-[#2D2926] mb-2">
-                Categories
-              </p>
-
-              <div className="flex flex-wrap gap-2">
-               {saleCategories.map((cat) => (
-  <button
-    key={cat._id}
-    onClick={() =>
-      setSelectedCategories((prev) =>
-        prev.includes(String(cat._id))
-          ? prev.filter((id) => id !== String(cat._id))
-          : [...prev, String(cat._id)]
-      )
-    }
-    className={`
-      px-3 py-1 rounded-full border-2 text-sm transition
-      ${
-        selectedCategories.includes(String(cat._id))
-          ? "bg-black text-white border-black"
-          : "bg-white text-[#2D2926] border-gray-300 hover:border-gray-400"
-      }
-    `}
-  >
-    {cat.name}
-  </button>
-))}
-              </div>
-            </div>
-
-            
-            {/* ===== PRICE SLIDER ===== */}
-<div className="mb-6">
-  <p className="text-sm font-semibold text-[#2D2926] mb-3">
-    Price
-  </p>
-
-  {/* TOP INPUT BOXES */}
-  <div className="flex items-center gap-3 mb-4">
-   <input
-  type="number"
-  value={priceRange[0]}
-  min={PRICE_MIN}
-  max={PRICE_MAX}
-  step="1"
-  onChange={(e) => handlePriceInput(e.target.value, 0)}
-  className="w-full p-2 border border-gray-300 rounded-md text-center"
-/>
-
-
-    <span className="text-gray-600">-</span>
-
-    <input
-  type="number"
-  value={priceRange[1]}
-  min={PRICE_MIN}
-  max={PRICE_MAX}
-  step="1"
-  onChange={(e) => handlePriceInput(e.target.value, 1)}
-  className="w-full p-2 border border-gray-300 rounded-md text-center"
-/>
-
-  </div>
-
-  {/* SLIDER TRACK */}
-  <div className="relative h-2 bg-gray-300 rounded-md mb-6">
-    {/* selected range */}
-    <div
-      className="absolute h-2 bg-black rounded-md"
-      style={{
-        left: `${(priceRange[0] / PRICE_MAX) * 100}%`,
-width: `${((priceRange[1] - priceRange[0]) / PRICE_MAX) * 100}%`,
-
-      }}
-    ></div>
-  </div>
-
-  {/* SLIDER HANDLES */}
-<div className="relative range-input" style={{ marginTop: "-10px" }}>
-    <input
-  type="range"
-  min={PRICE_MIN}
-  max={PRICE_MAX}
-  value={priceRange[0]}
-  onChange={(e) => handleRangeChange(e, 0)}
-  className="absolute w-full cursor-pointer pointer-events-auto"
-  style={{ top: "-25px" }}  
-/>
-
-<input
-  type="range"
-  min={PRICE_MIN}
-  max={PRICE_MAX}
-  value={priceRange[1]}
-  onChange={(e) => handleRangeChange(e, 1)}
-  className="absolute w-full cursor-pointer pointer-events-auto"
-  style={{ top: "-25px" }}  
-/>
-
-  </div>
-
-  {/* BOTTOM LABELS */}
-  <div
-  className="flex justify-between text-xs text-gray-600"
-  style={{ marginTop: "-4px" }}   // ★ lift labels up
->
-  <span>0</span>
-  <span>1250</span>
-  <span>2500</span>
-  <span>3750</span>
-  <span>5000</span>
-</div>
-{/* PRICE LIMIT TOOLTIP */}
-{showPriceTooltip && (
-  <div className="mt-2 text-xs text-red-600">
-    Maximum allowed price is ${PRICE_MAX}
-  </div>
-)}
-
-</div>
-
-            {/* ===== TAGS & STYLE ===== */}
-            <div className="mb-6">
-              <p className="text-sm font-semibold text-[#2D2926] mb-2">
-                Tags & Style
-              </p>
-
-              <div className="flex flex-wrap gap-2">
-                {tagAttribute && tagAttribute.options?.length > 0 && (
-  <div className="mb-6">
-    <p className="text-sm font-semibold text-[#2D2926] mb-2">
-      {tagAttribute.name}
-    </p>
-
-    <div className="flex flex-wrap gap-2">
-      {tagAttribute.options.map((opt) => {
-        const tag = opt.label;
-
-        return (
-          <button
-            key={opt._id}
-            onClick={() => toggleTag(tag)}
-            className={`
-              px-3 py-1 rounded-full border-2 text-sm transition
-              ${
-                selectedTags.includes(tag)
-                  ? "bg-black text-white border-black"
-                  : "bg-white text-[#2D2926] border-gray-300 hover:border-gray-400"
-              }
-            `}
-          >
-            {tag}
-          </button>
-        );
-      })}
-    </div>
-  </div>
-)}
-              </div>
-            </div>
-           
-
-            {/* ===== CLEAR ALL ===== */}
-            <button
-              onClick={resetFilters}
-              className="w-full py-2 mt-3 rounded-lg bg-gray-200 text-[#2D2926] font-medium hover:bg-gray-300"
-            >
-              Clear All
-            </button>
-
-          </aside>
-
-          {/* ====================== */}
-          {/* PRODUCT GRID */}
-          {/* ====================== */}
-
-         <main>
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 min-h-[260px] items-start">
-    {/* Loading State */}
-    {loadingProducts ? (
-      <div className="col-span-full flex items-center justify-center py-16 min-h-[200px]">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-black mb-4"></div>
-          <p className="text-gray-600">Loading products...</p>
-        </div>
-      </div>
-    ) : (
-      <>
-        {/* Acrylic and Vinyl Signage Card - First Position */}
-        <div
-          className="flex flex-col h-full border-2 border-black rounded-xl shadow-lg
-            transition-all duration-300 group hover:shadow-xl hover:scale-[1.02]
-            bg-gradient-to-br from-gray-50 to-gray-100"
-        >
-          <div className="h-40 shrink-0 rounded-t-xl overflow-hidden bg-gradient-to-br from-black to-gray-800 flex items-center justify-center">
-            <div className="text-center text-white">
-              <svg className="w-12 h-12 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
-              </svg>
-              <p className="text-xs font-semibold">Acrylic & Vinyl</p>
-            </div>
+      <div className="mx-auto max-w-7xl pb-16">
+        {loadingCategories && (
+          <p className="text-center text-lg text-gray-400">Loading categories…</p>
+        )}
+        {categoriesError && (
+          <p className="text-center text-red-500">{categoriesError}</p>
+        )}
+        {!loadingCategories && !categoriesError && saleCategories.length === 0 && (
+          <p className="text-center text-sm text-gray-500">
+            No sale categories yet. Add categories with type &quot;sale&quot; in admin.
+          </p>
+        )}
+        {!loadingCategories && !categoriesError && saleCategories.length > 0 && (
+          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-7 lg:grid-cols-3 lg:gap-8">
+            {saleCategories.map((cat, index) => {
+              const Icon = CATEGORY_ICONS[index % CATEGORY_ICONS.length];
+              return (
+                <Link
+                  key={cat._id}
+                  to={`/shop/category/${cat._id}`}
+                  className="group relative block w-full overflow-hidden rounded-3xl border border-[#e8e3dc] bg-white shadow-[0_2px_20px_-4px_rgba(45,41,38,0.07)] transition-all duration-500 ease-out hover:-translate-y-1.5 hover:border-[#d4cdc3] hover:bg-[#faf9f7] hover:shadow-[0_24px_48px_-12px_rgba(45,41,38,0.14)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2D2926]"
+                >
+                  <div className="relative flex flex-col items-center px-7 py-11 text-center md:px-9 md:py-12">
+                    <div
+                      className="mb-7 flex h-[5.25rem] w-[5.25rem] items-center justify-center rounded-[1.35rem] bg-[#ede8e0] text-[#2D2926] ring-1 ring-[#e0d9cf] transition-all duration-500 group-hover:scale-[1.06] group-hover:bg-[#2D2926] group-hover:text-[#faf9f7] group-hover:shadow-[0_12px_28px_-8px_rgba(45,41,38,0.3)] group-hover:ring-[#2D2926] md:h-[5.75rem] md:w-[5.75rem]"
+                      aria-hidden
+                    >
+                      <Icon
+                        className="h-[2.125rem] w-[2.125rem] md:h-10 md:w-10"
+                        strokeWidth={1.15}
+                      />
+                    </div>
+                    <h3
+                      className="max-w-[14rem] text-[1.35rem] font-medium leading-snug tracking-tight text-[#2D2926] transition-colors duration-300 group-hover:text-[#1a1816] md:text-2xl md:max-w-[16rem]"
+                      style={{ fontFamily: '"Cormorant Garamond", serif' }}
+                    >
+                      {cat.name}
+                    </h3>
+                    <span className="mt-5 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#2D2926] transition-all duration-300 group-hover:gap-2.5 group-hover:text-[#1a1816]">
+                      Explore
+                      <FiArrowRight
+                        className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5"
+                        strokeWidth={2.25}
+                      />
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
-          <div className="p-4 flex flex-col flex-1 min-h-0">
-            <h3 className="font-bold text-base text-[#2D2926]">
-              Acrylic and Vinyl Signage
-            </h3>
-            <p className="text-sm text-gray-600 mt-2 line-clamp-2">
-              Create personalized acrylic and vinyl signage with custom text, fonts, colors, and backgrounds for your events.
-            </p>
-            <div className="mt-auto pt-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
-              <button
-                onClick={(e) => { e.preventDefault(); navigate("/signage"); }}
-                className="w-full bg-black text-white px-4 py-2 rounded-lg text-sm shadow-md hover:bg-gray-800 transition"
-              >
-                Create Signage
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Vinyl Printing Card */}
-        <div
-          className="flex flex-col h-full border-2 border-black rounded-xl shadow-lg
-            transition-all duration-300 group hover:shadow-xl hover:scale-[1.02]
-            bg-gradient-to-br from-gray-50 to-gray-100"
-        >
-          <div className="h-40 shrink-0 rounded-t-xl overflow-hidden bg-gradient-to-br from-gray-800 to-gray-700 flex items-center justify-center">
-            <div className="text-center text-white">
-              <svg className="w-12 h-12 mx-auto mb-1" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 4h-2v2h2V7zm0 4h-2v2h2v-2zm0 4h-2v2h2v-2zm-6-8H7v2h2V7zm0 4H7v2h2v-2zm0 4H7v2h2v-2z" />
-              </svg>
-              <p className="text-xs font-semibold">Vinyl Printing</p>
-            </div>
-          </div>
-          <div className="p-4 flex flex-col flex-1 min-h-0">
-            <h3 className="font-bold text-base text-[#2D2926]">
-              Vinyl Printing
-            </h3>
-            <p className="text-sm text-gray-600 mt-2 line-clamp-2">
-              Choose a size, upload your artwork, and add to cart. Pickup in Anaheim. Minimum $95.
-            </p>
-            <div className="mt-auto pt-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
-              <button
-                onClick={(e) => { e.preventDefault(); navigate("/vinyl-printing"); }}
-                className="w-full bg-black text-white px-4 py-2 rounded-lg text-sm shadow-md hover:bg-gray-800 transition"
-              >
-                Get started
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {filteredProducts.map((product) => (
-          <a
-            href={`/buyproducts/${product._id}`}
-            className="flex flex-col h-full border border-gray-300 hover:border-gray-500
-              rounded-xl shadow transition-all duration-300 group hover:shadow-lg hover:scale-[1.02]"
-          >
-            <div className="h-40 shrink-0 rounded-t-xl overflow-hidden">
-              <img
-                src={product.images?.[0]?.url || hero1}
-                alt={product.name}
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-            </div>
-            <div className="p-4 flex flex-col flex-1 min-h-0">
-              <h3 className="font-bold text-base text-[#2D2926] line-clamp-2">
-                {product.title}
-              </h3>
-              <div className="mt-2 flex items-center gap-2">
-                {product.salePrice ? (
-                  <>
-                    <span className="text-gray-500 line-through text-xs">$ {product.pricePerDay}</span>
-                    <span className="text-red-600 font-bold text-base">$ {product.salePrice}</span>
-                  </>
-                ) : (
-                  <span className="text-black font-semibold text-base">$ {product.pricePerDay}</span>
-                )}
-              </div>
-              <p className="text-xs text-gray-600 mt-1">
-                Category: {getCategoryNameById(product.category)}
-              </p>
-              <div className="mt-auto pt-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
-                <button type="button" className="w-full bg-black text-white px-4 py-2 rounded-lg text-sm shadow-md hover:bg-[#222222] transition">
-                  View Product
-                </button>
-              </div>
-            </div>
-          </a>
-        ))}
-      </>
-    )}
-
-  </div>
-</main>
-
-        </div>
+        )}
       </div>
     </section>
   );
 };
 
-export default CategoryPage;
+export default ShopPage;
