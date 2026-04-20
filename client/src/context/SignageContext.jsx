@@ -42,9 +42,12 @@ const PX_PER_FT = 150;
 export const SIGNAGE_BOARD_WIDTH_FT = 4;
 export const SIGNAGE_BOARD_HEIGHT_FT = 8;
 
-/** Horizontal printable span for text (8 ft); maps to painted board width in canvas px. */
-export const SIGNAGE_TEXT_BOUNDARY_WIDTH_FT = 8;
-export const SIGNAGE_TEXT_BOUNDARY_WIDTH_INCHES = SIGNAGE_TEXT_BOUNDARY_WIDTH_FT * 12;
+/**
+ * Horizontal printable span (in): full **painted** board width in canvas px maps to this (6 ft).
+ * Used for px→in labels and width-based pricing vs `boardClampRect.width`.
+ */
+export const SIGNAGE_TEXT_BOUNDARY_WIDTH_INCHES = 72;
+export const SIGNAGE_TEXT_BOUNDARY_WIDTH_FT = SIGNAGE_TEXT_BOUNDARY_WIDTH_INCHES / 12;
 
 /** Convert text box width (canvas px) to inches using the board’s horizontal text boundary. */
 export const textBoxWidthPxToInches = (textBoxWidthPx, boundaryWidthPx) => {
@@ -63,17 +66,44 @@ export const textBoxHeightPxToInches = (textBoxHeightPx, boundaryHeightPx) => {
   return (Number(textBoxHeightPx) || 0) * (SIGNAGE_TEXT_BOUNDARY_HEIGHT_INCHES / bh);
 };
 
-/** Reference pair: width 90″ ↔ height 26″ for box labels and pricing height. */
+/** Canvas px that matches physical inches on the painted board boundary. */
+export function printedTextBoxCanvasPxFromInches(
+  widthIn,
+  heightIn,
+  boundaryWidthPx,
+  boundaryHeightPx
+) {
+  const bw = Number(boundaryWidthPx);
+  const bh = Number(boundaryHeightPx);
+  const wi = Number(widthIn) || 0;
+  const hi = Number(heightIn) || 0;
+  const widthPx =
+    Number.isFinite(bw) && bw > 0 ? (wi * bw) / SIGNAGE_TEXT_BOUNDARY_WIDTH_INCHES : 0;
+  const heightPx =
+    Number.isFinite(bh) && bh > 0 ? (hi * bh) / SIGNAGE_TEXT_BOUNDARY_HEIGHT_INCHES : 0;
+  return { widthPx, heightPx };
+}
+
+/** Reference pair: 90″×26″ rule for resize box aspect and height-from-width pricing (not the 6′ board px→in span). */
 export const SIGNAGE_TEXT_ASPECT_REF_WIDTH_IN = 90;
 export const SIGNAGE_TEXT_ASPECT_REF_HEIGHT_IN = 26;
 export const SIGNAGE_TEXT_ASPECT_H_PER_W =
   SIGNAGE_TEXT_ASPECT_REF_HEIGHT_IN / SIGNAGE_TEXT_ASPECT_REF_WIDTH_IN;
 
+/**
+ * Default printed text box (pristine: “Hello”, default font, 100% scale).
+ * Same aspect as the 90×26″ resize rule. Sub‑inch seeds (~0.6″×1.1″) were unreadable in preview.
+ */
+export const INITIAL_PRINTED_TEXT_BOX_WIDTH_IN = 12;
+export const INITIAL_PRINTED_TEXT_BOX_HEIGHT_IN =
+  (INITIAL_PRINTED_TEXT_BOX_WIDTH_IN * SIGNAGE_TEXT_ASPECT_REF_HEIGHT_IN) /
+  SIGNAGE_TEXT_ASPECT_REF_WIDTH_IN;
+
 export const signageTextHeightInchesForWidthInches = (widthInches) =>
   (Number(widthInches) || 0) * SIGNAGE_TEXT_ASPECT_H_PER_W;
 
 /**
- * Canvas px height for a given box width so inches match height = width × (26/90).
+ * Canvas px height for a given box width so inches match height = width × (26 / aspect ref width).
  * Uses painted board aspect (bh/bw) so width/height inches scale together with the 90×26 rule.
  */
 export const textBoxHeightPxForAspectWidthPx = (widthPx, boundaryWidthPx, boundaryHeightPx) => {
@@ -87,6 +117,9 @@ export const textBoxHeightPxForAspectWidthPx = (widthPx, boundaryWidthPx, bounda
 
 const aspectK = (boardWidth, boardHeight) =>
   (Number(boardHeight) || 1) / (Number(boardWidth) || 1) * SIGNAGE_TEXT_ASPECT_H_PER_W;
+
+/** Minimum logical box size in canvas px when using the corner resize handle (allow sub-inch print areas). */
+export const SIGNAGE_RESIZE_MIN_CANVAS_PX = 1;
 
 /**
  * Bottom-right resize: width from cursor (uniform scale hint), height = f(width) for 90×26″ physical rule.
@@ -105,23 +138,24 @@ export const signageResizeBoxWithAspect = ({
   const k = aspectK(b.width, b.height);
   const maxW = Math.max(0, Math.min(b.left + b.width - anchorX, b.width));
   const maxH = Math.max(0, Math.min(b.top + b.height - anchorY, b.height));
+  const minDim = SIGNAGE_RESIZE_MIN_CANVAS_PX;
   const scale = sw > 0 && sh > 0 ? Math.min(nw / sw, nh / sh) : 1;
   let w = sw * scale;
-  w = Math.max(40, contentMinW, Math.min(w, maxW));
+  w = Math.max(minDim, contentMinW, Math.min(w, maxW));
   let h = textBoxHeightPxForAspectWidthPx(w, b.width, b.height);
   if (h > maxH) {
     h = maxH;
     w = k > 0 ? h / k : w;
   }
-  w = Math.max(40, contentMinW, Math.min(w, maxW));
+  w = Math.max(minDim, contentMinW, Math.min(w, maxW));
   h = textBoxHeightPxForAspectWidthPx(w, b.width, b.height);
   if (h > maxH) {
     h = maxH;
     w = k > 0 ? h / k : w;
-    w = Math.max(40, contentMinW, Math.min(w, maxW));
+    w = Math.max(minDim, contentMinW, Math.min(w, maxW));
     h = textBoxHeightPxForAspectWidthPx(w, b.width, b.height);
   }
-  const minH = Math.max(24, contentMinH);
+  const minH = Math.max(minDim, contentMinH);
   if (h < minH) {
     h = minH;
     w = k > 0 ? h / k : w;
@@ -129,7 +163,7 @@ export const signageResizeBoxWithAspect = ({
       w = maxW;
       h = textBoxHeightPxForAspectWidthPx(w, b.width, b.height);
     }
-    w = Math.max(40, contentMinW, w);
+    w = Math.max(minDim, contentMinW, w);
     h = textBoxHeightPxForAspectWidthPx(w, b.width, b.height);
     if (h > maxH) {
       h = maxH;
@@ -196,7 +230,7 @@ export const getBoardPaintRect = (cw, ch, naturalW, naturalH) => {
   };
 };
 
-/** Extra half-width when clamping (keep 0 so a full-width box can reach 96″ on the board). */
+/** Extra half-width when clamping (keep 0 so a full-width box can reach the full horizontal boundary in inches). */
 const CLAMP_BOX_HALF_WIDTH_PAD = 0;
 
 /**
@@ -261,6 +295,104 @@ export const clampTextCenterInBoard = (board, centerX, centerY, boxWidth, boxHei
     y: Math.max(minCY, Math.min(centerY, maxCY)),
   };
 };
+
+/** Canvas px — drop-shadow / glow sits outside glyph ink (must match textDragClampBox). */
+export const TEXT_DRAG_CLAMP_PAD_PX = 18;
+
+/** Ignore glyph→px extents beyond this past the logical box (bad metrics were shrinking max resize). */
+const GLYPH_DRAG_BLEED_PX = 56;
+
+/**
+ * Same effective w×h as `textDragClampBox`: logical box union glyph span + pad.
+ * Glyph inches from layout can spike (e.g. height); cap how far past the box they may expand drag.
+ */
+export function computeTextDragClampDimensionsPx(
+  textBoxW,
+  textBoxH,
+  boardW,
+  boardH,
+  extentWIn,
+  extentHIn
+) {
+  const bw = Number(boardW) || 0;
+  const bh = Number(boardH) || 0;
+  let w = Number(textBoxW) || 0;
+  let h = Number(textBoxH) || 0;
+  const wIn = extentWIn;
+  const hIn = extentHIn;
+  if (wIn != null && Number.isFinite(wIn) && wIn > 0 && Number.isFinite(bw) && bw > 0) {
+    const wGlyph = (wIn * bw) / SIGNAGE_TEXT_BOUNDARY_WIDTH_INCHES;
+    w = Math.max(w, Math.min(wGlyph, w + GLYPH_DRAG_BLEED_PX));
+  }
+  if (hIn != null && Number.isFinite(hIn) && hIn > 0 && Number.isFinite(bh) && bh > 0) {
+    const hGlyph = (hIn * bh) / SIGNAGE_TEXT_BOUNDARY_HEIGHT_INCHES;
+    h = Math.max(h, Math.min(hGlyph, h + GLYPH_DRAG_BLEED_PX));
+  }
+  return { width: w + TEXT_DRAG_CLAMP_PAD_PX, height: h + TEXT_DRAG_CLAMP_PAD_PX };
+}
+
+/**
+ * Shrink a resize result (TL anchor fixed, 90×26 aspect) until the drag-clamp box fits
+ * `clampTextCenterInBoard` at the resulting center — same limit as moving the text.
+ */
+export function shrinkSignageResizeToDragClamp({
+  w,
+  h,
+  anchorX,
+  anchorY,
+  board,
+  canvasWidth,
+  canvasHeight,
+  extentWIn,
+  extentHIn,
+  contentMinW = 0,
+  contentMinH = 0,
+  minDim = SIGNAGE_RESIZE_MIN_CANVAS_PX,
+}) {
+  const b = board;
+  const bw = b.width;
+  const bh = b.height;
+  const maxW = Math.max(0, Math.min(b.left + b.width - anchorX, b.width));
+  const maxH = Math.max(0, Math.min(b.top + b.height - anchorY, b.height));
+  const cw = canvasWidth != null && Number(canvasWidth) > 0 ? Number(canvasWidth) : 600;
+  const ch = canvasHeight != null && Number(canvasHeight) > 0 ? Number(canvasHeight) : 1200;
+  const boardRatio = Number.isFinite(bh) && Number.isFinite(bw) && bw > 0 ? bh / bw : 1;
+  const invAspect = boardRatio * SIGNAGE_TEXT_ASPECT_H_PER_W;
+
+  const applyBoardCaps = (wCandidate) => {
+    let w1 = Math.max(minDim, contentMinW, Math.min(wCandidate, maxW));
+    let h1 = textBoxHeightPxForAspectWidthPx(w1, bw, bh);
+    if (h1 > maxH) {
+      h1 = maxH;
+      w1 = invAspect > 0 ? h1 / invAspect : w1;
+      w1 = Math.max(minDim, contentMinW, Math.min(w1, maxW));
+      h1 = textBoxHeightPxForAspectWidthPx(w1, bw, bh);
+    }
+    const minH = Math.max(minDim, contentMinH);
+    if (h1 < minH) {
+      h1 = minH;
+      w1 = invAspect > 0 ? h1 / invAspect : w1;
+      w1 = Math.max(minDim, contentMinW, Math.min(w1, maxW));
+      h1 = textBoxHeightPxForAspectWidthPx(w1, bw, bh);
+    }
+    return { w: w1, h: h1 };
+  };
+
+  let { w: w0, h: h0 } = applyBoardCaps(w);
+  const eps = 1.25;
+  for (let i = 0; i < 40; i++) {
+    const drag = computeTextDragClampDimensionsPx(w0, h0, bw, bh, extentWIn, extentHIn);
+    const cx = anchorX + w0 / 2;
+    const cy = anchorY + h0 / 2;
+    const c2 = clampTextCenterInBoard(b, cx, cy, drag.width, drag.height, ch, cw);
+    if (Math.abs(c2.x - cx) <= eps && Math.abs(c2.y - cy) <= eps) {
+      return { w: w0, h: h0 };
+    }
+    const narrowed = Math.max(minDim, contentMinW, w0 * 0.9);
+    ({ w: w0, h: h0 } = applyBoardCaps(narrowed));
+  }
+  return { w: w0, h: h0 };
+}
 
 // Backward compatibility alias
 export const getBannerBounds = getBoardBounds;
@@ -420,6 +552,9 @@ export const SignageProvider = ({ children }) => {
   // User-adjustable text scale (0.5 = 50%, 2 = 200%)
   const [userTextScale, setUserTextScale] = useState(1);
 
+  /** When true, skip fixed 0.6167″×1.0931″ initial box (e.g. cart edit restores saved text box). */
+  const [disableInitialPrintedBoxSizing, setDisableInitialPrintedBoxSizing] = useState(false);
+
   // Text box dimensions (visible on canvas; synced from size preset, updated when user resizes from handle)
   const [textBoxWidth, setTextBoxWidth] = useState(250);
   const [textBoxHeight, setTextBoxHeight] = useState(60);
@@ -517,11 +652,31 @@ export const SignageProvider = ({ children }) => {
     height: textBoxHeight,
   };
 
-  // Pricing: text width inches vs horizontal boundary on the board (8 ft), not full canvas (4 ft wide)
+  // Pricing: text width inches vs horizontal printable boundary on the board, not full canvas width
   const widthInches = textBoxWidthPxToInches(textBoxWidth, boardClampRect.width);
   const heightInches = signageTextHeightInchesForWidthInches(widthInches);
   const textWidthInches = textExtentInches.width;
   const textHeightInches = textExtentInches.height;
+
+  /** Canvas px box to keep *visible* glyphs inside the board/canvas when dragging (logical box can be tiny). */
+  const textDragClampBox = useMemo(() => {
+    return computeTextDragClampDimensionsPx(
+      textBoxWidth,
+      textBoxHeight,
+      boardClampRect.width,
+      boardClampRect.height,
+      textExtentInches.width,
+      textExtentInches.height
+    );
+  }, [
+    textBoxWidth,
+    textBoxHeight,
+    textExtentInches.width,
+    textExtentInches.height,
+    boardClampRect.width,
+    boardClampRect.height,
+  ]);
+
   const pricePerSqInch = signageType === "vinyl" ? pricePerSqInchVinyl : pricePerSqInchAcrylic;
   const scaleBasedPrice = (pricePerSqInch || 0) * widthInches * heightInches;
   const basePrice =
@@ -570,6 +725,7 @@ export const SignageProvider = ({ children }) => {
   }, [textContent, memoizedGetLinePositions, effectiveFontSize, selectedFont, selectedTextColor]);
 
   const memoizedResetSignage = useCallback(() => {
+    setDisableInitialPrintedBoxSizing(false);
     setTextContent("Hello");
     setSelectedFont(DEFAULT_SIGNAGE_FONT);
     setSelectedTextColor(normalizeHexColor("#000000"));
@@ -645,6 +801,7 @@ export const SignageProvider = ({ children }) => {
     setBackgroundImageUrl,
     setCustomBackgroundColor,
     setUserTextScale,
+    setDisableInitialPrintedBoxSizing,
     setTextBoxWidth,
     setTextBoxHeight,
     setTextExtentInches,
@@ -721,10 +878,12 @@ export const SignageProvider = ({ children }) => {
     textSize,
     fontSize,
     userTextScale,
+    disableInitialPrintedBoxSizing,
     effectiveFontSize,
     effectiveTextSize,
     textBoxWidth,
     textBoxHeight,
+    textDragClampBox,
     contentMinSizeRef,
 
     // Stable setters
@@ -752,10 +911,12 @@ export const SignageProvider = ({ children }) => {
     textSize,
     fontSize,
     userTextScale,
+    disableInitialPrintedBoxSizing,
     effectiveFontSize,
     effectiveTextSize,
     textBoxWidth,
     textBoxHeight,
+    textDragClampBox,
     fonts,
     textSizes,
     textSizesConfig,

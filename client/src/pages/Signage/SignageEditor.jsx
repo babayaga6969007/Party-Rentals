@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import React from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -9,14 +9,22 @@ import {
   useSignage,
   getBoardBounds,
   clampTextCenterInBoard,
+  computeTextDragClampDimensionsPx,
+  shrinkSignageResizeToDragClamp,
   DEFAULT_SIGNAGE_FONT,
   signageResizeBoxWithAspect,
+  SIGNAGE_RESIZE_MIN_CANVAS_PX,
 } from "../../context/SignageContext";
 import SignagePreview from "../../components/signage/SignagePreview";
 import SignageHeader from "../../components/signage/SignageHeader";
 import SignageControls from "../../components/signage/SignageControls";
 import { capturePreviewSnapshot } from "../../utils/signageCart";
 import { waitForFonts, preloadFontsWithFontFace } from "../../utils/fontLoader";
+
+/** Pointer-box lerp during resize drag (higher = snappier, lower = smoother). */
+const SIGNAGE_RESIZE_SMOOTH_ALPHA = 0.58;
+/** Re-schedule rAF until smoothed size is within this of the live pointer. */
+const SIGNAGE_RESIZE_SMOOTH_EPS = 0.4;
 
 const SignageEditorContent = () => {
   const { id: productId, token } = useParams();
@@ -44,6 +52,7 @@ const SignageEditorContent = () => {
     textBoxHeight,
     setTextBoxWidth,
     setTextBoxHeight,
+    setDisableInitialPrintedBoxSizing,
     backgroundType,
     backgroundColor,
     backgroundGradient,
@@ -53,8 +62,6 @@ const SignageEditorContent = () => {
     fontSize,
     effectiveTextSize,
     effectiveFontSize,
-    userTextScale,
-    setUserTextScale,
     selectedFont,
     selectedTextColor,
     selectedSize,
@@ -71,6 +78,8 @@ const SignageEditorContent = () => {
     configLoading,
     verticalBoardImageUrl,
     boardClampRect,
+    textDragClampBox,
+    contentMinSizeRef,
     signageType,
     setSignageType,
     setRushProduction,
@@ -78,7 +87,6 @@ const SignageEditorContent = () => {
     rushProduction,
     basePrice,
     rushFee,
-    contentMinSizeRef,
   } = useSignage();
 
   const location = useLocation();
@@ -99,6 +107,7 @@ const SignageEditorContent = () => {
       !editFromCartLoadedRef.current
     ) {
       editFromCartLoadedRef.current = true;
+      setDisableInitialPrintedBoxSizing(true);
       const sd = editItemFromCart.signageData;
       const payload = {
         ...sd,
@@ -110,7 +119,18 @@ const SignageEditorContent = () => {
       setSignageType(sd.signageType === "vinyl" ? "vinyl" : "acrylic");
       setRushProduction(!!sd.rushProduction);
     }
-  }, [editItemFromCart, token, loading, configLoading, loadSignage, setTextBoxWidth, setTextBoxHeight, setSignageType, setRushProduction]);
+  }, [
+    editItemFromCart,
+    token,
+    loading,
+    configLoading,
+    loadSignage,
+    setTextBoxWidth,
+    setTextBoxHeight,
+    setDisableInitialPrintedBoxSizing,
+    setSignageType,
+    setRushProduction,
+  ]);
 
   // Ensure text is centered in banner on initial load (for all new signages, not shared ones; skip when loading from cart edit)
   useEffect(() => {
@@ -127,7 +147,17 @@ const SignageEditorContent = () => {
       const outer = getBoardBounds(canvasWidth, canvasHeight);
       const cx = outer.left + outer.width / 2;
       const cy = outer.top + outer.height * 0.72;
-      setTextPosition(clampTextCenterInBoard(boardClampRect, cx, cy, textBoxWidth, textBoxHeight, canvasHeight, canvasWidth));
+      setTextPosition(
+        clampTextCenterInBoard(
+          boardClampRect,
+          cx,
+          cy,
+          textDragClampBox.width,
+          textDragClampBox.height,
+          canvasHeight,
+          canvasWidth
+        )
+      );
       positionInitializedRef.current = true;
     }
   }, [
@@ -140,7 +170,37 @@ const SignageEditorContent = () => {
     canvasHeight,
     textBoxWidth,
     textBoxHeight,
+    textDragClampBox.width,
+    textDragClampBox.height,
     boardClampRect,
+    setTextPosition,
+  ]);
+
+  // After glyph metrics load (or box changes), keep center inside board/canvas vs *visible* text, not just logical box.
+  useEffect(() => {
+    if (isDragging) return;
+    const cw = canvasWidth || 600;
+    const ch = canvasHeight || 1200;
+    setTextPosition((prev) => {
+      const next = clampTextCenterInBoard(
+        boardClampRect,
+        prev.x,
+        prev.y,
+        textDragClampBox.width,
+        textDragClampBox.height,
+        ch,
+        cw
+      );
+      if (next.x === prev.x && next.y === prev.y) return prev;
+      return next;
+    });
+  }, [
+    textDragClampBox.width,
+    textDragClampBox.height,
+    boardClampRect,
+    canvasWidth,
+    canvasHeight,
+    isDragging,
     setTextPosition,
   ]);
 
@@ -261,6 +321,12 @@ const SignageEditorContent = () => {
   const isDraggingRef = useRef(false);
   const dragListenersCleanupRef = useRef(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const isResizingRef = useRef(false);
+  const resizeAnchorRef = useRef(null);
+  const resizeListenersRef = useRef(null);
+  const resizeRafRef = useRef(null);
+  const resizePendingRef = useRef(null);
+  const resizeSmoothRef = useRef(null);
 
   const removeDragListeners = () => {
     const cleanup = dragListenersCleanupRef.current;
@@ -268,6 +334,131 @@ const SignageEditorContent = () => {
       dragListenersCleanupRef.current = null;
       cleanup();
     }
+  };
+
+  const removeResizeListeners = () => {
+    const ref = resizeListenersRef.current;
+    if (ref?.cleanup) {
+      resizeListenersRef.current = null;
+      ref.cleanup();
+    }
+  };
+
+  const applyResizeFromCanvasPoint = useCallback(
+    (canvasX, canvasY, options = {}) => {
+      const { snap = false } = options;
+      const {
+        anchorX,
+        anchorY,
+        startWidth: sw,
+        startHeight: sh,
+        startPointerX: spx,
+        startPointerY: spy,
+      } = resizeAnchorRef.current || {};
+      if (spx == null || spy == null) return false;
+      const targetW = Math.max(SIGNAGE_RESIZE_MIN_CANVAS_PX, sw + (canvasX - spx));
+      const targetH = Math.max(SIGNAGE_RESIZE_MIN_CANVAS_PX, sh + (canvasY - spy));
+      let smooth = resizeSmoothRef.current;
+      if (!smooth || smooth.w == null || smooth.h == null) {
+        smooth = { w: sw, h: sh };
+      }
+      const a = SIGNAGE_RESIZE_SMOOTH_ALPHA;
+      let pointerW = snap ? targetW : smooth.w + (targetW - smooth.w) * a;
+      let pointerH = snap ? targetH : smooth.h + (targetH - smooth.h) * a;
+      resizeSmoothRef.current = { w: pointerW, h: pointerH };
+      const cw = canvasWidth || 600;
+      const ch = canvasHeight || 1200;
+      const b = boardClampRect;
+      const cm = contentMinSizeRef.current;
+      const contentMinW = Number(cm?.w) || 0;
+      const contentMinH = Number(cm?.h) || 0;
+      const { w: rawW, h: rawH } = signageResizeBoxWithAspect({
+        startWidth: sw,
+        startHeight: sh,
+        pointerWidth: pointerW,
+        pointerHeight: pointerH,
+        anchorX,
+        anchorY,
+        board: b,
+        contentMinW,
+        contentMinH,
+      });
+      const { w: clampedW, h: clampedH } = shrinkSignageResizeToDragClamp({
+        w: rawW,
+        h: rawH,
+        anchorX,
+        anchorY,
+        board: b,
+        canvasWidth: cw,
+        canvasHeight: ch,
+        extentWIn: textWidthInches,
+        extentHIn: textHeightInches,
+        contentMinW,
+        contentMinH,
+      });
+      const centerX = anchorX + clampedW / 2;
+      const centerY = anchorY + clampedH / 2;
+      const drag = computeTextDragClampDimensionsPx(
+        clampedW,
+        clampedH,
+        b.width,
+        b.height,
+        textWidthInches,
+        textHeightInches
+      );
+      setTextBoxWidth(clampedW);
+      setTextBoxHeight(clampedH);
+      setTextPosition(clampTextCenterInBoard(b, centerX, centerY, drag.width, drag.height, ch, cw));
+      if (!snap) {
+        const dw = Math.abs(targetW - pointerW);
+        const dh = Math.abs(targetH - pointerH);
+        return dw > SIGNAGE_RESIZE_SMOOTH_EPS || dh > SIGNAGE_RESIZE_SMOOTH_EPS;
+      }
+      return false;
+    },
+    [
+      boardClampRect,
+      canvasWidth,
+      canvasHeight,
+      contentMinSizeRef,
+      textWidthInches,
+      textHeightInches,
+      setTextBoxWidth,
+      setTextBoxHeight,
+      setTextPosition,
+    ]
+  );
+
+  const scheduleResizeApply = useCallback(
+    (canvasX, canvasY) => {
+      resizePendingRef.current = { canvasX, canvasY };
+      const runFrame = () => {
+        resizeRafRef.current = null;
+        if (!isResizingRef.current) return;
+        const p = resizePendingRef.current;
+        if (!p) return;
+        const needsAnother = applyResizeFromCanvasPoint(p.canvasX, p.canvasY, { snap: false });
+        if (needsAnother && isResizingRef.current) {
+          resizeRafRef.current = requestAnimationFrame(runFrame);
+        }
+      };
+      if (resizeRafRef.current != null) return;
+      resizeRafRef.current = requestAnimationFrame(runFrame);
+    },
+    [applyResizeFromCanvasPoint]
+  );
+
+  const endResize = () => {
+    if (resizeRafRef.current != null) {
+      cancelAnimationFrame(resizeRafRef.current);
+      resizeRafRef.current = null;
+    }
+    const p = resizePendingRef.current;
+    resizePendingRef.current = null;
+    if (p) applyResizeFromCanvasPoint(p.canvasX, p.canvasY, { snap: true });
+    resizeSmoothRef.current = null;
+    isResizingRef.current = false;
+    removeResizeListeners();
   };
 
   const handleMouseMove = (e) => {
@@ -280,7 +471,15 @@ const SignageEditorContent = () => {
 
     const cw = canvasWidth || 600;
     const ch = canvasHeight || 1200;
-    const pos = clampTextCenterInBoard(boardClampRect, newX, newY, textBoxWidth, textBoxHeight, ch, cw);
+    const pos = clampTextCenterInBoard(
+      boardClampRect,
+      newX,
+      newY,
+      textDragClampBox.width,
+      textDragClampBox.height,
+      ch,
+      cw
+    );
     dragPositionRef.current = pos;
     setLiveDragPosition(pos);
   };
@@ -296,7 +495,15 @@ const SignageEditorContent = () => {
 
     const cw = canvasWidth || 600;
     const ch = canvasHeight || 1200;
-    const pos = clampTextCenterInBoard(boardClampRect, newX, newY, textBoxWidth, textBoxHeight, ch, cw);
+    const pos = clampTextCenterInBoard(
+      boardClampRect,
+      newX,
+      newY,
+      textDragClampBox.width,
+      textDragClampBox.height,
+      ch,
+      cw
+    );
     dragPositionRef.current = pos;
     setLiveDragPosition(pos);
   };
@@ -312,43 +519,20 @@ const SignageEditorContent = () => {
     if (finalPosition) {
       const cw = canvasWidth || 600;
       const ch = canvasHeight || 1200;
-      setTextPosition(clampTextCenterInBoard(boardClampRect, finalPosition.x, finalPosition.y, textBoxWidth, textBoxHeight, ch, cw));
+      setTextPosition(
+        clampTextCenterInBoard(
+          boardClampRect,
+          finalPosition.x,
+          finalPosition.y,
+          textDragClampBox.width,
+          textDragClampBox.height,
+          ch,
+          cw
+        )
+      );
     }
     setIsDragging(false);
     setTimeout(() => setIsTextClicked(false), 200);
-  };
-
-  useEffect(() => {
-    const onBlur = () => {
-      if (isDraggingRef.current) handleMouseUp();
-      if (isResizingRef.current) endResize();
-    };
-    window.addEventListener("blur", onBlur);
-    return () => {
-      window.removeEventListener("blur", onBlur);
-      removeDragListeners();
-      removeResizeListeners();
-    };
-  }, []);
-
-  // Resize from bottom-right handle (anchor = top-left of box)
-  const [isResizing, setIsResizing] = useState(false);
-  const isResizingRef = useRef(false);
-  const resizeAnchorRef = useRef(null);
-  const resizeListenersRef = useRef(null);
-
-  const removeResizeListeners = () => {
-    const ref = resizeListenersRef.current;
-    if (ref?.cleanup) {
-      resizeListenersRef.current = null;
-      ref.cleanup();
-    }
-  };
-
-  const endResize = () => {
-    isResizingRef.current = false;
-    setIsResizing(false);
-    removeResizeListeners();
   };
 
   const handleResizeHandleMouseDown = (e) => {
@@ -361,39 +545,25 @@ const SignageEditorContent = () => {
     const anchorY = textPosition.y - textBoxHeight / 2;
     const startWidth = textBoxWidth;
     const startHeight = textBoxHeight;
-    resizeAnchorRef.current = { anchorX, anchorY, startWidth, startHeight };
+    const startPointerX = (e.clientX - rect.left) / s;
+    const startPointerY = (e.clientY - rect.top) / s;
+    resizeAnchorRef.current = {
+      anchorX,
+      anchorY,
+      startWidth,
+      startHeight,
+      startPointerX,
+      startPointerY,
+    };
+    resizeSmoothRef.current = { w: startWidth, h: startHeight };
     isResizingRef.current = true;
-    setIsResizing(true);
 
     const onMove = (ev) => {
-      const { startWidth: sw, startHeight: sh } = resizeAnchorRef.current || { startWidth: textBoxWidth, startHeight: textBoxHeight };
       const canvasX = (ev.clientX - rect.left) / s;
       const canvasY = (ev.clientY - rect.top) / s;
-      const newWidth = Math.max(40, canvasX - anchorX);
-      const newHeight = Math.max(24, canvasY - anchorY);
-      const cw = canvasWidth || 600;
-      const ch = canvasHeight || 1200;
-      const b = boardClampRect;
-      const contentMin = contentMinSizeRef?.current ?? { w: 0, h: 0 };
-      const { w: clampedW, h: clampedH } = signageResizeBoxWithAspect({
-        startWidth: sw,
-        startHeight: sh,
-        pointerWidth: newWidth,
-        pointerHeight: newHeight,
-        anchorX,
-        anchorY,
-        board: b,
-        contentMinW: contentMin.w || 0,
-        contentMinH: contentMin.h || 0,
-      });
-      const centerX = anchorX + clampedW / 2;
-      const centerY = anchorY + clampedH / 2;
-      setTextBoxWidth(clampedW);
-      setTextBoxHeight(clampedH);
-      setTextPosition(clampTextCenterInBoard(b, centerX, centerY, clampedW, clampedH, ch, cw));
+      scheduleResizeApply(canvasX, canvasY);
     };
     const onUp = () => {
-      removeResizeListeners();
       endResize();
     };
     const cleanup = () => {
@@ -415,40 +585,28 @@ const SignageEditorContent = () => {
     const anchorY = textPosition.y - textBoxHeight / 2;
     const startWidth = textBoxWidth;
     const startHeight = textBoxHeight;
-    resizeAnchorRef.current = { anchorX, anchorY, startWidth, startHeight };
+    const t0 = e.touches[0];
+    const startPointerX = (t0.clientX - rect.left) / s;
+    const startPointerY = (t0.clientY - rect.top) / s;
+    resizeAnchorRef.current = {
+      anchorX,
+      anchorY,
+      startWidth,
+      startHeight,
+      startPointerX,
+      startPointerY,
+    };
+    resizeSmoothRef.current = { w: startWidth, h: startHeight };
     isResizingRef.current = true;
-    setIsResizing(true);
 
     const onMove = (ev) => {
       const touch = ev.touches[0];
-      const { startWidth: sw, startHeight: sh } = resizeAnchorRef.current || { startWidth: textBoxWidth, startHeight: textBoxHeight };
+      if (!touch) return;
       const canvasX = (touch.clientX - rect.left) / s;
       const canvasY = (touch.clientY - rect.top) / s;
-      const newWidth = Math.max(40, canvasX - anchorX);
-      const newHeight = Math.max(24, canvasY - anchorY);
-      const cw = canvasWidth || 600;
-      const ch = canvasHeight || 1200;
-      const b = boardClampRect;
-      const contentMin = contentMinSizeRef?.current ?? { w: 0, h: 0 };
-      const { w: clampedW, h: clampedH } = signageResizeBoxWithAspect({
-        startWidth: sw,
-        startHeight: sh,
-        pointerWidth: newWidth,
-        pointerHeight: newHeight,
-        anchorX,
-        anchorY,
-        board: b,
-        contentMinW: contentMin.w || 0,
-        contentMinH: contentMin.h || 0,
-      });
-      const centerX = anchorX + clampedW / 2;
-      const centerY = anchorY + clampedH / 2;
-      setTextBoxWidth(clampedW);
-      setTextBoxHeight(clampedH);
-      setTextPosition(clampTextCenterInBoard(b, centerX, centerY, clampedW, clampedH, ch, cw));
+      scheduleResizeApply(canvasX, canvasY);
     };
     const onEnd = () => {
-      removeResizeListeners();
       endResize();
     };
     const cleanup = () => {
@@ -461,6 +619,19 @@ const SignageEditorContent = () => {
     document.addEventListener("touchend", onEnd, { capture: true });
     document.addEventListener("touchcancel", onEnd, { capture: true });
   };
+
+  useEffect(() => {
+    const onBlur = () => {
+      if (isDraggingRef.current) handleMouseUp();
+      if (isResizingRef.current) endResize();
+    };
+    window.addEventListener("blur", onBlur);
+    return () => {
+      window.removeEventListener("blur", onBlur);
+      removeDragListeners();
+      removeResizeListeners();
+    };
+  }, []);
 
   const MIN_SIGNAGE_ORDER = 95; // Minimum $95 per acrylic or vinyl order
 
@@ -701,7 +872,7 @@ const SignageEditorContent = () => {
                 />
                 {!isSharedView && (
                   <p className="text-sm text-gray-500 mt-4 text-center shrink-0">
-                    Click and drag text to reposition
+                    Drag the corner handle on the text to resize. Drag the text to move it.
                   </p>
                 )}
               </div>
