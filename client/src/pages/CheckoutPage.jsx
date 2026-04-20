@@ -92,28 +92,48 @@ const [pickupTimeFee, setPickupTimeFee] = useState(0);
   // Vinyl-printing-only cart: no delivery, pickup at Anaheim — simpler checkout
   const isVinylPrintingOnly = items.length > 0 && items.every((i) => i.productType === "vinyl-printing");
 
-  // ✅ Base pricing (memo to avoid recalculating every render)
-  const pricing = useMemo(() => {
-    if (location.state?.pricing) {
-      const p = location.state.pricing;
-      const subtotal = Number(p.subtotal || 0);
-      const laborCharge = subtotal * 0.14;
-      const total = subtotal + laborCharge;
-      return { subtotal, laborCharge, total };
-    }
+ // Base pricing (memo to avoid recalculating every render)
+const pricing = useMemo(() => {
+  if (location.state?.pricing) {
+    const p = location.state.pricing;
 
-    const subtotal = items.reduce(
-      (sum, item) => sum + Number(item.lineTotal || 0),
-      0
-    );
+    const subtotal = Number(p.subtotal || 0);
 
+    // 1️⃣ Tax
+    const tax = subtotal * 0.0975;
 
-    const laborCharge = subtotal * 0.14;
-    const total = subtotal + laborCharge;
+    // 2️⃣ Subtotal after tax
+    const subtotalWithTax = subtotal + tax;
 
-    return { subtotal, laborCharge, total };
+    // 3️⃣ Labor charge on taxed subtotal
+    const laborCharge = subtotalWithTax * 0.14;
 
-  }, [location.state?.pricing, items]);
+    // 4️⃣ Total (before extra fees)
+    const total = subtotalWithTax + laborCharge;
+
+    return { subtotal, tax, subtotalWithTax, laborCharge, total };
+  }
+
+  const subtotal = items.reduce(
+    (sum, item) => sum + Number(item.lineTotal || 0),
+    0
+  );
+
+  // 1️⃣ Tax
+  const tax = subtotal * 0.0975;
+
+  // 2️⃣ Subtotal after tax
+  const subtotalWithTax = subtotal + tax;
+
+  // 3️⃣ Labor charge on taxed subtotal
+  const laborCharge = subtotalWithTax * 0.14;
+
+  // 4️⃣ Total (before extra fees)
+  const total = subtotalWithTax + laborCharge;
+
+  return { subtotal, tax, subtotalWithTax, laborCharge, total };
+
+}, [location.state?.pricing, items]);
 
 
   // ✅ Extra fees (vinyl-printing has no delivery/stairs)
@@ -537,19 +557,25 @@ if (!agreeToTerms) {
 
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">Subtotal</span>
-              <span className="font-medium">
-                ${pricing.subtotal.toFixed(2)}
-              </span>
-            </div>
+  <span className="text-gray-500">Subtotal</span>
+  <span className="font-medium">
+    ${pricing.subtotal.toFixed(2)}
+  </span>
+</div>
 
+<div className="flex justify-between">
+  <span className="text-gray-500">Tax (9.75%)</span>
+  <span className="font-medium">
+    ${pricing.tax.toFixed(2)}
+  </span>
+</div>
 
-            <div className="flex justify-between">
-              <span className="text-gray-500">Labor Charge (14%)</span>
-              <span className="font-medium">
-                ${pricing.laborCharge.toFixed(2)}
-              </span>
-            </div>
+<div className="flex justify-between">
+  <span className="text-gray-500">Labor Charge (14%)</span>
+  <span className="font-medium">
+    ${pricing.laborCharge.toFixed(2)}
+  </span>
+</div>
 
             {stairsFee && (
               <div className="flex justify-between text-sm">

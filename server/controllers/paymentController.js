@@ -6,23 +6,29 @@ const calculateOrderAmount = ({
   extraFees = 0,
   paymentMode = "FULL", // "FULL" or "PARTIAL"
 }) => {
-  // 1️⃣ Subtotal
+  //  Subtotal
   const subtotal = items.reduce((sum, item) => {
     return sum + Number(item.lineTotal || 0);
   }, 0);
 
-  // 2️⃣ Labor charge = 14% of subtotal
-  const laborCharge = subtotal * 0.14;
 
-  // 3️⃣ Discount (keep your existing logic if needed)
-  const discount = 0;
+  //  Tax = 9.75% of subtotal
+const tax = subtotal * 0.0975;
 
+// 3 Subtotal after tax
+const subtotalWithTax = subtotal + tax;
 
-  // 4️⃣ Grand total
-  const grandTotal =
-    subtotal - discount + laborCharge + Number(extraFees || 0);
+// 4 Labor charge = 14% of (subtotal + tax)
+const laborCharge = subtotalWithTax * 0.14;
 
-  // 5️⃣ Decide payable amount
+// 5 Discount (keep your existing logic if needed)
+const discount = 0;
+
+// 6 Grand total
+const grandTotal =
+  subtotalWithTax - discount + laborCharge + Number(extraFees || 0);
+
+  //  Decide payable amount
   const payableAmount =
     paymentMode === "PARTIAL" ? grandTotal * 0.6 : grandTotal;
 

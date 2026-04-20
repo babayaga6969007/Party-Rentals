@@ -37,7 +37,7 @@ const { customer, items, pricing, delivery } = state;
 const subtotal = pricing?.subtotal ?? 0;
 const discount = pricing?.discount ?? 0;
 const extraFees = pricing?.extraFees ?? 0;
-
+const tax = pricing?.tax ?? 0;
 const orderTotal = pricing?.orderTotal ?? 0;
 const amountPaid = pricing?.amountPaid ?? 0;
 const amountDue = pricing?.amountDue ?? 0;
@@ -145,14 +145,17 @@ key={index}
 </div>
 
 <div className="flex justify-between">
+  <span className="text-gray-600">Tax (9.75%)</span>
+  <span>${tax.toFixed(2)}</span>
+</div>
+
+<div className="flex justify-between">
   <span className="text-gray-600">Discount</span>
   <span className="text-red-500">-${discount.toFixed(2)}</span>
 </div>
 <div className="flex justify-between">
   <span className="text-gray-600">Labor Charge (14%)</span>
-  <span>
-    ${(orderTotal - subtotal - extraFees + discount).toFixed(2)}
-  </span>
+  <span>${(pricing?.laborCharge ?? 0).toFixed(2)}</span>
 </div>
 
 
