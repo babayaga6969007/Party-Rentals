@@ -64,10 +64,13 @@ router.put(
 
 // Delete product
 router.delete("/admin/delete/:id", authAdmin, productController.deleteProduct);
-
+router.put(
+  "/admin/toggle-publish/:id",
+  authAdmin,
+  productController.togglePublish
+);
 // ============ PUBLIC ROUTES ============
 
 router.get("/", productController.getProducts);
 router.get("/:id", productController.getSingleProduct);
-
 module.exports = router;

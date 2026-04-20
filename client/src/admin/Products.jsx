@@ -23,7 +23,7 @@ const Products = () => {
 
   const loadProducts = async () => {
     try {
-      const res = await api("/products?limit=1000");
+      const res = await api("/products?limit=1000&admin=true");
       setItems(res.products || []);
     } catch (err) {
       console.error(err);
@@ -123,6 +123,25 @@ const getAdminProductPrice = (product) => {
   const handleDeleteClick = (id) => {
     setDeleteConfirm({ isOpen: true, productId: id });
   };
+  const handleTogglePublish = async (id) => {
+  try {
+    const token = localStorage.getItem("admin_token");
+
+    await api(`/products/admin/toggle-publish/${id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    toast.success("Status updated");
+
+    loadProducts(); // refresh list
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to update status");
+  }
+};
 
   const handleDeleteConfirm = async () => {
     const productId = deleteConfirm.productId;
@@ -236,21 +255,51 @@ const getAdminProductPrice = (product) => {
             </p>
 
             {/* ACTIONS */}
-            <div className="mt-3 flex justify-between">
-              <a
-                href={`/admin/products/edit/${p._id}`}
-                className="text-blue-600"
-              >
-                Edit
-              </a>
+          <div className="mt-3 flex justify-between items-center">
 
-              <button
-                className="text-red-500"
-                onClick={() => handleDeleteClick(p._id)}
-              >
-                Delete
-              </button>
-            </div>
+  {/* EDIT */}
+  <a
+    href={`/admin/products/edit/${p._id}`}
+    className="text-blue-600"
+  >
+    Edit
+  </a>
+
+  {/* TOGGLE */}
+  <label className="flex items-center gap-2 cursor-pointer">
+    <span className="text-xs">
+      {p.isPublished ? "Published" : "Unpublished"}
+    </span>
+
+    <input
+      type="checkbox"
+      checked={p.isPublished}
+      onChange={() => handleTogglePublish(p._id)}
+      className="hidden"
+    />
+
+    <div
+      className={`w-10 h-5 flex items-center rounded-full p-1 transition ${
+        p.isPublished ? "bg-green-500" : "bg-gray-400"
+      }`}
+    >
+      <div
+        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition ${
+          p.isPublished ? "translate-x-5" : ""
+        }`}
+      />
+    </div>
+  </label>
+
+  {/* DELETE */}
+  <button
+    className="text-red-500"
+    onClick={() => handleDeleteClick(p._id)}
+  >
+    Delete
+  </button>
+
+</div>
           </div>
         ))}
       </div>

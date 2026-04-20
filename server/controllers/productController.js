@@ -634,6 +634,9 @@ exports.getSingleProduct = async (req, res) => {
       .lean();
 
     if (!product) {
+      if (!product.isPublished) {
+  return res.status(404).json({ message: "Product not found" });
+}
       return res.status(404).json({ message: "Product not found" });
     }
 
@@ -749,8 +752,12 @@ exports.getProducts = async (req, res) => {
     limit = 20,
   } = req.query;
 
-  let query = {};
+let query = {};
 
+// Only filter for customers
+if (!req.query.admin) {
+  query.isPublished = true;
+}
   // Search
   if (search) {
     query.title = { $regex: search, $options: "i" };
@@ -824,6 +831,31 @@ if (minPrice || maxPrice) {
       products,
     });
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+// ----------------------------------------------
+// Toggle Publish Status (Admin)
+// ----------------------------------------------
+exports.togglePublish = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    //  TOGGLE
+    product.isPublished = !product.isPublished;
+
+    await product.save();
+
+    res.json({
+      message: "Publish status updated",
+      isPublished: product.isPublished,
+    });
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ message: error.message });
   }
 };

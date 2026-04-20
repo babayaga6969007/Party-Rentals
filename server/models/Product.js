@@ -303,7 +303,10 @@ featuredAt: {
   type: Date,
   default: null,
 },
-
+isPublished: {
+  type: Boolean,
+  default: true,
+},
     /* Custom title (e.g. telephone booth) — when true, client can enter title text */
     allowCustomTitle: {
       type: Boolean,
