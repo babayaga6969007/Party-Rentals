@@ -1,11 +1,10 @@
-/** Bottom-right corner resize: small scale icon + large hit area. */
+/** Bottom-right corner resize — handle centered on the bbox corner (editor-style). */
 export default function SignageTextResizeHandle({ onMouseDown, onTouchStart, scale = 1 }) {
   const s = Math.min(Math.max(scale, 0.75), 2.5);
-  const nudgePx = Math.round(6 * s);
-  /** Visual only — compact scale glyph */
-  const dot = Math.max(20, Math.round(18 * Math.min(s, 1.08)));
-  const iconPx = Math.max(8, Math.round(8 * Math.min(s, 1.02)));
-  const hit = Math.max(dot + 20, 44);
+  /** Compact corner control */
+  const dot = Math.max(12, Math.round(11 * Math.min(s, 1.05)));
+  const iconPx = Math.max(5, Math.round(5 * Math.min(s, 1.02)));
+  const hit = Math.max(dot + 8, 28);
 
   return (
     <div
@@ -20,20 +19,22 @@ export default function SignageTextResizeHandle({ onMouseDown, onTouchStart, sca
         e.stopPropagation();
         onTouchStart?.(e);
       }}
-      className="absolute right-0 bottom-0 touch-none flex items-center justify-center bg-transparent"
+      className="absolute touch-none flex items-center justify-center bg-transparent"
       style={{
         pointerEvents: "auto",
         cursor: "nwse-resize",
         width: hit,
         height: hit,
         zIndex: 40,
-        transform: `translate(calc(42% + ${nudgePx}px), calc(42% + ${nudgePx}px))`,
+        right: 0,
+        bottom: 0,
+        transform: "translate(50%, 50%)",
       }}
       title="Drag to scale text"
       aria-label="Resize text"
     >
       <span
-        className="flex shrink-0 items-center justify-center rounded-full bg-neutral-900 ring-2 ring-white/95 shadow-md"
+        className="flex shrink-0 items-center justify-center rounded-full bg-neutral-900 ring-1 ring-white/90 shadow-sm"
         style={{ width: dot, height: dot }}
         aria-hidden
       >
@@ -41,7 +42,7 @@ export default function SignageTextResizeHandle({ onMouseDown, onTouchStart, sca
           viewBox="0 0 24 24"
           fill="none"
           stroke="white"
-          strokeWidth="2.4"
+          strokeWidth="2.2"
           strokeLinecap="round"
           strokeLinejoin="round"
           style={{ width: iconPx, height: iconPx }}

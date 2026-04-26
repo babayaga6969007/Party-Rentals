@@ -11,6 +11,7 @@ import {
   clampTextCenterInBoard,
   computeTextDragClampDimensionsPx,
   shrinkSignageResizeToDragClamp,
+  signageResizeClampTopLeft,
   DEFAULT_SIGNAGE_FONT,
   signageResizeBoxWithAspect,
   SIGNAGE_RESIZE_MIN_CANVAS_PX,
@@ -396,8 +397,9 @@ const SignageEditorContent = () => {
         contentMinW,
         contentMinH,
       });
-      const centerX = anchorX + clampedW / 2;
-      const centerY = anchorY + clampedH / 2;
+      const { tlX, tlY } = signageResizeClampTopLeft(anchorX, anchorY, clampedW, clampedH, b);
+      const centerX = tlX + clampedW / 2;
+      const centerY = tlY + clampedH / 2;
       const drag = computeTextDragClampDimensionsPx(
         clampedW,
         clampedH,
@@ -633,20 +635,12 @@ const SignageEditorContent = () => {
     };
   }, []);
 
-  const MIN_SIGNAGE_ORDER = 95; // Minimum $95 per acrylic or vinyl order
-
   // Add to cart (saves signage metadata directly in cart, no separate entity)
   const handleAddToCart = async () => {
     try {
       const texts = getTextsFromContent();
       if (texts.length === 0) {
         toast.error("Please enter some text");
-        return;
-      }
-
-      const price = currentPrice ?? product?.pricePerDay ?? 0;
-      if (price < MIN_SIGNAGE_ORDER) {
-        toast.error(`Minimum $${MIN_SIGNAGE_ORDER} per acrylic or vinyl order. Current total: $${Number(price).toFixed(2)}`);
         return;
       }
 
@@ -884,7 +878,6 @@ const SignageEditorContent = () => {
                   <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
                     <li>All Acrylic comes in 1/8&quot; thickness.</li>
                     <li>All sign and vinyl orders have a 7 day lead time.</li>
-                    <li>Minimum $95 per acrylic or vinyl order.</li>
                     <li>All acrylic and vinyl sign orders must be picked up at our location in Anaheim.</li>
                     <li>Any acrylic sign or vinyl orders added to current rental orders will be delivered with rental items.</li>
                     <li>

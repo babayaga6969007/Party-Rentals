@@ -53,11 +53,45 @@ export function measureSignageTextWithOpenType(font, text, fontSizePx, opts = {}
 
   const upm = font.unitsPerEm || 1000;
   const emH = ((font.ascender - font.descender) / upm) * size;
+  /** Prefer glyph ink height so auto-sized boxes match visible type (em×lineHeight is much looser). */
   const height =
-    inkH > 0.5 ? Math.max(inkH, emH * lineHeightFactor) : emH * lineHeightFactor;
+    inkH > 0.5 ? inkH : emH * lineHeightFactor;
 
   return {
     width: Math.max(width, inkW),
     height,
   };
+}
+
+/**
+ * One-line line-box height in **user units (same as fontSize)**, like Illustrator’s typographic
+ * bounds: prefer OS/2 sTypo ascender/descender, else hhea ascender/descender.
+ * See Illustrator “Character” / first-line em box, not sub-pixel DOM layout.
+ */
+export function getTypographicLineHeightPx(font, fontSizePx) {
+  const s = Number(fontSizePx) || 0;
+  if (!s || !font) return 0;
+  const upem = font.unitsPerEm || 1000;
+  const os2 = font.tables?.os2;
+  let asc = font.ascender;
+  let desc = font.descender;
+  if (os2?.sTypoAscender != null && os2?.sTypoDescender != null) {
+    asc = os2.sTypoAscender;
+    desc = os2.sTypoDescender;
+  }
+  return ((asc - desc) / upem) * s;
+}
+
+/**
+ * Illustrator-style type metrics: horizontal advance + typographic line height (no lineHeight CSS fudge).
+ * All values are in the same “canvas logical px” space as `fontSizePx`.
+ */
+export function measureSignageTypographicCanvasPx(font, text, fontSizePx) {
+  const size = Number(fontSizePx) || 0;
+  if (!text || !font || size <= 0) {
+    return { widthPx: 0, heightPx: 0 };
+  }
+  const widthPx = font.getAdvanceWidth(text, size);
+  const heightPx = getTypographicLineHeightPx(font, size);
+  return { widthPx, heightPx };
 }

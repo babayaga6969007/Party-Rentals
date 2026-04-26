@@ -4,6 +4,7 @@ import {
   textBoxHeightPxForAspectWidthPx,
   signageTextHeightInchesForWidthInches,
   SIGNAGE_TEXT_ASPECT_H_PER_W,
+  signageTextPrintableWidthPx,
 } from "../../context/SignageContext";
 
 /** DOM measure width → canvas px width (divide by preview CSS scale). */
@@ -27,33 +28,55 @@ export function boardAspectK(boardWidthPx, boardHeightPx) {
 
 /**
  * Clamp measured text width into max board box; returns canvas px width and height.
+ *
+ * @param {number | null | undefined} contentHeightPx — when set (canvas px, same space as
+ *   `tightW`), height follows measured line / ink instead of the 90×26 aspect-from-width
+ *   rule, so auto-sized boxes are not taller than the type.
  */
-export function computeClampedTextBoxSizePx(tightW, boardWidthPx, boardHeightPx) {
+export function computeClampedTextBoxSizePx(
+  tightW,
+  boardWidthPx,
+  boardHeightPx,
+  contentHeightPx
+) {
   const bw = Math.max(1, boardWidthPx || 1);
   const bh = Math.max(1, boardHeightPx || 1);
-  const maxWpx = bw;
+  const maxWpx = Math.max(1, Math.floor(signageTextPrintableWidthPx(bw)));
   const maxHpx = bh;
   const k = boardAspectK(boardWidthPx, boardHeightPx);
   let cap = 1;
   if (tightW > maxWpx) cap = Math.min(cap, maxWpx / tightW);
   let newW = Math.max(1, Math.ceil(tightW * cap));
-  let newH = Math.max(1, Math.ceil(textBoxHeightPxForAspectWidthPx(newW, bw, bh)));
-  if (newH > maxHpx) {
+  const useContentH =
+    contentHeightPx != null && Number.isFinite(contentHeightPx) && contentHeightPx > 0;
+  const aspectHeight = (w) =>
+    Math.max(1, Math.ceil(textBoxHeightPxForAspectWidthPx(w, bw, bh)));
+  let newH = useContentH
+    ? Math.max(1, Math.min(maxHpx, Math.ceil(contentHeightPx)))
+    : aspectHeight(newW);
+
+  if (!useContentH && newH > maxHpx) {
     newH = maxHpx;
     newW = Math.max(1, Math.ceil(k > 0 ? newH / k : newW));
+  } else if (useContentH && newH > maxHpx) {
+    newH = maxHpx;
   }
   if (newW > maxWpx) {
     newW = maxWpx;
-    newH = Math.max(1, Math.ceil(textBoxHeightPxForAspectWidthPx(newW, bw, bh)));
-    if (newH > maxHpx) {
+    newH = useContentH
+      ? Math.max(1, Math.min(maxHpx, Math.ceil(contentHeightPx)))
+      : aspectHeight(newW);
+    if (!useContentH && newH > maxHpx) {
       newH = maxHpx;
       newW = Math.max(1, Math.ceil(k > 0 ? newH / k : newW));
     }
   }
   if (maxWpx > 0 && newW >= maxWpx - 1.5) {
     newW = maxWpx;
-    newH = Math.max(1, Math.ceil(textBoxHeightPxForAspectWidthPx(newW, bw, bh)));
-    if (newH > maxHpx) {
+    newH = useContentH
+      ? Math.max(1, Math.min(maxHpx, Math.ceil(contentHeightPx)))
+      : aspectHeight(newW);
+    if (!useContentH && newH > maxHpx) {
       newH = maxHpx;
       newW = Math.max(1, Math.ceil(k > 0 ? newH / k : newW));
     }
@@ -63,9 +86,11 @@ export function computeClampedTextBoxSizePx(tightW, boardWidthPx, boardHeightPx)
 
 /** Physical width (in) for the text box from canvas px width vs painted board width. */
 export function computeBoxWidthInches(textBoxWidthCanvasPx, boardClampWidthPx) {
-  const boundaryW = boardClampWidthPx > 0 ? boardClampWidthPx : null;
-  if (boundaryW == null) return null;
-  return textBoxWidthPxToInches(textBoxWidthCanvasPx, boundaryW);
+  if (!(boardClampWidthPx > 0)) return null;
+  return textBoxWidthPxToInches(
+    textBoxWidthCanvasPx,
+    signageTextPrintableWidthPx(boardClampWidthPx)
+  );
 }
 
 /** Physical height (in) from box width using signage aspect rule. */
@@ -113,7 +138,7 @@ export function computeGlyphExtentInchesFromVisibleRect(
   const hCanvas = visibleHeightCssPx / previewScale;
   const wIn =
     visibleWidthCssPx > 0 && boardClampWidthPx > 0
-      ? textBoxWidthPxToInches(wCanvas, boardClampWidthPx)
+      ? textBoxWidthPxToInches(wCanvas, signageTextPrintableWidthPx(boardClampWidthPx))
       : null;
   const hIn =
     visibleHeightCssPx > 0 && boardClampHeightPx > 0
@@ -123,15 +148,45 @@ export function computeGlyphExtentInchesFromVisibleRect(
 }
 
 /**
- * Dimension-line labels: use the logical print box (what you resize / buy). Glyph-only extents
- * can sit below that width (short string in a wide box) or mis-measure and confuse “max width.”
+ * Map typographic width/height (canvas px, same space as board) to physical inches on the sign.
+ * Matches a fixed artboard: full board width/height in px ↔ boundary inches (8′ × 8′).
+ */
+export function typographicCanvasPxToInches(
+  widthCanvasPx,
+  heightCanvasPx,
+  boardClampWidthPx,
+  boardClampHeightPx
+) {
+  const wIn = textBoxWidthPxToInches(
+    widthCanvasPx,
+    signageTextPrintableWidthPx(boardClampWidthPx)
+  );
+  const hIn = textBoxHeightPxToInches(heightCanvasPx, boardClampHeightPx);
+  return { widthIn: wIn, heightIn: hIn };
+}
+
+/**
+ * Dimension lines: prefer Illustrator-style OpenType advance + sTypo line height when present;
+ * else logical print box; else glyph / aspect fallbacks.
  */
 export function computeDimensionLabelInches(
   textWidthInches,
   textHeightInches,
   boxWidthIn,
-  boxHeightIn
+  boxHeightIn,
+  typoWidthIn = null,
+  typoHeightIn = null
 ) {
+  if (
+    typoWidthIn != null &&
+    typoHeightIn != null &&
+    Number.isFinite(typoWidthIn) &&
+    Number.isFinite(typoHeightIn) &&
+    typoWidthIn > 0 &&
+    typoHeightIn > 0
+  ) {
+    return { labelWidthIn: typoWidthIn, labelHeightIn: typoHeightIn };
+  }
   const labelWidthIn =
     boxWidthIn != null && Number.isFinite(boxWidthIn) && boxWidthIn > 0
       ? boxWidthIn
@@ -148,5 +203,6 @@ export function computeDimensionLabelInches(
 }
 
 export function formatInchesLabel(v) {
-  return v != null ? `${Number(v).toFixed(2)} in` : "—";
+  if (v == null || !Number.isFinite(Number(v))) return "—";
+  return `${Math.round(Number(v))} in`;
 }
