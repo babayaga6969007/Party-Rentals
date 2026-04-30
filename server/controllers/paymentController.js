@@ -56,7 +56,7 @@ const amount = calculateOrderAmount({
   paymentMode,
   shippingCost,
 });
-f
+
     const paymentIntent = await stripe.paymentIntents.create({
   amount,
   currency: "usd",
@@ -65,8 +65,7 @@ f
   orderId: orderId || "temp_order",
   source: "checkout",
   paymentMode: paymentMode || "FULL",
-  itemsCount: items.length.toString(),
-  hasShipping: shippingCost ? "yes" : "no",
+itemsCount: Array.isArray(items) ? items.length.toString() : "0",  hasShipping: shippingCost ? "yes" : "no",
 }
 });
 
