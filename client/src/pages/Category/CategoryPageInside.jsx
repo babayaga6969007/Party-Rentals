@@ -616,10 +616,17 @@ const currentCategory = categories.find(
           {/* ====================== */}
 
          <main>
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
 
-   {filteredProducts.map((product) => (
-  <a key={product._id} href={`/product/${product._id}`}
+  {filteredProducts.length === 0 ? (
+   <div className="col-span-full text-left text-gray-500 text-lg py-10">
+  No products in this category yet.
+</div>
+  ) : (
+    filteredProducts.map((product) => (
+      <a
+        key={product._id}
+        href={`/product/${product._id}`}
         className="
           block border border-gray-300 hover:border-gray-500
           rounded-xl shadow 
@@ -627,78 +634,66 @@ const currentCategory = categories.find(
           group hover:shadow-lg hover:scale-[1.02]
         "
       >
-
-        {/* IMAGE — NOW FULL WIDTH, NO PADDING */}
+        {/* IMAGE */}
         <div className="h-48 rounded-t-xl overflow-hidden">
           <img
-  src={getProductCardImage(product)}
-  alt={product.title}
-  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-/>
-
-
+            src={getProductCardImage(product)}
+            alt={product.title}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
         </div>
 
         {/* CONTENT */}
         <div className="p-5">
-
-          {/* NAME */}
           <h3 className="font-bold text-lg text-[#2D2926]">
             {product.title}
           </h3>
 
-          {/* PRICE SECTION */}
-          {/* PRICE SECTION */}
-{(() => {
-  const { price, salePrice } = getProductCardPrice(product);
+          {(() => {
+            const { price, salePrice } = getProductCardPrice(product);
 
-  return (
-    <div className="mt-1 flex items-center gap-2">
-      {salePrice && Number(salePrice) < Number(price) ? (
-        <>
-          <span className="text-gray-500 line-through text-sm">
-            $ {price} / day
-          </span>
-          <span className="text-red-600 font-bold text-lg">
-            $ {salePrice} / day
-          </span>
-        </>
-      ) : (
-        <span className="text-black font-semibold text-lg">
-          $ {price} / day
-        </span>
-      )}
-    </div>
-  );
-})()}
+            return (
+              <div className="mt-1 flex items-center gap-2">
+                {salePrice && Number(salePrice) < Number(price) ? (
+                  <>
+                    <span className="text-gray-500 line-through text-sm">
+                      $ {price} / day
+                    </span>
+                    <span className="text-red-600 font-bold text-lg">
+                      $ {salePrice} / day
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-black font-semibold text-lg">
+                    $ {price} / day
+                  </span>
+                )}
+              </div>
+            );
+          })()}
 
-
-
-          {/* CATEGORY */}
           <p className="text-sm text-gray-600 mt-1">
-  Category: {
-    categories.find(
-      (c) => String(c._id) === String(product.category)
-    )?.name || "—"
-  }
-</p>
+            Category: {
+              categories.find(
+                (c) => String(c._id) === String(product.category)
+              )?.name || "—"
+            }
+          </p>
 
-
-          {/* BUTTON */}
-<div className="mt-4 
-     opacity-100 md:opacity-0 
-     md:group-hover:opacity-100 
-     transition-opacity duration-300">
+          <div className="mt-4 
+            opacity-100 md:opacity-0 
+            md:group-hover:opacity-100 
+            transition-opacity duration-300">
             <button className="w-full bg-black text-white px-6 py-2 rounded-lg text-sm shadow-md hover:bg-[#222222] transition">
               Rent Now
             </button>
           </div>
-
         </div>
       </a>
-    ))}
+    ))
+  )}
 
-  </div>
+</div>
 </main>
 
         </div>
