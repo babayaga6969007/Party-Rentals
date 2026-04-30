@@ -13,7 +13,7 @@ const NavbarTransparent = () => {
   "/gallery": "Visual Showcase",
   "/about": "About",
   "/contact": "Contact",
-  "/faqs": "FAQs",
+ // "/faqs": "FAQs",
   "/shop": "Shop",
   "/cart": "Your Cart",
 };
@@ -100,7 +100,7 @@ className={`h-14 md:h-20 transition-all duration-300 ${
             { to: "/gallery", label: "Visual Showcase" },
             { to: "/about", label: "About" },
             { to: "/contact", label: "Contact" },
-            { to: "/faqs", label: "FAQs" },
+           // { to: "/faqs", label: "FAQs" },
             { to: "/shop", label: "Shop" },
           ].map((item) => (
 <NavLink
@@ -206,7 +206,7 @@ className={`h-14 md:h-20 transition-all duration-300 ${
         { to: "/shop", label: "Shop" },
         { to: "/about", label: "About" },
         { to: "/contact", label: "Contact" },
-        { to: "/faqs", label: "FAQs" },
+        // { to: "/faqs", label: "FAQs" },
         { to: "/cart", label: "Cart" },
       ].map((item) => (
         <NavLink

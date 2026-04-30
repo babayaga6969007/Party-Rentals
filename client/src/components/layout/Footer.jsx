@@ -70,14 +70,7 @@ const Footer = () => {
     </Link>
   </li>
 
-  <li>
-    <Link
-      to="/faqs"
-      className="hover:text-black cursor-pointer block"
-    >
-      FAQs
-    </Link>
-  </li>
+
 
   <li>
     <Link

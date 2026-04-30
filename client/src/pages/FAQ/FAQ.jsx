@@ -142,8 +142,8 @@ const FAQ = () => {
   const [openIndex, setOpenIndex] = useState(null);
 
   return (
-    <div className="page-wrapper min-h-screen bg-white px-4 py-16">
-      <h1 className="text-4xl text-center font-semibold mb-4 text-[#2D2926]"
+<div className="page-wrapper bg-white px-4 py-16">
+        <h1 className="text-4xl text-center font-semibold mb-4 text-[#2D2926]"
         style={{ fontFamily: '"Cormorant Garamond", serif' }}>
         Frequently Asked Questions
       </h1>

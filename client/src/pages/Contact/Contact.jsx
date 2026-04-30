@@ -1,4 +1,5 @@
 import { FiMail, FiMapPin } from "react-icons/fi";
+import FAQ from "../FAQ/FAQ";
 import emailjs from "@emailjs/browser";
 import { useRef, useState } from "react";
 import { useContactFormModal } from "../../context/ContactFormModalContext";
@@ -303,7 +304,10 @@ Suite A                <br />
           ></iframe>
         </div>
       </div>
-
+{/* FAQ SECTION */}
+<div className="mt-24">
+  <FAQ />
+</div>
     </section>
   );
 };
