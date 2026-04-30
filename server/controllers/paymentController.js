@@ -56,16 +56,18 @@ const amount = calculateOrderAmount({
   paymentMode,
   shippingCost,
 });
-
+f
     const paymentIntent = await stripe.paymentIntents.create({
   amount,
   currency: "usd",
   automatic_payment_methods: { enabled: true },
-  metadata: {
-    orderId: orderId,              // ⭐ CRITICAL
-    source: "checkout",
-    paymentMode: paymentMode || "FULL",
-  },
+ metadata: {
+  orderId: orderId || "temp_order",
+  source: "checkout",
+  paymentMode: paymentMode || "FULL",
+  itemsCount: items.length.toString(),
+  hasShipping: shippingCost ? "yes" : "no",
+}
 });
 
 

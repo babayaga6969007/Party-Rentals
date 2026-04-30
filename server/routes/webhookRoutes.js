@@ -22,13 +22,22 @@ router.post(
     }
 
     //  HANDLE SUCCESSFUL PAYMENT
-    if (event.type === "payment_intent.succeeded") {
-      const paymentIntent = event.data.object;
+    const Order = require("../models/Order");
 
-      console.log("💰 PaymentIntent succeeded:", paymentIntent.id);
+if (event.type === "payment_intent.succeeded") {
+  const paymentIntent = event.data.object;
 
-      
-    }
+  console.log("PaymentIntent succeeded:", paymentIntent.id);
+
+  // SAFETY: ensure order exists
+  const existingOrder = await Order.findOne({
+    "stripePayment.paymentIntentId": paymentIntent.id,
+  });
+
+  if (!existingOrder) {
+    console.warn(" Payment succeeded but order not found:", paymentIntent.id);
+  }
+}
 
     res.json({ received: true });
   }
