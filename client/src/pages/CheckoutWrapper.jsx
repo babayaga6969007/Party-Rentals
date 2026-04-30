@@ -2,6 +2,7 @@ import { Elements } from "@stripe/react-stripe-js";
 import { stripePromise } from "../stripe";
 import CheckoutPage from "./CheckoutPage";
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { api } from "../utils/api";
 
@@ -10,6 +11,7 @@ export default function CheckoutWrapper() {
   const { cartItems } = useCart();
   const [clientSecret, setClientSecret] = useState("");
   const [paymentMode, setPaymentMode] = useState("FULL"); 
+  const location = useLocation();
 // FULL = 100% payment
 // PARTIAL = 60% upfront payment
 
@@ -24,14 +26,15 @@ useEffect(() => {
       const data = await api("/payments/create-payment-intent", {
         method: "POST",
         body: JSON.stringify({
-          items: cartItems.map((i) => ({
-            productId: i.productId,
-            qty: i.qty,
-            lineTotal: i.lineTotal,
-          })),
-          extraFees: 0,
-          paymentMode, // 👈 FULL or PARTIAL
-        }),
+  items: cartItems.map((i) => ({
+    productId: i.productId,
+    qty: i.qty,
+    lineTotal: i.lineTotal,
+  })),
+  extraFees: 0,
+  paymentMode,
+  shippingCost: Number(location?.state?.pricing?.shipping || 0),
+}),
       });
 
       setClientSecret(data.clientSecret);
@@ -41,8 +44,7 @@ useEffect(() => {
   };
 
   init();
-}, [cartItems, paymentMode]);
-
+}, [cartItems, paymentMode, location?.state?.pricing?.shipping]);
 
 
   if (!clientSecret) {

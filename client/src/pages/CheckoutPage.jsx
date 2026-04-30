@@ -38,7 +38,7 @@ const addDays = (dateStr, days) => {
 export default function CheckoutPage({ paymentMode, setPaymentMode }) {
   const location = useLocation();
   const appliedCoupon = location.state?.coupon || null;
-
+  const shippingCost = Number(location.state?.pricing?.shipping || 0);
   const navigate = useNavigate();
   const stripe = useStripe();
   const elements = useElements();
@@ -56,19 +56,12 @@ export default function CheckoutPage({ paymentMode, setPaymentMode }) {
   const [paymentError, setPaymentError] = useState("");
 
 
-  // ✅ Delivery & Pickup state (MUST be declared before using stairsFee/setupFee)
+  //  Delivery & Pickup state (MUST be declared before using stairsFee/setupFee)
   const [deliveryDate, setDeliveryDate] = useState("");
   const [pickupDate, setPickupDate] = useState("");
-// 🔒 Ensure pickup date is always at least 2 days after delivery
+// Ensure pickup date is always at least 2 days after delivery
 useEffect(() => {
   if (!deliveryDate) {
-    setPickupDate("");
-    return;
-  }
-
-  const minPickup = addDays(deliveryDate, 2);
-
-  if (!pickupDate || pickupDate < minPickup) {
     setPickupDate("");
   }
 }, [deliveryDate]);
@@ -99,39 +92,39 @@ const pricing = useMemo(() => {
 
     const subtotal = Number(p.subtotal || 0);
 
-    // 1️⃣ Tax
-    const tax = subtotal * 0.0975;
+//
+const baseAmount = subtotal + shippingCost;
 
-    // 2️⃣ Subtotal after tax
-    const subtotalWithTax = subtotal + tax;
+// TAX on subtotal + shipping
+const tax = baseAmount * 0.0975;
 
-    // 3️⃣ Labor charge on taxed subtotal
-    const laborCharge = subtotalWithTax * 0.14;
+const subtotalWithTax = baseAmount + tax;
 
-    // 4️⃣ Total (before extra fees)
-    const total = subtotalWithTax + laborCharge;
+const laborCharge = subtotalWithTax * 0.14;
 
-    return { subtotal, tax, subtotalWithTax, laborCharge, total };
+const total = subtotalWithTax + laborCharge;
+
+return { subtotal, shippingCost, tax, subtotalWithTax, laborCharge, total };
   }
 
   const subtotal = items.reduce(
-    (sum, item) => sum + Number(item.lineTotal || 0),
-    0
-  );
+  (sum, item) => sum + Number(item.lineTotal || 0),
+  0
+);
 
-  // 1️⃣ Tax
-  const tax = subtotal * 0.0975;
 
-  // 2️⃣ Subtotal after tax
-  const subtotalWithTax = subtotal + tax;
+const baseAmount = subtotal + shippingCost;
 
-  // 3️⃣ Labor charge on taxed subtotal
-  const laborCharge = subtotalWithTax * 0.14;
+// TAX on subtotal + shipping
+const tax = baseAmount * 0.0975;
 
-  // 4️⃣ Total (before extra fees)
-  const total = subtotalWithTax + laborCharge;
+const subtotalWithTax = baseAmount + tax;
 
-  return { subtotal, tax, subtotalWithTax, laborCharge, total };
+const laborCharge = subtotalWithTax * 0.14;
+
+const total = subtotalWithTax + laborCharge;
+
+return { subtotal, shippingCost, tax, subtotalWithTax, laborCharge, total };
 
 }, [location.state?.pricing, items]);
 
@@ -443,7 +436,7 @@ if (!agreeToTerms) {
                 <label className="block text-gray-500 mb-1">Pickup Date</label>
                 <input
   type="date"
-  min={deliveryDate ? addDays(deliveryDate, 2) : ""}
+  min={deliveryDate || ""}
   value={pickupDate}
   onChange={(e) => setPickupDate(e.target.value)}
   disabled={!deliveryDate}
@@ -562,7 +555,12 @@ if (!agreeToTerms) {
     ${pricing.subtotal.toFixed(2)}
   </span>
 </div>
-
+<div className="flex justify-between">
+  <span className="text-gray-500">Delivery</span>
+  <span className="font-medium">
+    ${pricing.shippingCost.toFixed(2)}
+  </span>
+</div>
 <div className="flex justify-between">
   <span className="text-gray-500">Tax (9.75%)</span>
   <span className="font-medium">
