@@ -32,18 +32,17 @@ const Partners = () => {
   return (
     <div className="py-14 bg-white overflow-hidden">
       {/* TEXT SECTION */}
-     <p
+    <p
   className="
     max-w-3xl
     mx-auto
     text-center
-    text-[22px] md:text-[32px]
-    text-[#2D2926]
+    text-[22px] md:text-[28px]
+    text-[#2D2926]/80
     px-4 md:px-0
     mb-8 md:mb-12
     leading-relaxed
   "
-  style={{ fontFamily: '"Cormorant Garamond", serif' }}
 >
   You shouldn't have to compromise the unique style of your event – with our
   customizable rentals and tailored fabrications, you won't.

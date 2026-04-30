@@ -55,18 +55,15 @@ const Gallery = () => {
         {/* Single Visual Showcase — signage + vinyl wraps in one grid */}
         <section className="mb-32">
           <div className="text-center mb-20">
-            <h2
-              className="text-3xl md:text-4xl font-semibold text-[#2D2926] mb-4"
-              style={{ fontFamily: '"Cormorant Garamond", serif' }}
-            >
-              Visual Showcase
-            </h2>
-            <p
-              className="text-[#2D2926]/80 text-xl max-w-2xl mx-auto leading-relaxed"
-              style={{ fontFamily: '"Cormorant Garamond", serif' }}
-            >
-              Immersive event builds that turn spaces into experiences. From concept to installation, we create event environments that make an impact.
-            </p>
+            <h1
+  className="text-4xl md:text-5xl font-semibold text-[#2D2926]"
+  style={{ fontFamily: '"Cormorant Garamond", serif' }}
+>
+  Visual Showcase
+</h1>
+            <p className="text-[#2D2926]/80 leading-relaxed mb-4 max-w-2xl mx-auto">
+  Immersive event builds that turn spaces into experiences. From concept to installation, we create event environments that make an impact.
+</p>
           </div>
 
           <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">

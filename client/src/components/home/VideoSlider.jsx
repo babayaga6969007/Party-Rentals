@@ -86,10 +86,10 @@ const handleTouchEnd = (e) => {
           style={{ fontFamily: '"Cormorant Garamond", serif' }}>
           Event Stories – Real Moments. Real Celebrations.
         </h2>
-        <p className="text-[#2D2926]/80 mt-2 max-w-2xl mx-auto">
-          Explore real event setups, decoration ideas, and customer moments from
-          our Party Rentals community.
-        </p>
+        <p className="text-[#2D2926]/80 leading-relaxed mb-4 max-w-2xl mx-auto">
+  Explore real event setups, decoration ideas, and customer moments from
+  our Party Rentals community.
+</p>
       </div>
 
       {/* Arrows outside slider: [left arrow] [slider] [right arrow] */}

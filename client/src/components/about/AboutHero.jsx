@@ -7,14 +7,15 @@ const AboutHero = () => {
       
       {/* Heading */}
       <div className="page-wrapper text-center mb-14">
-        <h2
-          className="text-4xl font-semibold text-[#2D2926]"
-          style={{ fontFamily: '"Cormorant Garamond", serif' }}
-        >
-          What We Do
-        </h2>
-        <p className="text-gray-600 mt-2 text-lg">
-Custom builds. Creative installs. One event at a time        </p>
+        <h1
+  className="text-4xl md:text-5xl font-semibold text-[#2D2926]"
+  style={{ fontFamily: '"Cormorant Garamond", serif' }}
+>
+  What We Do
+</h1>
+        <p className="text-[#2D2926]/80 leading-relaxed mb-4">
+  Custom builds. Creative installs. One event at a time
+</p>
       </div>
 
     </section>

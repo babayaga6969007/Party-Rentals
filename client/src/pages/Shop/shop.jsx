@@ -46,12 +46,9 @@ const ShopPage = () => {
           One Stop Shop
         </h1>
 
-        <p
-          className="text-[#2D2926]/80 text-[18px] mt-4 leading-relaxed max-w-2xl mx-auto"
-          style={{ fontFamily: '"Cormorant Garamond", serif' }}
-        >
-          Browse our collection and unique finds.
-        </p>
+       <p className="text-[#2D2926]/80 leading-relaxed mb-4 max-w-2xl mx-auto">
+  Browse our collection and unique finds.
+</p>
       </div>
 
       <div className="mx-auto max-w-7xl pb-16">

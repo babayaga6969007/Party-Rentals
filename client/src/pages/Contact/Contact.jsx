@@ -84,13 +84,10 @@ const safetyTimer = setTimeout(() => {
           Contact Us
         </h1>
 
-        <p
-          className="text-[#2D2926]/80 text-[18px] mt-4 leading-relaxed max-w-2xl mx-auto"
-          style={{ fontFamily: '"Cormorant Garamond", serif' }}
-        >
-          We’re here to help you create unforgettable events.  
-          Reach out for bookings, inquiries, or anything else you need.
-        </p>
+        <p className="text-[#2D2926]/80 leading-relaxed mb-4 max-w-2xl mx-auto">
+  We’re here to help you create unforgettable events.  
+  Reach out for bookings, inquiries, or anything else you need.
+</p>
       </div>
 
       {/* Contact Info + Form */}

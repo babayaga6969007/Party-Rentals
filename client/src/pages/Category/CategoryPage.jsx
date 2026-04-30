@@ -91,21 +91,18 @@ return (
     {/* PAGE HEADING */}
     {/* ========================= */}
     <div className="max-w-5xl mx-auto text-center mb-16">
-      <h1
-        className="text-5xl md:text-6xl font-semibold text-[#2D2926] tracking-tight"
-        style={{ fontFamily: '"Cormorant Garamond", serif' }}
-      >
-        Browse Our Collection
-      </h1>
+     <h1
+  className="text-4xl md:text-5xl font-semibold text-[#2D2926]"
+  style={{ fontFamily: '"Cormorant Garamond", serif' }}
+>
+  Browse Our Collection
+</h1>
 
       <div className="w-20 h-[2px] bg-[#2D2926] mx-auto mt-6 mb-6 opacity-40" />
 
-      <p
-        className="text-[#2D2926]/70 text-lg leading-relaxed max-w-2xl mx-auto"
-        style={{ fontFamily: '"Cormorant Garamond", serif' }}
-      >
-        Explore our curated rental categories and discover the perfect pieces for your event.
-      </p>
+      <p className="text-[#2D2926]/80 leading-relaxed mb-4 max-w-2xl mx-auto">
+  Explore our curated rental categories and discover the perfect pieces for your event.
+</p>
     </div>
 {/* SEARCH SECTION */}
 <div className="max-w-xl mx-auto mb-14 relative">
