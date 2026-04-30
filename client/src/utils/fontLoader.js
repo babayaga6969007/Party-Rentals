@@ -3,7 +3,7 @@
  * Ensures fonts are loaded before canvas operations
  */
 
-const FONT_DEFINITIONS = [
+export const FONT_DEFINITIONS = [
   { name: 'BlackMango-Bold', url: '/fonts/BlackMango-Bold.otf', format: 'opentype' },
   { name: 'Bodoni 72 Smallcaps', url: '/fonts/Bodoni 72 Smallcaps Book.ttf', format: 'truetype' },
   { name: 'Bright', url: '/fonts/Bright TTF.ttf', format: 'truetype' },
@@ -13,6 +13,26 @@ const FONT_DEFINITIONS = [
   { name: 'SignPainter', url: '/fonts/SignPainter.ttc', format: 'truetype-collection' },
   { name: 'Sloop Script Three', url: '/fonts/Sloop-ScriptThree.ttf', format: 'truetype' },
 ];
+
+/** First font family name from a CSS `font-family` stack (e.g. `'BlackMango-Bold', sans-serif`). */
+export function extractPrimaryFontFamily(cssStack) {
+  if (!cssStack || typeof cssStack !== 'string') return null;
+  const part = cssStack.split(",")[0].trim();
+  const quoted = part.match(/^['"](.+)['"]$/);
+  return (quoted ? quoted[1] : part).trim() || null;
+}
+
+/**
+ * Public URL for a signage font file if OpenType.js can parse it (excludes .ttc).
+ * Returns a root-relative path such as `/fonts/....otf`.
+ */
+export function getSignageOpenTypeFontUrl(cssStack) {
+  const family = extractPrimaryFontFamily(cssStack);
+  if (!family) return null;
+  const def = FONT_DEFINITIONS.find((f) => f.name.toLowerCase() === family.toLowerCase());
+  if (!def || def.format === "truetype-collection") return null;
+  return def.url;
+}
 
 /**
  * Preload fonts using FontFace API (more reliable for production)

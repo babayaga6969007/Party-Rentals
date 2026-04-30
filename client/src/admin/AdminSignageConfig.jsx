@@ -9,8 +9,8 @@ const AdminSignageConfig = () => {
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [pricePerSqInchAcrylic, setPricePerSqInchAcrylic] = useState("");
-  const [pricePerSqInchVinyl, setPricePerSqInchVinyl] = useState("");
+  const [pricePerWidthInchAcrylic, setPricePerWidthInchAcrylic] = useState("");
+  const [pricePerWidthInchVinyl, setPricePerWidthInchVinyl] = useState("");
   const [savingPrice, setSavingPrice] = useState(false);
   const [printFilePrepFee, setPrintFilePrepFee] = useState("");
   const [savingPrepFee, setSavingPrepFee] = useState(false);
@@ -42,15 +42,15 @@ const AdminSignageConfig = () => {
 
       setConfig(res.config);
       setError("");
-      setPricePerSqInchAcrylic(
-        res.config.pricePerSqInchAcrylic != null && res.config.pricePerSqInchAcrylic !== ""
-          ? String(res.config.pricePerSqInchAcrylic)
-          : res.config.pricePerSqInch != null ? String(res.config.pricePerSqInch) : ""
+      setPricePerWidthInchAcrylic(
+        res.config.pricePerWidthInchAcrylic != null && res.config.pricePerWidthInchAcrylic !== ""
+          ? String(res.config.pricePerWidthInchAcrylic)
+          : ""
       );
-      setPricePerSqInchVinyl(
-        res.config.pricePerSqInchVinyl != null && res.config.pricePerSqInchVinyl !== ""
-          ? String(res.config.pricePerSqInchVinyl)
-          : res.config.pricePerSqInch != null ? String(res.config.pricePerSqInch) : ""
+      setPricePerWidthInchVinyl(
+        res.config.pricePerWidthInchVinyl != null && res.config.pricePerWidthInchVinyl !== ""
+          ? String(res.config.pricePerWidthInchVinyl)
+          : ""
       );
       setPrintFilePrepFee(
         res.config.printFilePrepFee != null && res.config.printFilePrepFee !== ""
@@ -85,9 +85,9 @@ const AdminSignageConfig = () => {
     fetchConfig();
   }, []);
 
-  const handleSavePricePerSqInch = async () => {
-    const acrylic = pricePerSqInchAcrylic === "" ? 0 : Number(pricePerSqInchAcrylic);
-    const vinyl = pricePerSqInchVinyl === "" ? 0 : Number(pricePerSqInchVinyl);
+  const handleSavePricePerWidthInch = async () => {
+    const acrylic = pricePerWidthInchAcrylic === "" ? 0 : Number(pricePerWidthInchAcrylic);
+    const vinyl = pricePerWidthInchVinyl === "" ? 0 : Number(pricePerWidthInchVinyl);
     if (acrylic < 0 || isNaN(acrylic) || vinyl < 0 || isNaN(vinyl)) {
       toast.error("Prices must be 0 or positive numbers");
       return;
@@ -102,13 +102,13 @@ const AdminSignageConfig = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          pricePerSqInchAcrylic: acrylic,
-          pricePerSqInchVinyl: vinyl,
+          pricePerWidthInchAcrylic: acrylic,
+          pricePerWidthInchVinyl: vinyl,
         }),
       });
       setConfig(res.config);
-      setPricePerSqInchAcrylic(acrylic === 0 ? "" : String(acrylic));
-      setPricePerSqInchVinyl(vinyl === 0 ? "" : String(vinyl));
+      setPricePerWidthInchAcrylic(acrylic === 0 ? "" : String(acrylic));
+      setPricePerWidthInchVinyl(vinyl === 0 ? "" : String(vinyl));
       toast.success("Acrylic and vinyl prices saved");
     } catch (err) {
       toast.error(err?.message || "Failed to save price");
@@ -177,17 +177,19 @@ const AdminSignageConfig = () => {
         <h1 className="text-2xl font-bold mb-6">Acrylic Vinyl Signage Configuration</h1>
 
         <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">Pricing (per square inch)</h2>
+          <h2 className="text-xl font-semibold mb-4">Pricing (per width inch)</h2>
           <p className="text-sm text-gray-600 mb-4">
-            Set the price per 1&quot; × 1&quot; separately for acrylic and vinyl. The customer&apos;s initial price is this rate × text area width (in) × text area height (in), based on the signage type they choose.
+            Set the price per horizontal inch of printed text separately for acrylic and vinyl. The
+            customer&apos;s initial price is this rate × text area width (in), based on the signage type
+            they choose. Height does not multiply the rate.
           </p>
           <div className="flex flex-wrap items-end gap-6">
             <div>
-              <label className="block text-sm font-medium mb-2">Acrylic — price per sq in ($)</label>
+              <label className="block text-sm font-medium mb-2">Acrylic — price per width inch ($)</label>
               <input
                 type="number"
-                value={pricePerSqInchAcrylic}
-                onChange={(e) => setPricePerSqInchAcrylic(e.target.value)}
+                value={pricePerWidthInchAcrylic}
+                onChange={(e) => setPricePerWidthInchAcrylic(e.target.value)}
                 className="border rounded px-3 py-2 w-32"
                 min="0"
                 step="0.01"
@@ -195,11 +197,11 @@ const AdminSignageConfig = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Vinyl — price per sq in ($)</label>
+              <label className="block text-sm font-medium mb-2">Vinyl — price per width inch ($)</label>
               <input
                 type="number"
-                value={pricePerSqInchVinyl}
-                onChange={(e) => setPricePerSqInchVinyl(e.target.value)}
+                value={pricePerWidthInchVinyl}
+                onChange={(e) => setPricePerWidthInchVinyl(e.target.value)}
                 className="border rounded px-3 py-2 w-32"
                 min="0"
                 step="0.01"
@@ -208,7 +210,7 @@ const AdminSignageConfig = () => {
             </div>
             <button
               type="button"
-              onClick={handleSavePricePerSqInch}
+              onClick={handleSavePricePerWidthInch}
               disabled={savingPrice}
               className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition disabled:opacity-60"
             >
@@ -218,7 +220,7 @@ const AdminSignageConfig = () => {
 
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-600 mb-2">
-              This fee is added to every acrylic or vinyl sign order (in addition to the size-based or area-based price).
+              This fee is added to every acrylic or vinyl sign order (in addition to the width-based price).
             </p>
             <div className="flex flex-wrap items-end gap-4">
               <div>
