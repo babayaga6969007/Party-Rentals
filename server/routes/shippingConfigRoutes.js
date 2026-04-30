@@ -10,6 +10,7 @@ const {
 } = require("../controllers/shippingConfigController");
 const authAdmin = require("../middleware/authAdmin");
 
+
 // Public route to get config (for frontend)
 router.get("/", getConfig);
 
