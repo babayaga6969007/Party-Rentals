@@ -50,12 +50,17 @@ const { items, extraFees, paymentMode, orderId, shippingCost } = req.body;
       });
     }
 
-const amount = calculateOrderAmount({
+let amount = calculateOrderAmount({
   items,
   extraFees,
   paymentMode,
   shippingCost,
 });
+
+// TEMP TEST OVERRIDE
+if (process.env.STRIPE_TEST_AMOUNT) {
+  amount = Number(process.env.STRIPE_TEST_AMOUNT);
+}
 
     const paymentIntent = await stripe.paymentIntents.create({
   amount,
