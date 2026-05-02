@@ -3,7 +3,6 @@ const stripe = require("../config/stripe");
 
 const calculateOrderAmount = ({
   items = [],
-  extraFees = 0,
   paymentMode = "FULL",
   shippingCost = 0,
 }) => {
@@ -30,8 +29,7 @@ const discount = 0;
 
 // 7️⃣ Final total
 const grandTotal =
-  subtotalWithTax - discount + laborCharge + Number(extraFees || 0);
-
+  subtotalWithTax - discount + laborCharge;
 // 8️⃣ Payment mode
 const payableAmount =
   paymentMode === "PARTIAL" ? grandTotal * 0.6 : grandTotal;
@@ -43,7 +41,7 @@ return Math.round(payableAmount * 100);
 
 exports.createPaymentIntent = async (req, res) => {
   try {
-const { items, extraFees, paymentMode, orderId, shippingCost } = req.body;
+const { items, paymentMode, orderId, shippingCost } = req.body;
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
         error: "Cart items are required",
@@ -52,7 +50,6 @@ const { items, extraFees, paymentMode, orderId, shippingCost } = req.body;
 
 let amount = calculateOrderAmount({
   items,
-  extraFees,
   paymentMode,
   shippingCost,
 });

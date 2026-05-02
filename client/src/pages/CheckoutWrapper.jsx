@@ -31,7 +31,6 @@ useEffect(() => {
     qty: i.qty,
     lineTotal: i.lineTotal,
   })),
-  extraFees: 0,
   paymentMode,
   shippingCost: Number(location?.state?.pricing?.shipping || 0),
 }),
