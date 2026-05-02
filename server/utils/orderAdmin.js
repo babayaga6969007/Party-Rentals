@@ -29,9 +29,15 @@ exports.adminOrderEmail = (order) => ({
         ? `
         <hr/>
         <h3>🚚 Delivery / Pickup</h3>
-        <pre style="background:#f7f7f7;padding:10px;">
-${JSON.stringify(order.delivery, null, 2)}
-        </pre>
+        <p>
+          <strong>Delivery Date:</strong> ${order.delivery.deliveryDate || "—"}<br/>
+          <strong>Pickup Date:</strong> ${order.delivery.pickupDate || "—"}<br/>
+          <strong>Delivery Time:</strong> ${order.delivery.deliveryTime || "—"}<br/>
+          <strong>Pickup Time:</strong> ${order.delivery.pickupTime || "—"}<br/>
+          <strong>Stairs Service:</strong> ${
+            order.delivery.services?.stairs ? "Yes" : "No"
+          }
+        </p>
       `
         : ""
     }
